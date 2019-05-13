@@ -5,3 +5,6 @@
 	path = depends/libff
 	url = https://github.com/AztecProtocol/libff
 	branch = master
+[submodule "depends/libfqfft"]
+	path = depends/libfqfft
+	url = https://github.com/scipr-lab/libfqfft.git

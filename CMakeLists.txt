@@ -28,22 +28,11 @@ find_path(GMP_INCLUDE_DIR NAMES gmp.h)
 find_library(GMP_LIBRARIES NAMES gmp libgmp)
 find_library(GMPXX_LIBRARIES NAMES gmpxx libgmpxx)
 
-# LIBFF
-# find_path(LIBFF_INCLUDE_DIR NAMES libff HINTS /usr/local/include)
-# find_library(LIBFF_LIBRARY NAMES libff.a HINTS /usr/local/lib/libff.a)
-# message(STATUS "LIBFF: ${LIBFF_LIBRARY} (${LIBFF_INCLUDE_DIR})")
-# add_library(libff IMPORTED STATIC "${LIBFF_LIBRARY}")
-
-# LIBFQFFT
-find_path(LIBFQFFT_INCLUDE_DIR NAMES libfqfft HINTS /usr/local/include)
-set(LIBFQFFT_DIRECTORY ${LIBFQFFT_INCLUDE_DIR}/libfqfft)
-message(STATUS "LIBFQFFT: ${LIBFQFFT_INCLUDE_DIR}")
-include_directories(${LIBFQFFT_DIRECTORY})
 
 # SET LIBFF CURVE TO ALT_BN128
 set(
   CURVE
-  "BN_128"
+  "ALT_BN128"
   CACHE
   STRING
   "Default curve: one of ALT_BN128, BN128, EDWARDS, MNT4, MNT6"
