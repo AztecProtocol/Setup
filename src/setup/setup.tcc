@@ -6,8 +6,9 @@
 #include <libff/algebra/curves/public_params.hpp>
 #include <libff/algebra/curves/curve_utils.hpp>
 
+#include <aztec_common/streaming.hpp>
+
 #include "utils.hpp"
-#include "../common/streaming.hpp"
 
 namespace setup
 {

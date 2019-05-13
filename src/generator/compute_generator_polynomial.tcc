@@ -16,11 +16,9 @@
 #include <libfqfft/evaluation_domain/evaluation_domain.hpp>
 #include <libfqfft/evaluation_domain/domains/arithmetic_sequence_domain.hpp>
 
-#include "compute_generator_polynomial.hpp"
-#include "../common/streaming.hpp"
+#include <aztec_common/streaming.hpp>
 
-template <typename FieldT>
-using SubproductTree = std::vector<std::vector<std::vector<FieldT>>>;
+#include "compute_generator_polynomial.hpp"
 
 namespace generator
 {

@@ -3,7 +3,7 @@
 #include <string.h>
 #include <sstream>
 
-#include "../common/streaming.hpp"
+#include <aztec_common/streaming.hpp>
 
 #include <libfqfft/polynomial_arithmetic/basic_operations.hpp>
 
