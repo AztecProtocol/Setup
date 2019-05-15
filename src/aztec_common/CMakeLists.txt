@@ -4,6 +4,8 @@
 add_library(
     aztec_common STATIC
     ${include_dir}/aztec_common.hpp
+    compression.tcc
+    compression.hpp
     streaming.tcc
     streaming.hpp
 )

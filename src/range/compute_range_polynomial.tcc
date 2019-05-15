@@ -53,7 +53,7 @@ void compute_range_polynomials(size_t index, size_t range)
     std::vector<FieldT> generator_polynomial;
     std::vector<FieldT> range_polynomial(M, FieldT::zero());
 
-    streaming::read_coefficients_from_file(generator_polynomial, "generator.dat", M);
+    streaming::read_field_elements_from_file(generator_polynomial, "generator.dat", M);
     for (size_t i = index; i < range; ++i)
     {
         if (i % 100 == 0)
@@ -63,7 +63,7 @@ void compute_range_polynomials(size_t index, size_t range)
         }
         compute_range_polynomial<FieldT, M>(&generator_polynomial[0], &range_polynomial[0], i);
         // std::string filename = create_file_name(i);
-        // streaming::write_coefficients_to_file(range_polynomial, filename.c_str());
+        // streaming::write_field_elements_to_file(range_polynomial, filename.c_str());
     }
 }
 } // namespace range

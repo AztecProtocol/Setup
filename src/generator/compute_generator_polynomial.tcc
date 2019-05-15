@@ -58,7 +58,7 @@ void compute_generator_polynomial()
     //     std::cout << "reconstructed from raw:" << std::endl;
     //     reconstructed.print();
     // }
-    streaming::write_coefficients_to_file(result, "generator.dat");
+    streaming::write_field_elements_to_file(result, "generator.dat");
     // printf("firsts \n");
     // for (size_t i = 0; i < subproduct_tree[0].size(); ++i)
     // {

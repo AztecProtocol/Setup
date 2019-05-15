@@ -7,7 +7,10 @@ include(CableToolchains)
 include(GNUInstallDirs)
 
 cable_configure_toolchain(DEFAULT cxx17-pic)
-cable_set_build_type(DEFAULT Debug CONFIGURATION_TYPES Debug Release)
+
+include(HunterConfig)
+
+cable_set_build_type(DEFAULT Release CONFIGURATION_TYPES Debug Release)
 
 set(PROJECT_VERSION 0.1.0)
 project(aztec-trusted-setup)
@@ -60,6 +63,8 @@ add_definitions(
 add_subdirectory(depends)
 
 add_subdirectory(src)
+
+option(SETUP_TESTING "Build tests" ON)
 
 if(SETUP_TESTING)
     enable_testing()

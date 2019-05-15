@@ -1,3 +1,5 @@
+#pragma once
+
 #include <stddef.h>
 
 namespace utils
@@ -6,8 +8,7 @@ namespace utils
     void batch_normalize(size_t start, size_t number, GroupT *x, GroupT *alpha_x)
     {
         FieldT accumulator = FieldT::one();
-        FieldT *temporaries;
-        temporaries = static_cast<FieldT *>(malloc(2 * number * sizeof(FieldT)));
+        FieldT* temporaries = static_cast<FieldT *>(malloc(2 * number * sizeof(FieldT)));
         for (size_t i = 0; i < number; ++i)
         {
             temporaries[2 * i] = accumulator;
@@ -18,16 +19,21 @@ namespace utils
         accumulator = accumulator.inverse();
 
         FieldT zzInv;
-        for (size_t i = number; i > 0; --i)
+        FieldT zInv;
+        for (size_t i = number - 1; i < (size_t)(-1); --i)
         {
-            accumulator = accumulator * temporaries[2 * i + 1];
-            zzInv = accumulator * accumulator;
+            zInv = accumulator * temporaries[2 * i + 1];
+            zzInv = zInv * zInv;
             alpha_x[i + start].X = alpha_x[i + start].X * zzInv;
-            alpha_x[i + start].Y = alpha_x[i + start].Y * (zzInv * accumulator);
-            accumulator = accumulator * temporaries[2 * i];
-            zzInv = accumulator * accumulator;
+            alpha_x[i + start].Y = alpha_x[i + start].Y * (zzInv * zInv);
+            accumulator = accumulator * alpha_x[i + start].Z; // temporaries[2 * i + 1];
+            alpha_x[i + start].Z = FieldT::one();
+            zInv = accumulator * temporaries[2 * i];
+            zzInv = zInv * zInv;
             x[i + start].X = x[i + start].X * zzInv;
-            x[i + start].Y = x[i + start].Y * (zzInv * accumulator);
+            x[i + start].Y = x[i + start].Y * (zzInv * zInv);
+            accumulator = accumulator * x[i + start].Z; // temporaries[2 * i + 1];
+            x[i + start].Z = FieldT::one();
         }
         free(temporaries);
     }
