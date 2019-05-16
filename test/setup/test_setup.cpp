@@ -91,7 +91,7 @@ TEST(setup, validate_polynomial_evaluation)
     }
     libff::alt_bn128_G2 comparator = y * libff::alt_bn128_G2::one();
 
-    bool result = verifier::validate_polynomial_evaluation<libff::alt_bn128_pp, libff::alt_bn128_Fr, libff::alt_bn128_G1, libff::alt_bn128_G2>(&points[0], comparator, N);
+    bool result = verifier::validate_polynomial_evaluation<libff::alt_bn128_pp, libff::alt_bn128_G1, libff::alt_bn128_G2>(&points[0], comparator, N);
 
     EXPECT_EQ(result, true);
 }
@@ -125,6 +125,6 @@ TEST(setup, validate_transcript)
         accumulator = accumulator * y;
     }
 
-    bool result = verifier::validate_transcript<libff::alt_bn128_pp, libff::alt_bn128_Fr, libff::alt_bn128_G1, libff::alt_bn128_G2>(&g1_x[0], &g1_alpha_x[0], &g2_x[0], &g2_alpha_x[0], N);
+    bool result = verifier::validate_transcript<libff::alt_bn128_pp>(&g1_x[0], &g1_alpha_x[0], &g2_x[0], &g2_alpha_x[0], N);
     EXPECT_EQ(result, true);
 }

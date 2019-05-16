@@ -37,29 +37,28 @@ std::string create_file_name(size_t k)
     return ss.str();
 }
 
-template <
-    typename ppT,
-    typename FieldT,
-    typename Field2T,
-    typename ScalarT,
-    typename Group1T,
-    typename Group2T
-> void run_setup()
+template <typename ppT> void run_setup()
 {
-    constexpr size_t G1_BUFFER_SIZE = sizeof(FieldT) * 2 * POLYNOMIAL_DEGREE;
-    constexpr size_t G2_BUFFER_SIZE = sizeof(FieldT) * 4 * POLYNOMIAL_DEGREE;
+    using Fr = libff::Fr<ppT>;
+    using Fq = libff::Fq<ppT>;
+    using Fqe = libff::Fqe<ppT>;
+    using G1 = libff::G1<ppT>;
+    using G2 = libff::G2<ppT>;
+
+    constexpr size_t G1_BUFFER_SIZE = sizeof(Fq) * 2 * POLYNOMIAL_DEGREE;
+    constexpr size_t G2_BUFFER_SIZE = sizeof(Fq) * 4 * POLYNOMIAL_DEGREE;
 
     printf("inside run setup\n");
 
     // our toxic waste... we must ensure this is wiped before this function goes out of scope!
-    ScalarT accumulator = ScalarT::random_element();
-    ScalarT multiplicand = accumulator;
-    ScalarT alpha = ScalarT::random_element();
+    Fr accumulator = Fr::random_element();
+    Fr multiplicand = accumulator;
+    Fr alpha = Fr::random_element();
 
-    std::vector<Group1T> g1_x;
-    std::vector<Group1T> g1_alpha_x;
-    std::vector<Group2T> g2_x;
-    std::vector<Group2T> g2_alpha_x;
+    std::vector<G1> g1_x;
+    std::vector<G1> g1_alpha_x;
+    std::vector<G2> g2_x;
+    std::vector<G2> g2_alpha_x;
 
     printf("resizing vectors\n");
 
@@ -77,24 +76,24 @@ template <
     {
         printf("previous setup transcript found, reading from disk...\n");
         streaming::read_file_into_buffer("setup_g1_x_current.dat", read_write_buffer, G1_BUFFER_SIZE);
-        streaming::read_g1_elements_from_buffer<FieldT, Group1T>(&g1_x[0], read_write_buffer, G1_BUFFER_SIZE);
+        streaming::read_g1_elements_from_buffer<Fq, G1>(&g1_x[0], read_write_buffer, G1_BUFFER_SIZE);
         streaming::validate_checksum(read_write_buffer, G1_BUFFER_SIZE);
 
         streaming::read_file_into_buffer("setup_g1_alpha_x_current.dat", read_write_buffer, G1_BUFFER_SIZE);
-        streaming::read_g1_elements_from_buffer<FieldT, Group1T>(&g1_alpha_x[0], read_write_buffer, G1_BUFFER_SIZE);
+        streaming::read_g1_elements_from_buffer<Fq, G1>(&g1_alpha_x[0], read_write_buffer, G1_BUFFER_SIZE);
         streaming::validate_checksum(read_write_buffer, G1_BUFFER_SIZE);
 
         streaming::read_file_into_buffer("setup_g2_x_current.dat", read_write_buffer, G2_BUFFER_SIZE);
-        streaming::read_g2_elements_from_buffer<FieldT, Group2T>(&g2_x[0], read_write_buffer, G2_BUFFER_SIZE);
+        streaming::read_g2_elements_from_buffer<Fq, G2>(&g2_x[0], read_write_buffer, G2_BUFFER_SIZE);
         streaming::validate_checksum(read_write_buffer, G2_BUFFER_SIZE);
 
         streaming::read_file_into_buffer("setup_g2_alpha_x_current.dat", read_write_buffer, G2_BUFFER_SIZE);
-        streaming::read_g2_elements_from_buffer<FieldT, Group2T>(&g2_alpha_x[0], read_write_buffer, G2_BUFFER_SIZE);
+        streaming::read_g2_elements_from_buffer<Fq, G2>(&g2_alpha_x[0], read_write_buffer, G2_BUFFER_SIZE);
         streaming::validate_checksum(read_write_buffer, G2_BUFFER_SIZE);
 
 #ifdef VERIFY_TRANSCRIPT
         printf("verifying previous transcript...\n");
-        bool result = verifier::validate_transcript<ppT, ScalarT, Group1T, Group2T>(&g1_x[0], &g1_alpha_x[0], &g2_x[0], &g2_alpha_x[0], POLYNOMIAL_DEGREE);
+        bool result = verifier::validate_transcript<ppT>(&g1_x[0], &g1_alpha_x[0], &g2_x[0], &g2_alpha_x[0], POLYNOMIAL_DEGREE);
         printf("transcript result = %d\n", (int)result);
         ASSERT(result == true);
 #endif
@@ -108,10 +107,10 @@ template <
             {
                 printf("i = %d\n", (int)i);
             }
-            g1_x[i] = Group1T::one();
-            g1_alpha_x[i] = Group1T::one();
-            g2_x[i] = Group2T::one();
-            g2_alpha_x[i] = Group2T::one();
+            g1_x[i] = G1::one();
+            g1_alpha_x[i] = G1::one();
+            g2_x[i] = G2::one();
+            g2_alpha_x[i] = G2::one();
         }
     }
 
@@ -130,8 +129,8 @@ template <
     }
 
     printf("updated setup transcript, converting points into affine form...\n");
-    utils::batch_normalize<FieldT, Group1T>(0, POLYNOMIAL_DEGREE, &g1_x[0], &g1_alpha_x[0]);
-    utils::batch_normalize<Field2T, Group2T>(0, POLYNOMIAL_DEGREE, &g2_x[0], &g2_alpha_x[0]);
+    utils::batch_normalize<Fq, G1>(0, POLYNOMIAL_DEGREE, &g1_x[0], &g1_alpha_x[0]);
+    utils::batch_normalize<Fqe, G2>(0, POLYNOMIAL_DEGREE, &g2_x[0], &g2_alpha_x[0]);
 
     printf("writing setup transcript to disk...\n");
     std::rename("setup_g1_x_current.dat", "setup_g1_x_previous.dat");
@@ -140,31 +139,31 @@ template <
     std::rename("setup_g2_alpha_x_current.dat", "setup_g2_alpha_x_previous.dat");
 
     // write g1_x to file
-    streaming::write_g1_elements_to_buffer<FieldT, Group1T>(g1_x, read_write_buffer); // "setup_g1_x.dat");
+    streaming::write_g1_elements_to_buffer<Fq, G1>(g1_x, read_write_buffer); // "setup_g1_x.dat");
     streaming::add_checksum_to_buffer(read_write_buffer, G1_BUFFER_SIZE);
     streaming::write_buffer_to_file("setup_g1_x_current.dat", read_write_buffer, G1_BUFFER_SIZE);
 
     // write g1_alpha_x to file
-    streaming::write_g1_elements_to_buffer<FieldT, Group1T>(g1_alpha_x, read_write_buffer); // "setup_g1_alpha_x.dat");
+    streaming::write_g1_elements_to_buffer<Fq, G1>(g1_alpha_x, read_write_buffer); // "setup_g1_alpha_x.dat");
     streaming::add_checksum_to_buffer(read_write_buffer, G1_BUFFER_SIZE);
     streaming::write_buffer_to_file("setup_g1_alpha_x_current.dat", read_write_buffer, G1_BUFFER_SIZE);
 
     // write g2_x to file
-    streaming::write_g2_elements_to_buffer<Field2T, Group2T>(g2_x, read_write_buffer); // "setup_g2_x.dat");
+    streaming::write_g2_elements_to_buffer<Fqe, G2>(g2_x, read_write_buffer); // "setup_g2_x.dat");
     streaming::add_checksum_to_buffer(read_write_buffer, G2_BUFFER_SIZE);
     streaming::write_buffer_to_file("setup_g2_x_current.dat", read_write_buffer, G2_BUFFER_SIZE);
 
     // write g2_alpha_x to file
-    streaming::write_g2_elements_to_buffer<Field2T, Group2T>(g2_alpha_x, read_write_buffer); // "setup_g2_alpha_x.dat");
+    streaming::write_g2_elements_to_buffer<Fqe, G2>(g2_alpha_x, read_write_buffer); // "setup_g2_alpha_x.dat");
     streaming::add_checksum_to_buffer(read_write_buffer, G2_BUFFER_SIZE);
     streaming::write_buffer_to_file("setup_g2_alpha_x_current.dat", read_write_buffer, G2_BUFFER_SIZE);
 
     // wipe out accumulator. Use explicit_bzero so that this does not get optimized away
-    explicit_bzero((void*)&accumulator, sizeof(ScalarT));
+    explicit_bzero((void*)&accumulator, sizeof(Fr));
     // and wipe out our multiplicand
-    explicit_bzero((void*)&multiplicand, sizeof(ScalarT));
+    explicit_bzero((void*)&multiplicand, sizeof(Fr));
     // and alpha
-    explicit_bzero((void*)&alpha, sizeof(ScalarT));
+    explicit_bzero((void*)&alpha, sizeof(Fr));
 
     // free the memory we allocated to our write buffer
     free(read_write_buffer);

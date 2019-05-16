@@ -9,7 +9,7 @@ int main()
     printf("initializing libff \n");
     libff::alt_bn128_pp::init_public_params();
     printf("attempting to generate setup variables \n");
-    setup::run_setup<libff::alt_bn128_pp, libff::Fq<libff::alt_bn128_pp>, libff::Fqe<libff::alt_bn128_pp>, libff::Fr<libff::alt_bn128_pp>, libff::G1<libff::alt_bn128_pp>, libff::G2<libff::alt_bn128_pp> >();
+    setup::run_setup<libff::alt_bn128_pp>();
 
     return true;
 }

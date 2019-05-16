@@ -9,12 +9,34 @@
 
 namespace verifier
 {
+namespace
+{
+
+template <typename ppT>
+using Fq = libff::Fq<ppT>;
+
+template <typename ppT>
+using Fqe = libff::Fqe<ppT>;
+
+template <typename ppT>
+using G1 = libff::G1<ppT>;
+
+template <typename ppT>
+using G2 = libff::G2<ppT>;
+
+template <typename ppT>
+using Fr = libff::Fr<ppT>;
+
+} // namespace
+
 template <typename GroupT>
 struct VerificationKey
 {
     GroupT lhs;
     GroupT rhs;
 };
+
+
 
 // We want to validate that a vector of points corresponds to the terms [x, x^2, ..., x^n]
 // of an indeterminate x and a random variable z
@@ -44,7 +66,7 @@ void same_ratio_preprocess(GroupT *g1_points, VerificationKey<GroupT> &key, size
 
 // Validate that g1_key.lhs * g2_key.lhs == g1_key.rhs * g2_key.rhs
 template <typename ppT>
-bool same_ratio(VerificationKey<libff::G1<ppT>> &g1_key, VerificationKey<libff::G2<ppT>> &g2_key)
+bool same_ratio(VerificationKey<G1<ppT> > &g1_key, VerificationKey<G2<ppT> > &g2_key)
 {
     // turn off profiling printf statements when computing a pairing
     #ifndef ENABLE_LIBFF_PROFILING
@@ -72,7 +94,7 @@ bool same_ratio(VerificationKey<libff::G1<ppT>> &g1_key, VerificationKey<libff::
 // Because every term is multiplied by an independant random variable, we can treat each term as distinct.
 // Once we have A and B, we can validate that A*x = B via a pairing check.
 // This validates that our original vector represents the powering sequence that we desire
-template <typename ppT, typename FieldT, typename Group1T, typename Group2T>
+template <typename ppT, typename Group1T, typename Group2T>
 bool validate_polynomial_evaluation(Group1T *evaluation, Group2T comparator, size_t polynomial_degree)
 {
     VerificationKey<Group1T> key;
@@ -81,7 +103,7 @@ bool validate_polynomial_evaluation(Group1T *evaluation, Group2T comparator, siz
     delta.lhs = comparator;
     delta.rhs = Group2T::one();
 
-    same_ratio_preprocess<FieldT, Group1T>(evaluation, key, polynomial_degree);
+    same_ratio_preprocess<Fq<ppT>, Group1T>(evaluation, key, polynomial_degree);
 
     // is this the compiler equivalent of "it's fine! nobody panic! we'll just edit it out in post..."
     if constexpr (sizeof(Group2T) > sizeof(Group1T))
@@ -98,28 +120,28 @@ bool validate_polynomial_evaluation(Group1T *evaluation, Group2T comparator, siz
 }
 
 // Validate that a provided transcript conforms to the powering sequences required for our structured reference string
-template <typename ppT, typename FieldT, typename Group1T, typename Group2T>
-bool validate_transcript(Group1T* g1_x, Group1T* g1_alpha_x, Group2T* g2_x, Group2T* g2_alpha_x, size_t polynomial_degree)
+template <typename ppT>
+bool validate_transcript(G1<ppT>* g1_x, G1<ppT>* g1_alpha_x, G2<ppT>* g2_x, G2<ppT>* g2_alpha_x, size_t polynomial_degree)
 {
     // init a bool to track success. We're natural optimists, so init this to true
     // (...I mean, this wouldn't work if we didn't do this, but why spoil a good narrative with the facts?)
     bool result = true;
 
     // validate that the ratio between successive g1_x elements is defined by g2_x[0]
-    result &= validate_polynomial_evaluation<ppT, FieldT, Group1T, Group2T>(g1_x, g2_x[0], polynomial_degree);
+    result &= validate_polynomial_evaluation<ppT, G1<ppT>, G2<ppT> >(g1_x, g2_x[0], polynomial_degree);
 
     // validate that the ratio between successive g1_alpha_x elements is defined by g2_x[0]
-    result &= validate_polynomial_evaluation<ppT, FieldT, Group1T, Group2T>(g1_alpha_x, g2_x[0], polynomial_degree);
+    result &= validate_polynomial_evaluation<ppT, G1<ppT>, G2<ppT> >(g1_alpha_x, g2_x[0], polynomial_degree);
 
     // validate that the ratio between successive g2_x elements is defined by g1_x[0]
-    result &= validate_polynomial_evaluation<ppT, FieldT, Group2T, Group1T>(g2_x, g1_x[0], polynomial_degree);
+    result &= validate_polynomial_evaluation<ppT, G2<ppT>, G1<ppT> >(g2_x, g1_x[0], polynomial_degree);
 
     // validate that the ratio between successive g2_alpha_x elements is defined by g1_x[0]
-    result &= validate_polynomial_evaluation<ppT, FieldT, Group2T, Group1T>(g2_alpha_x, g1_x[0], polynomial_degree);
+    result &= validate_polynomial_evaluation<ppT, G2<ppT>, G1<ppT> >(g2_alpha_x, g1_x[0], polynomial_degree);
 
     // validate that the ratio between g1_x and g1_alpha_x is the same as g2_x and g2_alpha_x
-    VerificationKey<Group1T> g1_alpha_key;
-    VerificationKey<Group2T> g2_alpha_key;
+    VerificationKey<G1<ppT> > g1_alpha_key;
+    VerificationKey<G2<ppT> > g2_alpha_key;
 
     g1_alpha_key.lhs = g1_x[0];
     g1_alpha_key.rhs = g1_alpha_x[0];
