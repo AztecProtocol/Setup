@@ -10,15 +10,19 @@
 #include <libff/algebra/curves/public_params.hpp>
 #include <libff/algebra/curves/curve_utils.hpp>
 
+#include <aztec_common/assert.hpp>
 #include <aztec_common/checksum.hpp>
 #include <aztec_common/streaming.hpp>
 
 #include "utils.hpp"
+#include "verifier.hpp"
 
 namespace setup
 {
 namespace
 {
+#define VERIFY_TRANSCRIPT 1
+
 bool is_file_exist(const char *fileName)
 {
     std::ifstream infile(fileName);
@@ -34,6 +38,7 @@ std::string create_file_name(size_t k)
 }
 
 template <
+    typename ppT,
     typename FieldT,
     typename Field2T,
     typename ScalarT,
@@ -55,7 +60,9 @@ template <
     std::vector<Group1T> g1_alpha_x;
     std::vector<Group2T> g2_x;
     std::vector<Group2T> g2_alpha_x;
+
     printf("resizing vectors\n");
+
     g1_x.resize(POLYNOMIAL_DEGREE);
     g1_alpha_x.resize(POLYNOMIAL_DEGREE);
     g2_x.resize(POLYNOMIAL_DEGREE);
@@ -84,6 +91,13 @@ template <
         streaming::read_file_into_buffer("setup_g2_alpha_x_current.dat", read_write_buffer, G2_BUFFER_SIZE);
         streaming::read_g2_elements_from_buffer<FieldT, Group2T>(&g2_alpha_x[0], read_write_buffer, G2_BUFFER_SIZE);
         streaming::validate_checksum(read_write_buffer, G2_BUFFER_SIZE);
+
+#ifdef VERIFY_TRANSCRIPT
+        printf("verifying previous transcript...\n");
+        bool result = verifier::validate_transcript<ppT, ScalarT, Group1T, Group2T>(&g1_x[0], &g1_alpha_x[0], &g2_x[0], &g2_alpha_x[0], POLYNOMIAL_DEGREE);
+        printf("transcript result = %d\n", (int)result);
+        ASSERT(result == true);
+#endif
     }
     else
     {

@@ -16,7 +16,7 @@ namespace setup
 
     // template <typename FieldT, typename G1, typename G2>
     // void compute_challenge_responses(FieldT& setup_key, G1* database, G2* elements);
-    template <typename FieldT, typename Field2T, typename ScalarT, typename Group1T, typename Group2T>
+    template <typename ppT, typename FieldT, typename Field2T, typename ScalarT, typename Group1T, typename Group2T>
     void run_setup();
 };
 #include "setup.tcc"
