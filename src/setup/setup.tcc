@@ -10,6 +10,7 @@
 #include <libff/algebra/curves/public_params.hpp>
 #include <libff/algebra/curves/curve_utils.hpp>
 
+#include <aztec_common/checksum.hpp>
 #include <aztec_common/streaming.hpp>
 
 #include "utils.hpp"
@@ -48,6 +49,7 @@ template <
     // our toxic waste... we must ensure this is wiped before this function goes out of scope!
     ScalarT accumulator = ScalarT::random_element();
     ScalarT multiplicand = accumulator;
+    ScalarT alpha = ScalarT::random_element();
 
     std::vector<Group1T> g1_x;
     std::vector<Group1T> g1_alpha_x;
@@ -62,22 +64,26 @@ template <
     // GET DATABASE FROM FILE
     // (INIT)
     // set up our read write buffer
-    char* read_write_buffer = (char*)malloc(G2_BUFFER_SIZE);
+    char* read_write_buffer = (char*)malloc(G2_BUFFER_SIZE + checksum::BLAKE2B_CHECKSUM_LENGTH);
 
     if (is_file_exist("setup_g1_x_current.dat"))
     {
         printf("previous setup transcript found, reading from disk...\n");
         streaming::read_file_into_buffer("setup_g1_x_current.dat", read_write_buffer, G1_BUFFER_SIZE);
         streaming::read_g1_elements_from_buffer<FieldT, Group1T>(&g1_x[0], read_write_buffer, G1_BUFFER_SIZE);
+        streaming::validate_checksum(read_write_buffer, G1_BUFFER_SIZE);
 
         streaming::read_file_into_buffer("setup_g1_alpha_x_current.dat", read_write_buffer, G1_BUFFER_SIZE);
         streaming::read_g1_elements_from_buffer<FieldT, Group1T>(&g1_alpha_x[0], read_write_buffer, G1_BUFFER_SIZE);
+        streaming::validate_checksum(read_write_buffer, G1_BUFFER_SIZE);
 
         streaming::read_file_into_buffer("setup_g2_x_current.dat", read_write_buffer, G2_BUFFER_SIZE);
         streaming::read_g2_elements_from_buffer<FieldT, Group2T>(&g2_x[0], read_write_buffer, G2_BUFFER_SIZE);
+        streaming::validate_checksum(read_write_buffer, G2_BUFFER_SIZE);
 
         streaming::read_file_into_buffer("setup_g2_alpha_x_current.dat", read_write_buffer, G2_BUFFER_SIZE);
         streaming::read_g2_elements_from_buffer<FieldT, Group2T>(&g2_alpha_x[0], read_write_buffer, G2_BUFFER_SIZE);
+        streaming::validate_checksum(read_write_buffer, G2_BUFFER_SIZE);
     }
     else
     {
@@ -103,9 +109,9 @@ template <
             printf("group element i = %d\n", (int)i);
         }
         g1_x[i] = accumulator * g1_x[i];
-        g1_alpha_x[i] = accumulator * g1_alpha_x[i];
+        g1_alpha_x[i] = alpha * accumulator * g1_alpha_x[i];
         g2_x[i] = accumulator * g2_x[i];
-        g2_alpha_x[i] = accumulator * g2_alpha_x[i];
+        g2_alpha_x[i] = alpha * accumulator * g2_alpha_x[i];
         accumulator = accumulator * multiplicand;
     }
 
@@ -121,23 +127,30 @@ template <
 
     // write g1_x to file
     streaming::write_g1_elements_to_buffer<FieldT, Group1T>(g1_x, read_write_buffer); // "setup_g1_x.dat");
-    streaming::write_buffer_into_file("setup_g1_x_current.dat", read_write_buffer, G1_BUFFER_SIZE);
+    streaming::add_checksum_to_buffer(read_write_buffer, G1_BUFFER_SIZE);
+    streaming::write_buffer_to_file("setup_g1_x_current.dat", read_write_buffer, G1_BUFFER_SIZE);
+
     // write g1_alpha_x to file
     streaming::write_g1_elements_to_buffer<FieldT, Group1T>(g1_alpha_x, read_write_buffer); // "setup_g1_alpha_x.dat");
-    streaming::write_buffer_into_file("setup_g1_alpha_x_current.dat", read_write_buffer, G1_BUFFER_SIZE);
+    streaming::add_checksum_to_buffer(read_write_buffer, G1_BUFFER_SIZE);
+    streaming::write_buffer_to_file("setup_g1_alpha_x_current.dat", read_write_buffer, G1_BUFFER_SIZE);
 
     // write g2_x to file
-    streaming::write_g2_elements_to_buffer<FieldT, Group2T>(g2_x, read_write_buffer); // "setup_g2_x.dat");
-    streaming::write_buffer_into_file("setup_g2_x_current.dat", read_write_buffer, G2_BUFFER_SIZE);
+    streaming::write_g2_elements_to_buffer<Field2T, Group2T>(g2_x, read_write_buffer); // "setup_g2_x.dat");
+    streaming::add_checksum_to_buffer(read_write_buffer, G2_BUFFER_SIZE);
+    streaming::write_buffer_to_file("setup_g2_x_current.dat", read_write_buffer, G2_BUFFER_SIZE);
 
     // write g2_alpha_x to file
-    streaming::write_g2_elements_to_buffer<FieldT, Group2T>(g2_alpha_x, read_write_buffer); // "setup_g2_alpha_x.dat");
-    streaming::write_buffer_into_file("setup_g2_alpha_x_current.dat", read_write_buffer, G2_BUFFER_SIZE);
+    streaming::write_g2_elements_to_buffer<Field2T, Group2T>(g2_alpha_x, read_write_buffer); // "setup_g2_alpha_x.dat");
+    streaming::add_checksum_to_buffer(read_write_buffer, G2_BUFFER_SIZE);
+    streaming::write_buffer_to_file("setup_g2_alpha_x_current.dat", read_write_buffer, G2_BUFFER_SIZE);
 
     // wipe out accumulator. Use explicit_bzero so that this does not get optimized away
     explicit_bzero((void*)&accumulator, sizeof(ScalarT));
     // and wipe out our multiplicand
     explicit_bzero((void*)&multiplicand, sizeof(ScalarT));
+    // and alpha
+    explicit_bzero((void*)&alpha, sizeof(ScalarT));
 
     // free the memory we allocated to our write buffer
     free(read_write_buffer);

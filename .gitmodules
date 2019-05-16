@@ -8,3 +8,6 @@
 [submodule "depends/libfqfft"]
 	path = depends/libfqfft
 	url = https://github.com/scipr-lab/libfqfft.git
+[submodule "depends/blake2"]
+	path = depends/blake2
+	url = https://github.com/BLAKE2/BLAKE2.git

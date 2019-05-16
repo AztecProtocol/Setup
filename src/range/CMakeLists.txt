@@ -12,15 +12,17 @@ add_executable(
 
 target_link_libraries(
     compute_range_polynomial
-    ff
-    ${GMP_LIBRARIES}
+    PRIVATE
+        aztec_common
+        ff
+        ${GMP_LIBRARIES}
 )
 
 target_include_directories(
     compute_range_polynomial
-    PUBLIC
+    PRIVATE
         ${DEPENDS_DIR}/libff
         ${DEPENDS_DIR}/libfqfft
-    PRIVATE
+        ${include_dir}
         ${private_include_dir}
 )

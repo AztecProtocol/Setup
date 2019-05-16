@@ -22,7 +22,8 @@ set(include_dir ${CMAKE_CURRENT_SOURCE_DIR}/include)
 set(private_include_dir ${PROJECT_SOURCE_DIR}/src)
 set(DEPENDS_DIR ${PROJECT_SOURCE_DIR}/depends)
 
-message(INFO " include dir is ${include_dir}")
+message(INFO " INCLUDE_DIR = ${include_dir}\n")
+message(INFO " DEPENDS_DIR = ${DEPENDS_DIR}\n")
 
 ### DEPENDENCIES
 

@@ -13,36 +13,16 @@ add_executable(
 
 target_link_libraries(
     setup
-    ff
-    ${GMP_LIBRARIES}
+    PRIVATE
+        ff
+        ${GMP_LIBRARIES}
+        aztec_common
 )
 
 target_include_directories(
     setup
-    PUBLIC
-        ${DEPENDS_DIR}/libff
     PRIVATE
+        ${DEPENDS_DIR}/libff
+        ${DEPENDS_DIR}/blake2b/ref
         ${private_include_dir}
 )
-
-# add_library(
-#     setup_lib
-#     STATIC
-#     setup.tcc
-#     setup.hpp
-#     utils.hpp
-# )
-# 
-# target_link_libraries(
-#     setup_lib
-#     ff
-#     ${GMP_LIBRARIES}
-# )
-# 
-# target_include_directories(
-#     setup_lib
-#     PUBLIC
-#         ${DEPENDS_DIR}/libff
-#     PRIVATE
-#         ${private_include_dir}
-# )

@@ -21,7 +21,9 @@ target_include_directories(
     setup_tests
     PRIVATE
         ${private_include_dir}
+        ${include_dir}
 )
+
 set_target_properties(
     setup_tests
     PROPERTIES RUNTIME_OUTPUT_DIRECTORY ..
