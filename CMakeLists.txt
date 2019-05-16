@@ -32,6 +32,14 @@ find_path(GMP_INCLUDE_DIR NAMES gmp.h)
 find_library(GMP_LIBRARIES NAMES gmp libgmp)
 find_library(GMPXX_LIBRARIES NAMES gmpxx libgmpxx)
 
+option(
+    ENABLE_LIBFF_PROFILING
+    "Enable libff performance profiling"
+    OFF
+)
+if("${ENABLE_LIBFF_PROFILING}")
+  add_definitions(-DENABLE_LIBFF_PROFILING)
+endif()
 
 # SET LIBFF CURVE TO ALT_BN128
 set(
@@ -60,6 +68,7 @@ option(
 add_definitions(
 -DNO_PROCPS
 )
+
 
 add_subdirectory(depends)
 

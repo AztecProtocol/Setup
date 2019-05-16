@@ -12,43 +12,7 @@
 
 #include <aztec_common/streaming.hpp>
 
-template <size_t N>
-void validate_g1_point(libff::alt_bn128_G1& result, libff::alt_bn128_G1& expected)
-{
-    libff::bigint<N> result_x = result.X.as_bigint();
-    libff::bigint<N> result_y = result.Y.as_bigint();
-    libff::bigint<N> expected_x = expected.X.as_bigint();
-    libff::bigint<N> expected_y = expected.Y.as_bigint();
-
-    for (size_t i = 0; i < N; ++i)
-    {
-        EXPECT_EQ(result_x.data[i], expected_x.data[i]);
-        EXPECT_EQ(result_y.data[i], expected_y.data[i]);
-    }
-}
-
-template <size_t N>
-void validate_g2_point(libff::alt_bn128_G2& result, libff::alt_bn128_G2& expected)
-{
-    libff::bigint<N> result_x0 = result.X.c0.as_bigint();
-    libff::bigint<N> result_y0 = result.Y.c0.as_bigint();
-    libff::bigint<N> result_x1 = result.X.c1.as_bigint();
-    libff::bigint<N> result_y1 = result.Y.c1.as_bigint();
-
-    libff::bigint<N> expected_x0 = expected.X.c0.as_bigint();
-    libff::bigint<N> expected_y0 = expected.Y.c0.as_bigint();
-    libff::bigint<N> expected_x1 = expected.X.c1.as_bigint();
-    libff::bigint<N> expected_y1 = expected.Y.c1.as_bigint();
-
-    for (size_t i = 0; i < N; ++i)
-    {
-        EXPECT_EQ(result_x0.data[i], expected_x0.data[i]);
-        EXPECT_EQ(result_y0.data[i], expected_y0.data[i]);
-        EXPECT_EQ(result_x1.data[i], expected_x1.data[i]);
-        EXPECT_EQ(result_y1.data[i], expected_y1.data[i]);
-
-    }
-}
+#include "test_utils.hpp"
 
 TEST(aztec_common, variable_size_checks)
 {
@@ -114,7 +78,7 @@ TEST(streaming, write_g1_elements_to_buffer)
 
     for (size_t i = 0; i < N; ++i)
     {
-        validate_g1_point<num_limbs>(result[i], expected[i]);
+        test_utils::validate_g1_point<num_limbs>(result[i], expected[i]);
     }
 }
 
@@ -148,6 +112,6 @@ TEST(streaming, write_g2_elements_to_buffer)
 
     for (size_t i = 0; i < N; ++i)
     {
-        validate_g2_point<num_limbs>(result[i], expected[i]);
+        test_utils::validate_g2_point<num_limbs>(result[i], expected[i]);
     }
 }
