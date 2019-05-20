@@ -1,3 +1,8 @@
+/**
+ * Setup
+ * Copyright Spilsbury Holdings 2019
+ * 
+ **/
 #pragma once
 
 #include "stddef.h"
@@ -31,14 +36,15 @@ public:
     void process();
     std::vector<GroupT> *get_group_accumulators() { return &group_accumulators; }
     std::vector<FieldT> *get_field_accumulators() { return &field_accumulators; }
+    void process_range_single(size_t k);
+    void process_range_zero();
+    size_t range_start;
 
 private:
-    void process_range(size_t k);
-    void process_range_zero();
+    // void process_range(size_t start, size_t end);
 
     std::vector<GroupT> *powers_of_x;
     std::vector<FieldT> *generator_coefficients;
-    size_t range_start;
     size_t degree_start;
     std::vector<GroupT> group_accumulators;
     std::vector<FieldT> field_accumulators;

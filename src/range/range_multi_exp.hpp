@@ -1,3 +1,8 @@
+/**
+ * Setup
+ * Copyright Spilsbury Holdings 2019
+ * 
+ **/
 #pragma once
 
 #include <libff/algebra/curves/public_params.hpp>

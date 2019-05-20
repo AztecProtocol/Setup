@@ -1,3 +1,8 @@
+/**
+ * Setup
+ * Copyright Spilsbury Holdings 2019
+ * 
+ **/
 #include <string.h>
 #include <stdlib.h>
 #include <iostream>

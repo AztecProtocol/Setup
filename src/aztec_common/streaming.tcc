@@ -1,3 +1,8 @@
+/**
+ * Setup
+ * Copyright Spilsbury Holdings 2019
+ * 
+ **/
 #include <gmp.h>
 #include <memory.h>
 #include <fstream>

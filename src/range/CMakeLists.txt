@@ -2,6 +2,8 @@
 # trusted_setup_post_processing range
 # copyright spilsbury holdings 2019
 
+find_package (Threads)
+
 
 add_executable(
     compute_range_polynomial
@@ -16,6 +18,7 @@ target_link_libraries(
     PRIVATE
         aztec_common
         ff
+        ${CMAKE_THREAD_LIBS_INIT}
         ${GMP_LIBRARIES}
 )
 

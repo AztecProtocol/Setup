@@ -1,3 +1,8 @@
+/**
+ * Setup
+ * Copyright Spilsbury Holdings 2019
+ * 
+ **/
 #include <libff/algebra/curves/alt_bn128/alt_bn128_pp.hpp>
 
 #include "compute_generator_polynomial.hpp"
