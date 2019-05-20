@@ -2,11 +2,16 @@
 
 #include "compute_generator_polynomial.hpp"
 
+namespace
+{
+    constexpr size_t POLYNOMIAL_DEGREE = 0x2000;
+}
+
 int main()
 {
     printf("initializing libff \n");
     libff::alt_bn128_pp::init_public_params();
     printf("calling compute generator poly \n");
-    generator::compute_generator_polynomial<libff::Fr<libff::alt_bn128_pp>, 0x100000>();
+    generator::compute_generator_polynomial<libff::Fr<libff::alt_bn128_pp>, POLYNOMIAL_DEGREE>();
     return true;
 }

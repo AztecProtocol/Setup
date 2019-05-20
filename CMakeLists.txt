@@ -25,6 +25,14 @@ set(DEPENDS_DIR ${PROJECT_SOURCE_DIR}/depends)
 message(INFO " INCLUDE_DIR = ${include_dir}\n")
 message(INFO " DEPENDS_DIR = ${DEPENDS_DIR}\n")
 
+
+### SETUP
+# Create a directory to store the trusted setup output
+add_custom_target(create-setup-db-directory ALL
+    COMMAND ${CMAKE_COMMAND} -E make_directory setup_db)
+add_custom_target(create-post-processing-db-directory ALL
+    COMMAND ${CMAKE_COMMAND} -E make_directory post_processing_db)
+
 ### DEPENDENCIES
 
 # GMP

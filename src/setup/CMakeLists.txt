@@ -26,3 +26,5 @@ target_include_directories(
         ${DEPENDS_DIR}/blake2b/ref
         ${private_include_dir}
 )
+
+set_target_properties(setup PROPERTIES RUNTIME_OUTPUT_DIRECTORY ../..)

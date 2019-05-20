@@ -23,3 +23,5 @@ target_include_directories(
         ${private_include_dir}
         ${include_dir}
 )
+
+set_target_properties(compute_generator_polynomial PROPERTIES RUNTIME_OUTPUT_DIRECTORY ../..)

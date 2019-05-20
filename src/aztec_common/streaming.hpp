@@ -34,19 +34,19 @@ namespace streaming
     void write_g2_element_to_buffer(GroupT& element, char* buffer);
 
     template <typename FieldT, typename GroupT>
-    void write_g1_elements_to_buffer(std::vector<GroupT>& elements, char *buffer);
+    void write_g1_elements_to_buffer(GroupT* elements, char *buffer, size_t degree);
 
     template <typename FieldT, typename GroupT>
-    void write_g2_elements_to_buffer(std::vector<GroupT>& elements, char *buffer);
+    void write_g2_elements_to_buffer(GroupT* elements, char *buffer, size_t degree);
 
     template <typename FieldT>
     void read_field_elements_from_file(std::vector<FieldT>& coefficients, const char* filename, size_t degree);
 
     template <typename FieldT, typename GroupT>
-    void read_g1_elements_from_buffer(std::vector<GroupT>& elements, char* buffer, size_t buffer_size);
+    void read_g1_elements_from_buffer(GroupT* elements, char* buffer, size_t buffer_size);
 
     template <typename FieldT, typename GroupT>
-    void read_g2_elements_from_buffer(std::vector<GroupT>& elements, char* buffer, size_t buffer_size);
+    void read_g2_elements_from_buffer(GroupT* elements, char* buffer, size_t buffer_size);
 
     inline void read_file_into_buffer(char const *filename, char *buffer, size_t message_size)
     {

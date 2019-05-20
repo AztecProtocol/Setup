@@ -5,8 +5,9 @@
 
 add_executable(
     compute_range_polynomial
-    compute_range_polynomial.tcc
-    compute_range_polynomial.hpp
+    window.hpp
+    window.tcc
+    range_multi_exp.hpp
     main.cpp
 )
 
@@ -26,3 +27,5 @@ target_include_directories(
         ${include_dir}
         ${private_include_dir}
 )
+
+set_target_properties(compute_range_polynomial PROPERTIES RUNTIME_OUTPUT_DIRECTORY ../..)

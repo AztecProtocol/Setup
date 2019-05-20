@@ -105,11 +105,11 @@ void write_g2_element_to_buffer(GroupT& element, char* buffer)
 
 
 template <typename FieldT, typename GroupT>
-void write_g1_elements_to_buffer(std::vector<GroupT>& elements, char* buffer)
+void write_g1_elements_to_buffer(GroupT* elements, char* buffer, size_t degree)
 {
     constexpr size_t bytes_per_element = USE_COMPRESSION ? sizeof(FieldT) : sizeof(FieldT) * 2;
 
-    for (size_t i = 0; i < elements.size(); ++i)
+    for (size_t i = 0; i < degree; ++i)
     {
         size_t byte_position = bytes_per_element * i;
         write_g1_element_to_buffer<GroupT>(elements[i], buffer + byte_position);
@@ -119,11 +119,11 @@ void write_g1_elements_to_buffer(std::vector<GroupT>& elements, char* buffer)
 // FieldT = fq2 field of G2
 // GroupT = larger G2 group
 template <typename FieldT, typename GroupT>
-void write_g2_elements_to_buffer(std::vector<GroupT>& elements, char* buffer)
+void write_g2_elements_to_buffer(GroupT* elements, char* buffer, size_t degree)
 {
     constexpr size_t bytes_per_element = USE_COMPRESSION ? sizeof(FieldT) : sizeof(FieldT) * 2;
 
-    for (size_t i = 0; i < elements.size(); ++i)
+    for (size_t i = 0; i < degree; ++i)
     {
         size_t byte_position = bytes_per_element * i;
         write_g2_element_to_buffer<GroupT>(elements[i], buffer + byte_position);
@@ -196,7 +196,7 @@ void read_g1_elements_from_buffer(GroupT* elements, char* buffer, size_t buffer_
     {
         //  = &elements[i].X;
         //  = &elements[i].Y;
-        memcpy(&x, &buffer[i * bytes_per_element], bytes_per_element);
+        memcpy(&x, &buffer[i * bytes_per_element], sizeof(FieldT));
         if (isLittleEndian())
         {
             __bswap_bigint<num_limbs>(x);
@@ -209,7 +209,7 @@ void read_g1_elements_from_buffer(GroupT* elements, char* buffer, size_t buffer_
         else
         {
             libff::bigint<num_limbs> y;
-            memcpy(&y, &buffer[sizeof(FieldT) + i * bytes_per_element], bytes_per_element);
+            memcpy(&y, &buffer[sizeof(FieldT) + i * bytes_per_element], sizeof(FieldT));
             if (isLittleEndian())
             {
                 __bswap_bigint<num_limbs>(y);
@@ -254,8 +254,8 @@ void read_g2_elements_from_buffer(GroupT* elements, char* buffer, size_t buffer_
         {
             libff::bigint<num_limbs> y0;
             libff::bigint<num_limbs> y1;
-            memcpy(&y0, &buffer[2 * sizeof(FieldT) + i * bytes_per_element], bytes_per_element);
-            memcpy(&y1, &buffer[3 * sizeof(FieldT) + i * bytes_per_element], bytes_per_element);
+            memcpy(&y0, &buffer[2 * sizeof(FieldT) + i * bytes_per_element], sizeof(FieldT));
+            memcpy(&y1, &buffer[3 * sizeof(FieldT) + i * bytes_per_element], sizeof(FieldT));
             if (isLittleEndian())
             {
                 __bswap_bigint<num_limbs>(y0);

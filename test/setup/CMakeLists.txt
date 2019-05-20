@@ -7,8 +7,10 @@ find_package(GTest CONFIG REQUIRED)
 
 add_executable(
     setup_tests
+    test_asm.cpp
     test_aztec_common.cpp
     test_setup.cpp
+    test_compute_range_polynomial.cpp
 )
 target_link_libraries(
     setup_tests

@@ -4,6 +4,7 @@
 add_library(
     aztec_common STATIC
     ${include_dir}/aztec_common.hpp
+    batch_normalize.hpp
     checksum.hpp
     compression.tcc
     compression.hpp
