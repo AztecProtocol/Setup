@@ -103,28 +103,25 @@ TEST(setup, validate_transcript)
     // constexpr size_t num_limbs = sizeof(libff::alt_bn128_Fq) / GMP_NUMB_BYTES;
     size_t N = 100;
     std::vector<libff::alt_bn128_G1> g1_x;
-    std::vector<libff::alt_bn128_G1> g1_alpha_x;
     std::vector<libff::alt_bn128_G2> g2_x;
-    std::vector<libff::alt_bn128_G2> g2_alpha_x;
-    g1_x.reserve(N);
-    g1_alpha_x.reserve(N);
+    g1_x.reserve(N + N);
     g2_x.reserve(N);
-    g2_alpha_x.reserve(N);
 
     libff::alt_bn128_Fr y = libff::alt_bn128_Fr::random_element();
     libff::alt_bn128_Fr accumulator = y;
-    libff::alt_bn128_Fr alpha = libff::alt_bn128_Fr::random_element();
 
-    for (size_t i = 0; i < 100; ++i)
+    for (size_t i = 0; i < N; ++i)
     {
         g1_x.emplace_back(accumulator * libff::alt_bn128_G1::one());
-        g1_alpha_x.emplace_back(alpha * accumulator * libff::alt_bn128_G1::one());
         g2_x.emplace_back(accumulator * libff::alt_bn128_G2::one());
-        g2_alpha_x.emplace_back(alpha * accumulator * libff::alt_bn128_G2::one());
 
         accumulator = accumulator * y;
     }
-
-    bool result = verifier::validate_transcript<libff::alt_bn128_pp>(&g1_x[0], &g1_alpha_x[0], &g2_x[0], &g2_alpha_x[0], N);
+    for (size_t i = N; i < N + N; ++i)
+    {
+        g1_x.emplace_back(accumulator * libff::alt_bn128_G1::one());
+        accumulator = accumulator * y;
+    }
+    bool result = verifier::validate_transcript<libff::alt_bn128_pp>(&g1_x[0], &g2_x[0], N, N + N);
     EXPECT_EQ(result, true);
 }
