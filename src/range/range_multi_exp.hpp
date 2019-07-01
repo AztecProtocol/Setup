@@ -19,9 +19,9 @@
 
 namespace range
 {
-constexpr size_t POLYNOMIAL_DEGREE = 0x2000;
-constexpr size_t RANGE_PER_WINDOW = 0x2000;
-constexpr size_t DEGREE_PER_WINDOW = 0x1000;
+constexpr size_t POLYNOMIAL_DEGREE = 0x1000;
+constexpr size_t RANGE_PER_WINDOW = 0x1000;
+constexpr size_t DEGREE_PER_WINDOW = 0x500;
 
 template <typename FieldT>
 constexpr size_t G1_BUFFER_SIZE = sizeof(FieldT) * 2 * POLYNOMIAL_DEGREE;
@@ -35,12 +35,27 @@ template <typename FieldQT, typename FieldT, typename GroupT>
 void load_field_and_group_elements(std::vector<FieldT>& generator_polynomial, std::vector<GroupT>& g1_x)
 {
     char *read_buffer = (char *)malloc(G1_BUFFER_SIZE<FieldQT> + checksum::BLAKE2B_CHECKSUM_LENGTH);
-    streaming::read_field_elements_from_file(generator_polynomial, "generator.dat", POLYNOMIAL_DEGREE + 1);
+    if (read_buffer == nullptr)
+    {
+        printf("error, could not allocate memory for read buffer!\n");
+    }
+    streaming::read_field_elements_from_file(generator_polynomial, "../post_processing_db/generator.dat", POLYNOMIAL_DEGREE + 1);
     g1_x.resize(POLYNOMIAL_DEGREE + 1);
-    streaming::read_file_into_buffer("./setup_db/g1_x_current.dat", read_buffer, G1_BUFFER_SIZE<FieldQT>);
+    streaming::read_file_into_buffer("../setup_db/g1_x_current.dat", read_buffer, G1_BUFFER_SIZE<FieldQT>);
+    printf("read buffer = %lx\n", (size_t)read_buffer);
+    printf("g1 buffer size = %lx\n", (size_t)G1_BUFFER_SIZE<FieldQT>);
+    // for (size_t i = 0; i < G1_BUFFER_SIZE<FieldQT>; ++i)
+    // {
+    //     printf("[%d]: %d\n", (int)i, (int)read_buffer[i]);
+    // }
     streaming::read_g1_elements_from_buffer<FieldQT, GroupT>(&g1_x[1], read_buffer, G1_BUFFER_SIZE<FieldQT>);
     streaming::validate_checksum(read_buffer, G1_BUFFER_SIZE<FieldQT>);
     g1_x[0] = GroupT::one();
+    // for (size_t i = 0; i < POLYNOMIAL_DEGREE; ++i)
+    // {
+    //     printf("from buffer, g1_x[%d]:\n", (int)i);
+    //     g1_x[i].print();
+    // }
     free(read_buffer);
 }
 
@@ -49,10 +64,14 @@ void write_field_and_group_accumulators(std::vector<FieldT>& field_accumulators,
 {
     // TODO pick useful file names
     char *write_buffer = (char *)malloc(G1_BUFFER_SIZE<FieldQT> + checksum::BLAKE2B_CHECKSUM_LENGTH);
+    if (write_buffer == nullptr)
+    {
+        printf("error, could not allocate memory for write buffer!\n");
+    }
     streaming::write_g1_elements_to_buffer<FieldQT, GroupT>(&(group_accumulators[0]), write_buffer, POLYNOMIAL_DEGREE);
     streaming::add_checksum_to_buffer(write_buffer, G1_BUFFER_SIZE<FieldQT>);
-    streaming::write_buffer_to_file("./post_processing_db/group_accumulators.dat", write_buffer, G1_BUFFER_SIZE<FieldQT>);
-    streaming::write_field_elements_to_file(field_accumulators, "./post_processing_db/field_accumulators.dat");
+    streaming::write_buffer_to_file("../post_processing_db/group_accumulators.dat", write_buffer, G1_BUFFER_SIZE<FieldQT>);
+    streaming::write_field_elements_to_file(field_accumulators, "../post_processing_db/field_accumulators.dat");
     free(write_buffer);
 }
 } // namespace

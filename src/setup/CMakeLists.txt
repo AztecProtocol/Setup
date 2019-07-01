@@ -2,6 +2,7 @@
 # trusted_setup_post_processing setup
 # copyright spilsbury holdings 2019
 
+find_package (Threads)
 
 add_executable(
     setup
@@ -15,6 +16,7 @@ target_link_libraries(
     setup
     PRIVATE
         ff
+        ${CMAKE_THREAD_LIBS_INIT}
         ${GMP_LIBRARIES}
         aztec_common
 )

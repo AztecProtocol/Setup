@@ -14,7 +14,6 @@ template <typename FieldT, typename GroupT, size_t Range, size_t Degree>
 void Window<FieldT, GroupT, Range, Degree>::process_range_zero()
 {
     std::vector<FieldT> range_coefficients(generator_coefficients->begin() + 1 + degree_start, generator_coefficients->begin() + degree_start + Degree +  1);
-
     GroupT multiexp_result = libff::multi_exp<GroupT, FieldT, libff::multi_exp_method_bos_coster>(
         powers_of_x->begin() + degree_start,
         powers_of_x->begin() + degree_start + Degree,
@@ -37,6 +36,10 @@ void Window<FieldT, GroupT, Range, Degree>::process_range_single(size_t k)
     {
         range_coefficients[i] -= range_coefficients[i - 1];
         range_coefficients[i] *= divisor;
+        // printf("range coefficient[%d]:\n", (int)i);
+        // range_coefficients[i].print();
+        // printf("x[%d]:\n", (int)i);
+        // powers_of_x->at(i).print();
     }
 
     GroupT multiexp_result = libff::multi_exp<GroupT, FieldT, libff::multi_exp_method_bos_coster>(
@@ -46,7 +49,7 @@ void Window<FieldT, GroupT, Range, Degree>::process_range_single(size_t k)
         range_coefficients.end(),
         1
     );
-
+    // multiexp_result.print();
     field_accumulators[k] = range_coefficients.back();
     group_accumulators[k] = group_accumulators[k] + multiexp_result;
 }

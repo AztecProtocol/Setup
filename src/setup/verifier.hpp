@@ -126,35 +126,36 @@ bool validate_polynomial_evaluation(Group1T *evaluation, Group2T comparator, siz
 
 // Validate that a provided transcript conforms to the powering sequences required for our structured reference string
 template <typename ppT>
-bool validate_transcript(G1<ppT>* g1_x, G1<ppT>* g1_alpha_x, G2<ppT>* g2_x, G2<ppT>* g2_alpha_x, size_t polynomial_degree)
+bool validate_transcript(G1<ppT>* g1_x, G2<ppT>* g2_x, size_t polynomial_degree_sonic, size_t polynomial_degree_aztec)
+// bool validate_transcript(G1<ppT>* g1_x, G1<ppT>* g1_alpha_x, G2<ppT>* g2_x, G2<ppT>* g2_alpha_x, size_t polynomial_degree_sonic, size_t polynomial_degree_aztec)
 {
     // init a bool to track success. We're natural optimists, so init this to true
     // (...I mean, this wouldn't work if we didn't do this, but why spoil a good narrative with the facts?)
     bool result = true;
 
     // validate that the ratio between successive g1_x elements is defined by g2_x[0]
-    result &= validate_polynomial_evaluation<ppT, G1<ppT>, G2<ppT> >(g1_x, g2_x[0], polynomial_degree);
+    result &= validate_polynomial_evaluation<ppT, G1<ppT>, G2<ppT> >(g1_x, g2_x[0], polynomial_degree_aztec);
 
-    // validate that the ratio between successive g1_alpha_x elements is defined by g2_x[0]
-    result &= validate_polynomial_evaluation<ppT, G1<ppT>, G2<ppT> >(g1_alpha_x, g2_x[0], polynomial_degree);
+    // // validate that the ratio between successive g1_alpha_x elements is defined by g2_x[0]
+    // result &= validate_polynomial_evaluation<ppT, G1<ppT>, G2<ppT> >(g1_alpha_x, g2_x[0], polynomial_degree_sonic);
 
     // validate that the ratio between successive g2_x elements is defined by g1_x[0]
-    result &= validate_polynomial_evaluation<ppT, G2<ppT>, G1<ppT> >(g2_x, g1_x[0], polynomial_degree);
+    result &= validate_polynomial_evaluation<ppT, G2<ppT>, G1<ppT> >(g2_x, g1_x[0], polynomial_degree_sonic);
 
-    // validate that the ratio between successive g2_alpha_x elements is defined by g1_x[0]
-    result &= validate_polynomial_evaluation<ppT, G2<ppT>, G1<ppT> >(g2_alpha_x, g1_x[0], polynomial_degree);
+    // // validate that the ratio between successive g2_alpha_x elements is defined by g1_x[0]
+    // result &= validate_polynomial_evaluation<ppT, G2<ppT>, G1<ppT> >(g2_alpha_x, g1_x[0], polynomial_degree_sonic);
 
     // validate that the ratio between g1_x and g1_alpha_x is the same as g2_x and g2_alpha_x
-    VerificationKey<G1<ppT> > g1_alpha_key;
-    VerificationKey<G2<ppT> > g2_alpha_key;
+    // VerificationKey<G1<ppT> > g1_alpha_key;
+    // VerificationKey<G2<ppT> > g2_alpha_key;
 
-    g1_alpha_key.lhs = g1_x[0];
-    g1_alpha_key.rhs = g1_alpha_x[0];
-    g2_alpha_key.lhs = g2_alpha_x[0];
-    g2_alpha_key.rhs = g2_x[0];
+    // g1_alpha_key.lhs = g1_x[0];
+    // g1_alpha_key.rhs = g1_alpha_x[0];
+    // g2_alpha_key.lhs = g2_alpha_x[0];
+    // g2_alpha_key.rhs = g2_x[0];
 
     // validate g1_x[0] * g2_alpha_x[0] = g2_x[0] * g1_alpha_x[0]
-    result &= same_ratio<ppT>(g1_alpha_key, g2_alpha_key);
+    // result &= same_ratio<ppT>(g1_alpha_key, g2_alpha_key);
 
     return result;
 }

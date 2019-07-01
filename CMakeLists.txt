@@ -6,7 +6,18 @@ include(CableCompilerSettings)
 include(CableToolchains)
 include(GNUInstallDirs)
 
+
+option(
+    DOCKER
+    "remove unneccesary options for pos-processing docker images"
+    OFF
+)
+
+if (DOCKER)
+set(CMAKE_CXX_STANDARD 11)
+else()
 cable_configure_toolchain(DEFAULT cxx17-pic)
+endif()
 
 include(HunterConfig)
 
@@ -15,23 +26,22 @@ cable_set_build_type(DEFAULT Release CONFIGURATION_TYPES Debug Release)
 set(PROJECT_VERSION 0.1.0)
 project(aztec-trusted-setup)
 
+if (NOT DOCKER)
 cable_configure_compiler(NO_PEDANTIC NO_CONVERSION_WARNINGS)
+endif()
 
 set(include_dir ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 set(private_include_dir ${PROJECT_SOURCE_DIR}/src)
 set(DEPENDS_DIR ${PROJECT_SOURCE_DIR}/depends)
 
-message(INFO " INCLUDE_DIR = ${include_dir}\n")
-message(INFO " DEPENDS_DIR = ${DEPENDS_DIR}\n")
-
 
 ### SETUP
 # Create a directory to store the trusted setup output
 add_custom_target(create-setup-db-directory ALL
-    COMMAND ${CMAKE_COMMAND} -E make_directory setup_db)
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${PROJECT_SOURCE_DIR}/setup_db)
 add_custom_target(create-post-processing-db-directory ALL
-    COMMAND ${CMAKE_COMMAND} -E make_directory post_processing_db)
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${PROJECT_SOURCE_DIR}/post_processing_db)
 
 ### DEPENDENCIES
 
@@ -84,7 +94,7 @@ add_subdirectory(src)
 
 option(SETUP_TESTING "Build tests" ON)
 
-if(SETUP_TESTING)
+if(SETUP_TESTING AND NOT DOCKER)
     enable_testing()
     add_subdirectory(test)
 endif()
