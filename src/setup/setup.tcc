@@ -106,7 +106,6 @@ template <typename ppT> void run_setup()
 #if VERIFY_TRANSCRIPT > 0
         printf("verifying previous transcript...\n");
         bool result = verifier::validate_transcript<ppT>(&g1_x[0], &g2_x[0], POLYNOMIAL_DEGREE_SONIC, POLYNOMIAL_DEGREE_AZTEC);
-        // bool result = verifier::validate_transcript<ppT>(&g1_x[0], &g1_alpha_x[0], &g2_x[0], &g2_alpha_x[0], POLYNOMIAL_DEGREE_SONIC, POLYNOMIAL_DEGREE_AZTEC);
         printf("transcript result = %d\n", (int)result);
         ASSERT(result == true);
 #endif
@@ -134,19 +133,6 @@ template <typename ppT> void run_setup()
     }
 
     printf("initialized setup polynomials, updating setup transcript...\n");
-    // for (size_t i = 0; i < POLYNOMIAL_DEGREE_SONIC; ++i)
-    // {
-    //     if (i % 1000 == 0)
-    //     {
-    //         printf("group element i = %d\n", (int)i);
-    //     }
-    //     libff::bigint<num_limbs> x_bigint = accumulator.as_bigint();
-    //     libff::bigint<num_limbs> alpha_x_bigint = (alpha * accumulator).as_bigint();
-    //     g2_x[i] = libff::fixed_window_wnaf_exp<G2, num_limbs>(WNAF_WINDOW_SIZE, g2_x[i], x_bigint);
-
-    //     accumulator = accumulator * multiplicand;
-    // }
-
 
     size_t num_threads = (size_t)std::thread::hardware_concurrency();
     if (num_threads == 0)
@@ -155,7 +141,6 @@ template <typename ppT> void run_setup()
         printf("INFO: could not profile target CPU, defaulting to 4 threads\n");
         num_threads = 4;
     }
-/*          g1_x[i] = libff::fixed_window_wnaf_exp<G1, num_limbs>(WNAF_WINDOW_SIZE, g1_x[i], x_bigint); */
 
     printf("computing g1 multiple-exponentiations\n");
     size_t range_per_thread = POLYNOMIAL_DEGREE_AZTEC / num_threads;
@@ -189,48 +174,24 @@ template <typename ppT> void run_setup()
         threads[i].join();
     }
 
-    // for (size_t i = POLYNOMIAL_DEGREE_SONIC; i < POLYNOMIAL_DEGREE_AZTEC; ++i)
-    // {
-    //     if (i % 1000 == 0)
-    //     {
-    //         printf("group element i = %d\n", (int)i);
-    //     }
-    //     libff::bigint<num_limbs> x_bigint = accumulator.as_bigint();
-    //     g1_x[i] = libff::fixed_window_wnaf_exp<G1, num_limbs>(WNAF_WINDOW_SIZE, g1_x[i], x_bigint);
-    //     accumulator = accumulator * multiplicand;
-    // }
+
     printf("updated setup transcript, converting points into affine form...\n");
     utils::batch_normalize<Fq, G1>(0, POLYNOMIAL_DEGREE_AZTEC, &g1_x[0]);
     utils::batch_normalize<Fqe, G2>(0, POLYNOMIAL_DEGREE_SONIC, &g2_x[0]);
 
-    // utils::batch_normalize<Fq, G1>(0, POLYNOMIAL_DEGREE_SONIC, &g1_alpha_x[0]);
-    // utils::batch_normalize<Fqe, G2>(0, POLYNOMIAL_DEGREE_SONIC, &g2_x[0], &g2_alpha_x[0]);
-
     printf("writing setup transcript to disk...\n");
     std::rename("../setup_db/g1_x_current.dat", "../setup_db/g1_x_previous.dat");
-    // std::rename("../setup_db/g1_alpha_x_current.dat", "../setup_db/g1_alpha_x_previous.dat");
     std::rename("../setup_db/g2_x_current.dat", "../setup_db/g2_x_previous.dat");
-    // std::rename("../setup_db/g2_alpha_x_current.dat", "../setup_db/g2_alpha_x_previous.dat");
 
     // write g1_x to file
     streaming::write_g1_elements_to_buffer<Fq, G1>(&g1_x[0], read_write_buffer, POLYNOMIAL_DEGREE_AZTEC); // "g1_x.dat");
     streaming::add_checksum_to_buffer(read_write_buffer, G1_BUFFER_SIZE_AZTEC);
     streaming::write_buffer_to_file("../setup_db/g1_x_current.dat", read_write_buffer, G1_BUFFER_SIZE_AZTEC);
 
-    // // write g1_alpha_x to file
-    // streaming::write_g1_elements_to_buffer<Fq, G1>(&g1_alpha_x[0], read_write_buffer, POLYNOMIAL_DEGREE_SONIC); // "g1_alpha_x.dat");
-    // streaming::add_checksum_to_buffer(read_write_buffer, G1_BUFFER_SIZE_SONIC);
-    // streaming::write_buffer_to_file("../setup_db/g1_alpha_x_current.dat", read_write_buffer, G1_BUFFER_SIZE_SONIC);
-
     // write g2_x to file
     streaming::write_g2_elements_to_buffer<Fqe, G2>(&g2_x[0], read_write_buffer, POLYNOMIAL_DEGREE_SONIC); // "g2_x.dat");
     streaming::add_checksum_to_buffer(read_write_buffer, G2_BUFFER_SIZE_SONIC);
     streaming::write_buffer_to_file("../setup_db/g2_x_current.dat", read_write_buffer, G2_BUFFER_SIZE_SONIC);
-
-    // // write g2_alpha_x to file
-    // streaming::write_g2_elements_to_buffer<Fqe, G2>(&g2_alpha_x[0], read_write_buffer, POLYNOMIAL_DEGREE_SONIC); // "g2_alpha_x.dat");
-    // streaming::add_checksum_to_buffer(read_write_buffer, G2_BUFFER_SIZE_SONIC);
-    // streaming::write_buffer_to_file("../setup_db/g2_alpha_x_current.dat", read_write_buffer, G2_BUFFER_SIZE_SONIC);
 
     // wipe out accumulator. Use explicit_bzero so that this does not get optimized away
     explicit_bzero((void*)&accumulator, sizeof(Fr));
