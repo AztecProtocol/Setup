@@ -1,7 +1,7 @@
 /**
  * Setup
  * Copyright Spilsbury Holdings 2019
- * 
+ *
  **/
 #include <libff/algebra/curves/alt_bn128/alt_bn128_pp.hpp>
 
@@ -9,7 +9,7 @@
 
 namespace
 {
-    constexpr size_t POLYNOMIAL_DEGREE = 0x2000;
+constexpr size_t POLYNOMIAL_DEGREE = 0x2000;
 }
 
 int main()
@@ -18,5 +18,5 @@ int main()
     libff::alt_bn128_pp::init_public_params();
     printf("calling compute generator poly \n");
     generator::compute_generator_polynomial<libff::Fr<libff::alt_bn128_pp>, POLYNOMIAL_DEGREE>();
-    return true;
+    return 0;
 }

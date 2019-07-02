@@ -1,7 +1,7 @@
 /**
  * Setup
  * Copyright Spilsbury Holdings 2019
- * 
+ *
  **/
 #include <libff/algebra/curves/alt_bn128/alt_bn128_pp.hpp>
 
@@ -9,12 +9,13 @@
 
 #include "setup.hpp"
 
-int main()
+int main(int argc, char **argv)
 {
+    const uint polynomial_degree_aztec = argc > 1 ? strtol(argv[1], NULL, 0) : setup::POLYNOMIAL_DEGREE_AZTEC;
     printf("initializing libff \n");
     libff::alt_bn128_pp::init_public_params();
-    printf("attempting to generate setup variables \n");
-    setup::run_setup<libff::alt_bn128_pp>();
+    printf("attempting to generate setup variables %d\n", polynomial_degree_aztec);
+    setup::run_setup<libff::alt_bn128_pp>(polynomial_degree_aztec);
 
-    return true;
+    return 0;
 }

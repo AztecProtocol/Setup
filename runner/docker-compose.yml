@@ -3,17 +3,22 @@ services:
   runner:
     build: .
     image: aztec/post-processing-runner
+    environment:
+      BATCH_SIZE: "100"
     volumes:
       - .:/usr/src/runner
     depends_on:
-      - post-processing
+      - job-server
       - redis
 
-  post-processing:
+  job-server:
     image: aztec/post-processing
     environment:
       NODE_ENV: production
       REDIS_URL: redis://redis
+      JOBS: 1000
+    ports:
+      - "8080:80"
     depends_on:
       - redis
 

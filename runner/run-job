@@ -1,0 +1,6 @@
+#!/bin/bash
+set -e
+cd ../app/build/
+echo Computing range polynomial $1
+./compute_range_polynomial $1 | curl -s -X PUT -d @- -H "Content-Type: text/plain" http://job-server/complete/$1
+echo

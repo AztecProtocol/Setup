@@ -1,2 +1,9 @@
 #!/bin/bash
-parallel --help
+
+# Wait for other docker-composed stuff to startup. Ugh.
+until curl --output /dev/null --silent --head --fail http://job-server; do
+  echo "Waiting for job server to start..."
+  sleep 1
+done
+
+curl -s http://job-server/job?num=$BATCH_SIZE | parallel -a - ./run-job

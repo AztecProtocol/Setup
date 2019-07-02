@@ -1,4 +1,4 @@
 build
-depends
 runner
+depends
 !depends/CMakeLists.txt
