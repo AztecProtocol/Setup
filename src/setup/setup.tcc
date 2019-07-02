@@ -92,7 +92,7 @@ template <typename ppT> void run_setup()
     char* read_write_buffer = (char*)malloc(G1_BUFFER_SIZE_AZTEC + checksum::BLAKE2B_CHECKSUM_LENGTH);
 
 
-    if (is_file_exist("./setup_db/g1_x_current.dat"))
+    if (is_file_exist("../setup_db/g1_x_current.dat"))
     {
         printf("previous setup transcript found, reading from disk...\n");
         streaming::read_file_into_buffer("../setup_db/g1_x_current.dat", read_write_buffer, G1_BUFFER_SIZE_AZTEC);
