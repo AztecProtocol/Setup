@@ -2,3 +2,5 @@ build
 runner
 depends
 !depends/CMakeLists.txt
+setup_db
+post_processing_db

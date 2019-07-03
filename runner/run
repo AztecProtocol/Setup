@@ -6,4 +6,7 @@ until curl --output /dev/null --silent --head --fail http://job-server; do
   sleep 1
 done
 
-curl -s http://job-server/job?num=$BATCH_SIZE | parallel -a - ./run-job
+while true; do
+  curl -s http://job-server/job?num=$BATCH_SIZE | parallel -a - ./run-job
+  sleep 1
+done

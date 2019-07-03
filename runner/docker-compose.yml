@@ -16,7 +16,6 @@ services:
     environment:
       NODE_ENV: production
       REDIS_URL: redis://redis
-      JOBS: 1000
     ports:
       - "8080:80"
     depends_on:

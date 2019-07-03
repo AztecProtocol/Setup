@@ -1,7 +1,7 @@
 /**
  * Setup
  * Copyright Spilsbury Holdings 2019
- * 
+ *
  **/
 #pragma once
 
@@ -19,37 +19,31 @@
 
 namespace range
 {
-constexpr size_t POLYNOMIAL_DEGREE = 0x1000;
 constexpr size_t RANGE_PER_WINDOW = 1;
-constexpr size_t DEGREE_PER_WINDOW = 0x500;
-
-template <typename FieldT>
-constexpr size_t G1_BUFFER_SIZE = sizeof(FieldT) * 2 * POLYNOMIAL_DEGREE;
-
-template <typename FieldT>
-constexpr size_t G1_ELEMENT_SIZE = sizeof(FieldT) * 2;
 
 namespace
 {
 template <typename FieldQT, typename FieldT, typename GroupT>
-void load_field_and_group_elements(std::vector<FieldT>& generator_polynomial, std::vector<GroupT>& g1_x)
+void load_field_and_group_elements(std::vector<FieldT> &generator_polynomial, std::vector<GroupT> &g1_x, size_t polynomial_degree)
 {
-    char *read_buffer = (char *)malloc(G1_BUFFER_SIZE<FieldQT> + checksum::BLAKE2B_CHECKSUM_LENGTH);
+    const size_t g1_buffer_size = sizeof(FieldQT) * 2 * polynomial_degree;
+
+    char *read_buffer = (char *)malloc(g1_buffer_size + checksum::BLAKE2B_CHECKSUM_LENGTH);
     if (read_buffer == nullptr)
     {
         // printf("error, could not allocate memory for read buffer!\n");
     }
-    streaming::read_field_elements_from_file(generator_polynomial, "../post_processing_db/generator.dat", POLYNOMIAL_DEGREE + 1);
-    g1_x.resize(POLYNOMIAL_DEGREE + 1);
-    streaming::read_file_into_buffer("../setup_db/g1_x_current.dat", read_buffer, G1_BUFFER_SIZE<FieldQT>);
+    streaming::read_field_elements_from_file(generator_polynomial, "../post_processing_db/generator.dat", polynomial_degree + 1);
+    g1_x.resize(polynomial_degree + 1);
+    streaming::read_file_into_buffer("../setup_db/g1_x_current.dat", read_buffer, g1_buffer_size);
     // printf("read buffer = %lx\n", (size_t)read_buffer);
     // printf("g1 buffer size = %lx\n", (size_t)G1_BUFFER_SIZE<FieldQT>);
     // for (size_t i = 0; i < G1_BUFFER_SIZE<FieldQT>; ++i)
     // {
     //     printf("[%d]: %d\n", (int)i, (int)read_buffer[i]);
     // }
-    streaming::read_g1_elements_from_buffer<FieldQT, GroupT>(&g1_x[1], read_buffer, G1_BUFFER_SIZE<FieldQT>);
-    streaming::validate_checksum(read_buffer, G1_BUFFER_SIZE<FieldQT>);
+    streaming::read_g1_elements_from_buffer<FieldQT, GroupT>(&g1_x[1], read_buffer, g1_buffer_size);
+    streaming::validate_checksum(read_buffer, g1_buffer_size);
     g1_x[0] = GroupT::one();
     // for (size_t i = 0; i < POLYNOMIAL_DEGREE; ++i)
     // {
@@ -61,43 +55,27 @@ void load_field_and_group_elements(std::vector<FieldT>& generator_polynomial, st
     // printf("freed read buffer\n");
 }
 
-template <typename FieldQT, typename FieldT, typename GroupT>
-void write_field_and_group_accumulators(std::vector<FieldT>& field_accumulators, std::vector<GroupT> &group_accumulators)
-{
-    // TODO pick useful file names
-    char *write_buffer = (char *)malloc(G1_BUFFER_SIZE<FieldQT> + checksum::BLAKE2B_CHECKSUM_LENGTH);
-    if (write_buffer == nullptr)
-    {
-        printf("error, could not allocate memory for write buffer!\n");
-    }
-    streaming::write_g1_elements_to_buffer<FieldQT, GroupT>(&(group_accumulators[0]), write_buffer, POLYNOMIAL_DEGREE);
-    streaming::add_checksum_to_buffer(write_buffer, G1_BUFFER_SIZE<FieldQT>);
-    streaming::write_buffer_to_file("../post_processing_db/group_accumulators.dat", write_buffer, G1_BUFFER_SIZE<FieldQT>);
-    streaming::write_field_elements_to_file(field_accumulators, "../post_processing_db/field_accumulators.dat");
-    // printf("freeing write buffer\n");
-    free(write_buffer);
-    // printf("freed write buffer\n");
-}
 } // namespace
 
 template <typename ppT>
-void compute_range_polynomials(int range_index)
+void compute_range_polynomials(int range_index, size_t polynomial_degree)
 {
-    ASSERT((POLYNOMIAL_DEGREE / DEGREE_PER_WINDOW) * DEGREE_PER_WINDOW == POLYNOMIAL_DEGREE)
+    const size_t degree_per_window = polynomial_degree / 2;
+    ASSERT((polynomial_degree / degree_per_window) * degree_per_window == polynomial_degree)
     using Fr = libff::Fr<ppT>;
     using Fq = libff::Fq<ppT>;
     using G1 = libff::G1<ppT>;
-    using WindowInstance = Window<Fr, G1, RANGE_PER_WINDOW, DEGREE_PER_WINDOW>;
+    using WindowInstance = Window<Fr, G1, RANGE_PER_WINDOW>;
 
     // ### Setup Fr array
     std::vector<Fr> generator_polynomial;
     // ### Setup G1 arrays
     std::vector<G1> g1_x;
-    load_field_and_group_elements<Fq, Fr, G1>(generator_polynomial, g1_x);
+    load_field_and_group_elements<Fq, Fr, G1>(generator_polynomial, g1_x, polynomial_degree);
 
-    WindowInstance window = WindowInstance(&g1_x, &generator_polynomial, range_index, 0);
+    WindowInstance window = WindowInstance(&g1_x, &generator_polynomial, range_index, 0, degree_per_window);
 
-    for (size_t i = 0; i < (POLYNOMIAL_DEGREE / DEGREE_PER_WINDOW) - 1; ++i)
+    for (size_t i = 0; i < (polynomial_degree / degree_per_window) - 1; ++i)
     {
         window.process();
         // printf("advancing window\n");
@@ -109,7 +87,6 @@ void compute_range_polynomials(int range_index)
 
     // printf("getting pointers to group and field accumulators\n");
     std::vector<G1> &group_accumulators = *(window.get_group_accumulators());
-    std::vector<Fr> &field_accumulators = *(window.get_field_accumulators());
 
     // printf("calling batch normalize\n");
     batch_normalize::batch_normalize<Fq, G1>(0, RANGE_PER_WINDOW, &(group_accumulators[0]));
@@ -119,6 +96,5 @@ void compute_range_polynomials(int range_index)
         group_accumulators[i].print();
     }
     // printf("writing field and group accumulators\n");
-    write_field_and_group_accumulators<Fq, Fr, G1>(field_accumulators, group_accumulators);
 }
 } // namespace range

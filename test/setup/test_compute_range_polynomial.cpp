@@ -15,7 +15,7 @@ TEST(range, window)
     constexpr size_t RANGE = 0x100;
     constexpr size_t DEGREE = 0x100;
     constexpr size_t WINDOW_DEGREE = 0x20;
-    using WindowInstance = Window<libff::alt_bn128_Fr, libff::alt_bn128_G1, RANGE, WINDOW_DEGREE>;
+    using WindowInstance = Window<libff::alt_bn128_Fr, libff::alt_bn128_G1, RANGE>;
 
     std::vector<std::vector<std::vector<libff::alt_bn128_Fr>>> subproduct_tree;
 
@@ -36,8 +36,7 @@ TEST(range, window)
         accumulator *= x;
     }
 
-
-    WindowInstance window = WindowInstance(&g1_x, &generator_polynomial, 0, 0);
+    WindowInstance window = WindowInstance(&g1_x, &generator_polynomial, 0, 0, WINDOW_DEGREE);
 
     for (size_t i = 0; i < (DEGREE / WINDOW_DEGREE) - 1; ++i)
     {
@@ -46,7 +45,7 @@ TEST(range, window)
     }
     window.process();
 
-    std::vector<libff::alt_bn128_G1>& group_accumulators = *window.get_group_accumulators();
+    std::vector<libff::alt_bn128_G1> &group_accumulators = *window.get_group_accumulators();
 
     libff::alt_bn128_G1 h = libff::alt_bn128_G1::zero();
     for (size_t i = 0; i < generator_polynomial.size(); ++i)
@@ -65,4 +64,3 @@ TEST(range, window)
         test_utils::validate_g1_point<4>(result, h);
     }
 }
-

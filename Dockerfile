@@ -4,4 +4,4 @@ RUN mkdir -p /usr/src/app
 WORKDIR /usr/src/app
 COPY . .
 RUN git submodule init && git submodule update
-RUN mkdir build && cd build && cmake .. && make
+RUN mkdir build && cd build && cmake .. && make -j8

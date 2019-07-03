@@ -2,5 +2,5 @@
 set -e
 cd ../app/build/
 echo Computing range polynomial $1
-./compute_range_polynomial $1 | curl -s -X PUT -d @- -H "Content-Type: text/plain" http://job-server/complete/$1
+time ./compute_range_polynomial $1 $POLYNOMIAL_DEGREE | curl -s -X PUT -d @- -H "Content-Type: text/plain" http://job-server/complete/$1
 echo

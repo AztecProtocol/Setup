@@ -11,10 +11,10 @@
 
 int main(int argc, char **argv)
 {
-    const uint polynomial_degree_aztec = argc > 1 ? strtol(argv[1], NULL, 0) : setup::POLYNOMIAL_DEGREE_AZTEC;
+    const size_t polynomial_degree_aztec = argc > 1 ? strtol(argv[1], NULL, 0) : setup::POLYNOMIAL_DEGREE_AZTEC;
     printf("initializing libff \n");
     libff::alt_bn128_pp::init_public_params();
-    printf("attempting to generate setup variables %d\n", polynomial_degree_aztec);
+    printf("attempting to generate setup variables %zu\n", polynomial_degree_aztec);
     setup::run_setup<libff::alt_bn128_pp>(polynomial_degree_aztec);
 
     return 0;

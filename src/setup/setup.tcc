@@ -65,7 +65,7 @@ void compute_aztec_polynomial_section(FieldT y, GroupT *g1_x, size_t start, size
 }
 
 template <typename ppT>
-void run_setup(uint polynomial_degree_aztec)
+void run_setup(size_t polynomial_degree_aztec)
 {
     using Fr = libff::Fr<ppT>;
     using Fq = libff::Fq<ppT>;
