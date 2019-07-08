@@ -1,6 +1,7 @@
 version: 2.1
 orbs:
   aws-ecr: circleci/aws-ecr@4.0.1
+  aws-cli: circleci/aws-cli@0.1.1
 jobs:
   build_and_push_setup_tools:
     docker:
