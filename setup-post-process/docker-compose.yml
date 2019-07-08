@@ -2,7 +2,7 @@ version: '3'
 services:
   runner:
     build: .
-    image: aztec/post-processing-runner
+    image: aztec/setup-post-process
     environment:
       BATCH_SIZE: "100"
     volumes:
@@ -12,7 +12,7 @@ services:
       - redis
 
   job-server:
-    image: aztec/post-processing
+    image: aztec/job-server
     environment:
       NODE_ENV: production
       REDIS_URL: redis://redis

@@ -3,5 +3,6 @@ RUN apt-get update && apt-get install -y build-essential git libboost-all-dev cm
 RUN mkdir -p /usr/src/app
 WORKDIR /usr/src/app
 COPY . .
-RUN git submodule init && git submodule update
+#RUN git submodule init && git submodule update
 RUN mkdir build && cd build && cmake .. && make -j8
+RUN ./build/test/setup_tests

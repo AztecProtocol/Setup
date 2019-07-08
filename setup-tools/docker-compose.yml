@@ -2,7 +2,7 @@ version: '3'
 services:
   build-env:
     build: .
-    image: aztec/trusted-setup
+    image: aztec/setup-tools
     entrypoint: /bin/bash
     tty: true
     volumes:
