@@ -2,7 +2,7 @@ version: 2.1
 orbs:
   aws-ecr: circleci/aws-ecr@4.0.1
 jobs:
-  build_and_push_image:
+  build_and_push_setup_tools:
     docker:
       - image: circleci/python:3.7.1
     steps:
@@ -23,4 +23,4 @@ jobs:
 workflows:
   build_and_push_image:
     jobs:
-      - build
+      - build_and_push_setup_tools
