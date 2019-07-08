@@ -19,3 +19,8 @@ jobs:
       - aws-ecr/ecr-login
       - aws-ecr/push-image:
           repo: "setup-tools"
+
+workflows:
+  build_and_push_image:
+    jobs:
+      - build
