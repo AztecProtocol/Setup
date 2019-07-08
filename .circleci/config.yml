@@ -1,12 +1,21 @@
 version: 2.1
 orbs:
-  aws-ecr: circleci/aws-ecr@1.0.0
-workflows:
+  aws-ecr: circleci/aws-ecr@4.0.1
+jobs:
   build_and_push_image:
-    jobs:
-      - aws-ecr/build_and_push_image:
-          context: global
-          create-repo: true
-          dockerfile: ./setup-tools/Dockerfile
-          path: setup-tools
-          repo: setup-tools
+    docker:
+      - image: circleci/python:3.7.1
+    steps:
+      - checkout
+      - run:
+          name: "Pull Submodules"
+          command: |
+            git submodule init
+            git submodule update --remote
+      - setup_remote_docker
+      - aws-ecr/build-image:
+          repo: "setup-tools"
+      - aws-cli/install
+      - aws-ecr/ecr-login
+      - aws-ecr/push-image:
+          repo: "setup-tools"
