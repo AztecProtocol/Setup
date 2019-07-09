@@ -3,8 +3,6 @@ services:
   runner:
     build: .
     image: aztec/setup-post-process
-    environment:
-      BATCH_SIZE: "100"
     volumes:
       - .:/usr/src/runner
     depends_on:

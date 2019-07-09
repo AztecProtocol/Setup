@@ -1,6 +1,13 @@
 #!/bin/bash
 set -e
 cd ../app/build/
-echo Computing range polynomial $1
-time ./compute_range_polynomial $1 $POLYNOMIAL_DEGREE | curl -s -X PUT -d @- -H "Content-Type: text/plain" http://job-server/complete/$1
-echo
+
+while true; do
+  JOBNUM=$(curl -s http://job-server/job)
+  if [ -z "$JOBNUM" ]; then
+    sleep 1
+    continue
+  fi
+  echo Computing range polynomial $JOBNUM
+  time ./compute_range_polynomial $JOBNUM $POLYNOMIAL_DEGREE | curl -s -X PUT -d @- -H "Content-Type: text/plain" http://job-server/complete/$JOBNUM
+done

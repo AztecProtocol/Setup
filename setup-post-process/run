@@ -6,7 +6,12 @@ until curl --output /dev/null --silent --head --fail http://job-server; do
   sleep 1
 done
 
-while true; do
-  curl -s http://job-server/job?num=$BATCH_SIZE | parallel -a - ./run-job
-  sleep 1
+[ -z "$NUMJOBS" ] && NUMJOBS=$(nproc)
+
+echo "Running $NUMJOBS job processors."
+
+for i in $(seq 1 $NUMJOBS)
+do
+   ./run-job &
 done
+wait
