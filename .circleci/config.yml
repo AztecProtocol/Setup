@@ -33,7 +33,7 @@ jobs:
       - aws-ecr/push-image:
           repo: setup-post-process
       - aws-ecr/build-image:
-          dockerfile: ./setup-tools/Dockerfile
+          dockerfile: ./job-server/Dockerfile
           repo: job-server
           path: job-server
       - aws-ecr/push-image:
