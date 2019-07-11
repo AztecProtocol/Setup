@@ -38,6 +38,12 @@ jobs:
           path: job-server
       - aws-ecr/push-image:
           repo: job-server
+      - run:
+          name: "Remove Untagged Images (replace with lifecycle policy)"
+          command : |
+            aws ecr batch-delete-image --repository-name setup-tools --image-ids "$(aws ecr list-images --repository-name setup-tools --filter "tagStatus=UNTAGGED" --query 'imageIds[*]' --output json)" || true
+            aws ecr batch-delete-image --repository-name setup-post-process --image-ids "$(aws ecr list-images --repository-name setup-post-process --filter "tagStatus=UNTAGGED" --query 'imageIds[*]' --output json)" || true
+            aws ecr batch-delete-image --repository-name job-server --image-ids "$(aws ecr list-images --repository-name job-server --filter "tagStatus=UNTAGGED" --query 'imageIds[*]' --output json)" || true
 
 
 workflows:
@@ -45,3 +51,6 @@ workflows:
     jobs:
       - build_and_push_images:
           context: global
+          filters:
+            branches:
+              only: master

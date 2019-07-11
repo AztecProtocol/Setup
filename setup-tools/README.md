@@ -13,7 +13,7 @@ The common reference string produced by `setup` can also be used to construct st
 ## Install Instructions
 
 To build:
-`docker build -t aztec/trusted-setup .`
+`docker build -t aztec/setup-tools .`
 
 This creates a docker image with the executables located in `/usr/src/app/build`.
 
