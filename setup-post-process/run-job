@@ -9,5 +9,11 @@ while true; do
     continue
   fi
   echo Computing range polynomial $JOBNUM
-  time ./compute_range_polynomial $JOBNUM $POLYNOMIAL_DEGREE | curl -s -X PUT -d @- -H "Content-Type: text/plain" http://$JOB_SERVER_HOST/complete/$JOBNUM
+  START=`date +%s`
+  RESULT=$(./compute_range_polynomial $JOBNUM $POLYNOMIAL_DEGREE)
+  END=`date +%s`
+  if [ -n "$RESULT" ]; then
+    curl -s -X PUT -d "$RESULT" -H "Content-Type: text/plain" http://$JOB_SERVER_HOST/complete/$JOBNUM > /dev/null
+  fi
+  echo "Job $JOBNUM complete in $((END-START))s: $RESULT"
 done
