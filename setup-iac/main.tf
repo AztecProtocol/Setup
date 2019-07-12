@@ -361,33 +361,23 @@ resource "aws_spot_fleet_request" "main" {
 
   launch_specification {
     ami = "ami-013b322dbc79e9a6a"
-    instance_type = "t2.micro"
-    spot_price = "0.03"
+    instance_type = "c5.xlarge"
+    spot_price = "0.20"
     subnet_id = "${aws_subnet.setup.id}"
     vpc_security_group_ids = ["${aws_security_group.setup.id}"]
     iam_instance_profile = "${aws_iam_instance_profile.ecs.name}"
-    //key_name = "${var.key_name}"
-
-    /*
-    root_block_device = {
-      volume_type = "gp2"
-      volume_size = "${var.volume_size}"
-    }
-*/
 
     user_data = <<USER_DATA
 #!/bin/bash
 echo ECS_CLUSTER=${aws_ecs_cluster.setup.name} >> /etc/ecs/ecs.config
 USER_DATA
   }
-
-  //depends_on = ["aws_iam_policy_attachment.fleet"]
 }
 
 resource "aws_ecs_task_definition" "setup_task" {
   family                   = "setup-task"
   requires_compatibilities = ["EC2"]
-  memory                   = "512"
+  memory                   = "4096"
   network_mode             = "awsvpc"
   execution_role_arn       = "${aws_iam_role.ecs_task_execution_role.arn}"
 

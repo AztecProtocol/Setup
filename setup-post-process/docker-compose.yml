@@ -3,6 +3,8 @@ services:
   runner:
     build: .
     image: aztec/setup-post-process
+    environment:
+      JOB_SERVER_HOST: job-server
     volumes:
       - .:/usr/src/runner
     depends_on:

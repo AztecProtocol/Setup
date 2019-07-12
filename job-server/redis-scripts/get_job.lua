@@ -1,4 +1,4 @@
-local JOB_EXPIRATION_TIME = 60
+local JOB_EXPIRATION_TIME = 600
 
 local function generateJob()
 	local from = tonumber(redis.pcall('get', 'from')) or 0
