@@ -41,7 +41,7 @@ function app(redisClient, scripts) {
 
   router.put('/complete/:id', async ctx => {
     await redisClient.evalshaAsync(scripts['complete_job.lua'], 0, ctx.params.id, ctx.request.body);
-    ctx.body = `${ctx.params.id}: ${ctx.request.body}\n`;
+    ctx.body = ctx.request.body;
   });
 
   router.get('/result', async ctx => {
