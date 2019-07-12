@@ -356,12 +356,11 @@ resource "aws_spot_fleet_request" "main" {
   spot_price = "0.03"
   allocation_strategy = "diversified"
   target_capacity = "1"
-  terminate_instances_with_expiration = true
-  valid_until = "2019-07-12T16:44:28Z"
+  terminate_instances_with_expiration = false
 
   launch_specification {
     ami = "ami-013b322dbc79e9a6a"
-    instance_type = "c5.xlarge"
+    instance_type = "m5.xlarge"
     spot_price = "0.20"
     subnet_id = "${aws_subnet.setup.id}"
     vpc_security_group_ids = ["${aws_security_group.setup.id}"]
@@ -372,12 +371,16 @@ resource "aws_spot_fleet_request" "main" {
 echo ECS_CLUSTER=${aws_ecs_cluster.setup.name} >> /etc/ecs/ecs.config
 USER_DATA
   }
+
+  lifecycle {
+    ignore_changes = ["valid_until"]
+  }
 }
 
 resource "aws_ecs_task_definition" "setup_task" {
   family                   = "setup-task"
   requires_compatibilities = ["EC2"]
-  memory                   = "4096"
+  memory                   = "15576"
   network_mode             = "awsvpc"
   execution_role_arn       = "${aws_iam_role.ecs_task_execution_role.arn}"
 
