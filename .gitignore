@@ -1,3 +1,4 @@
-build
 .vscode
-cmake/cable
+node_modules
+.terraform
+*.log

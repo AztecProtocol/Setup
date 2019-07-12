@@ -1,7 +1,7 @@
 /**
  * Setup
  * Copyright Spilsbury Holdings 2019
- * 
+ *
  **/
 #include <stddef.h>
 #include <vector>
@@ -27,14 +27,14 @@
 
 namespace generator
 {
-template <typename FieldT, size_t M>
-void compute_generator_polynomial()
+template <typename FieldT>
+void compute_generator_polynomial(size_t polynomial_degree)
 {
     std::vector<std::vector<std::vector<FieldT>>> subproduct_tree;
-    printf("computing the subproduct tree...\n");
-    libfqfft::compute_subproduct_tree(log2(M), subproduct_tree);
+    printf("computing the subproduct tree for %zu...\n", polynomial_degree);
+    libfqfft::compute_subproduct_tree(log2(polynomial_degree), subproduct_tree);
 
-    std::vector<FieldT> result = subproduct_tree[log2(M)][0];
+    std::vector<FieldT> result = subproduct_tree[log2(polynomial_degree)][0];
     printf("result size = %d\n", (int)result.size());
     printf("computed polynomial coefficients, writing to disk...\n");
     streaming::write_field_elements_to_file(result, "../post_processing_db/generator.dat");

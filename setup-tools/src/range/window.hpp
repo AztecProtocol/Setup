@@ -1,13 +1,13 @@
 /**
  * Setup
  * Copyright Spilsbury Holdings 2019
- * 
+ *
  **/
 #pragma once
 
 #include "stddef.h"
 
-template <typename FieldT, typename GroupT, size_t Range, size_t Degree>
+template <typename FieldT, typename GroupT, size_t Range>
 class Window
 {
 
@@ -15,8 +15,10 @@ public:
     Window(std::vector<GroupT> *_powers_of_x,
            std::vector<FieldT> *_generator_coefficients,
            size_t _range_start,
-           size_t _degree_start) : range_start(_range_start),
-                                   degree_start(_degree_start)
+           size_t _degree_start,
+           size_t _degree) : range_start(_range_start),
+                             degree_start(_degree_start),
+                             degree(_degree)
     {
         powers_of_x = _powers_of_x;
         generator_coefficients = _generator_coefficients;
@@ -46,6 +48,7 @@ private:
     std::vector<GroupT> *powers_of_x;
     std::vector<FieldT> *generator_coefficients;
     size_t degree_start;
+    size_t degree;
     std::vector<GroupT> group_accumulators;
     std::vector<FieldT> field_accumulators;
     std::vector<FieldT> field_divisors;

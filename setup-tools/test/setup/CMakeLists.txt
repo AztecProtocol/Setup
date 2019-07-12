@@ -21,6 +21,7 @@ target_link_libraries(
 target_include_directories(
     setup_tests
     PRIVATE
+        ${PROJECT_SOURCE_DIR}/depends/libfqfft
         ${private_include_dir}
         ${include_dir}
 )

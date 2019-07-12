@@ -1,8 +1,56 @@
- version: 2
- jobs:
-   build:
-     docker:
-       - image: circleci/ruby:2.4.1
-     steps:
-       - checkout
-       - run: echo "A first hello"
+version: 2.1
+orbs:
+  aws-ecr: circleci/aws-ecr@4.0.1
+  aws-cli: circleci/aws-cli@0.1.1
+jobs:
+  build_and_push_images:
+    docker:
+      - image: circleci/python:3.7.1
+    steps:
+      - checkout
+      - run:
+          name: "Pull Submodules"
+          command: git submodule init && git submodule update
+      - setup_remote_docker
+      - aws-cli/install
+      - aws-ecr/ecr-login
+      - run:
+          name: "Ensure Repos Exist"
+          command : |
+            aws ecr describe-repositories --repository-names setup-tools > /dev/null 2>&1 || aws ecr create-repository --repository-name setup-tools
+            aws ecr describe-repositories --repository-names setup-post-process > /dev/null 2>&1 || aws ecr create-repository --repository-name setup-post-process
+            aws ecr describe-repositories --repository-names job-server > /dev/null 2>&1 || aws ecr create-repository --repository-name job-server
+      - aws-ecr/build-image:
+          dockerfile: ./setup-tools/Dockerfile
+          repo: setup-tools
+          path: setup-tools
+      - aws-ecr/push-image:
+          repo: setup-tools
+      - aws-ecr/build-image:
+          dockerfile: ./setup-post-process/Dockerfile
+          repo: setup-post-process
+          path: setup-post-process
+      - aws-ecr/push-image:
+          repo: setup-post-process
+      - aws-ecr/build-image:
+          dockerfile: ./job-server/Dockerfile
+          repo: job-server
+          path: job-server
+      - aws-ecr/push-image:
+          repo: job-server
+      - run:
+          name: "Remove Untagged Images (replace with lifecycle policy)"
+          command : |
+            aws ecr batch-delete-image --repository-name setup-tools --image-ids "$(aws ecr list-images --repository-name setup-tools --filter "tagStatus=UNTAGGED" --query 'imageIds[*]' --output json)" || true
+            aws ecr batch-delete-image --repository-name setup-post-process --image-ids "$(aws ecr list-images --repository-name setup-post-process --filter "tagStatus=UNTAGGED" --query 'imageIds[*]' --output json)" || true
+            aws ecr batch-delete-image --repository-name job-server --image-ids "$(aws ecr list-images --repository-name job-server --filter "tagStatus=UNTAGGED" --query 'imageIds[*]' --output json)" || true
+
+
+workflows:
+  build_and_push_images:
+    jobs:
+      - build_and_push_images:
+          context: global
+          filters:
+            branches:
+              only: master

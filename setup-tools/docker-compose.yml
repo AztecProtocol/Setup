@@ -1,0 +1,9 @@
+version: '3'
+services:
+  build-env:
+    build: .
+    image: aztec/setup-tools
+    entrypoint: /bin/bash
+    tty: true
+    volumes:
+      - .:/usr/src/app

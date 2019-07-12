@@ -1,0 +1,23 @@
+version: '3'
+services:
+  runner:
+    build: .
+    image: aztec/setup-post-process
+    volumes:
+      - .:/usr/src/runner
+    depends_on:
+      - job-server
+      - redis
+
+  job-server:
+    image: aztec/job-server
+    environment:
+      NODE_ENV: production
+      REDIS_URL: redis://redis
+    ports:
+      - "8080:80"
+    depends_on:
+      - redis
+
+  redis:
+    image: redis

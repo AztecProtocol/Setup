@@ -1,13 +1,13 @@
 [submodule "cmake/cable"]
-	path = cmake/cable
+	path = setup-tools/cmake/cable
 	url = https://github.com/ethereum/cable
 [submodule "depends/libff"]
-	path = depends/libff
+	path = setup-tools/depends/libff
 	url = https://github.com/AztecProtocol/libff
 	branch = master
 [submodule "depends/libfqfft"]
-	path = depends/libfqfft
+	path = setup-tools/depends/libfqfft
 	url = https://github.com/scipr-lab/libfqfft.git
 [submodule "depends/blake2"]
-	path = depends/blake2
+	path = setup-tools/depends/blake2
 	url = https://github.com/BLAKE2/BLAKE2.git
