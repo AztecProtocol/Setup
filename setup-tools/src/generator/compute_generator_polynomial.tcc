@@ -28,10 +28,10 @@
 namespace generator
 {
 template <typename FieldT>
-void compute_generator_polynomial(uint polynomial_degree)
+void compute_generator_polynomial(size_t polynomial_degree)
 {
     std::vector<std::vector<std::vector<FieldT>>> subproduct_tree;
-    printf("computing the subproduct tree...\n");
+    printf("computing the subproduct tree for %zu...\n", polynomial_degree);
     libfqfft::compute_subproduct_tree(log2(polynomial_degree), subproduct_tree);
 
     std::vector<FieldT> result = subproduct_tree[log2(polynomial_degree)][0];
