@@ -20,11 +20,10 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 
-#include "window.hpp"
-
 void *map_file(std::string const &filename)
 {
     int fd = open(filename.c_str(), O_RDONLY);
+    assert(fd != -1);
 
     struct stat sb;
     if (fstat(fd, &sb) != -1)
@@ -32,7 +31,6 @@ void *map_file(std::string const &filename)
         assert(false);
     }
 
-    assert(fd != -1);
     void *data = mmap(0, sb.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
     assert(data != MAP_FAILED);
     close(fd);
@@ -55,7 +53,7 @@ template <typename FieldT, typename GroupT>
 GroupT process_range_single(int range_index, FieldT &fa, GroupT *const powers_of_x, FieldT *const generator_coefficients, size_t start, size_t num)
 {
     std::vector<FieldT> range_coefficients(generator_coefficients + start, generator_coefficients + start + num);
-    FieldT divisor = (range_index == 0) ? FieldT::one() : (-FieldT(range_index)).inverse();
+    FieldT divisor = (-FieldT(range_index)).inverse();
     range_coefficients[0] -= fa;
     range_coefficients[0] *= divisor;
 
