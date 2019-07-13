@@ -13,7 +13,9 @@
 template <typename FieldT, typename GroupT, size_t Range>
 void Window<FieldT, GroupT, Range>::process_range_zero()
 {
-    std::vector<FieldT> range_coefficients(generator_coefficients->begin() + 1 + degree_start, generator_coefficients->begin() + degree_start + degree + 1);
+    printf("%zu %zu", degree_start, degree);
+    std::vector<FieldT>
+        range_coefficients(generator_coefficients->begin() + 1 + degree_start, generator_coefficients->begin() + degree_start + degree + 1);
     GroupT multiexp_result = libff::multi_exp<GroupT, FieldT, libff::multi_exp_method_bos_coster>(
         powers_of_x->begin() + degree_start,
         powers_of_x->begin() + degree_start + degree,
@@ -60,7 +62,7 @@ void Window<FieldT, GroupT, Range>::advance_window()
 template <typename FieldT, typename GroupT, size_t Range>
 void process_range(Window<FieldT, GroupT, Range> *window, size_t start, size_t num_ranges)
 {
-    // printf("in process range. start = %lu, end = %lu\n", start, start + num_ranges);
+    printf("in process range. start = %lu, end = %lu\n", start, start + num_ranges);
     for (size_t i = start; i < start + num_ranges; ++i)
     {
         if ((i % 100) == 0)
@@ -96,7 +98,7 @@ void Window<FieldT, GroupT, Range>::process()
         num_threads = Range;
         range_per_thread = 1;
     }
-    // printf("num_threads = %lu\n", num_threads);
+    printf("num_threads = %lu\n", num_threads);
     std::vector<std::thread> threads;
     for (uint i = 0; i < num_threads; i++)
     {
