@@ -1,12 +1,9 @@
 /**
  * Setup
  * Copyright Spilsbury Holdings 2019
- *
  **/
 #include <libff/algebra/curves/alt_bn128/alt_bn128_pp.hpp>
-
 #include <stdio.h>
-
 #include "range_multi_exp.hpp"
 
 constexpr size_t POLYNOMIAL_DEGREE = 0x10000;
