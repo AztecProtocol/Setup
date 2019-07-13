@@ -15,49 +15,46 @@
 #include <aztec_common/batch_normalize.hpp>
 #include <aztec_common/timer.hpp>
 
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+
 #include "window.hpp"
 
-template <typename FieldQT, typename FieldT, typename GroupT>
-void load_field_and_group_elements(std::vector<FieldT> &generator_polynomial, std::vector<GroupT> &g1_x, size_t polynomial_degree)
+void *map_file(std::string const &filename)
 {
-    std::cerr << "Loading data..." << std::endl;
+    int fd = open(filename.c_str(), O_RDONLY);
 
-    Timer timer;
+    struct stat sb;
+    if (fstat(fd, &sb) != -1)
+    {
+        assert(false);
+    }
 
-    const size_t g1_buffer_size = sizeof(FieldQT) * 2 * polynomial_degree;
+    assert(fd != -1);
+    void *data = mmap(0, sb.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
+    assert(data != MAP_FAILED);
+    close(fd);
 
-    char *read_buffer = (char *)malloc(g1_buffer_size + checksum::BLAKE2B_CHECKSUM_LENGTH);
-    assert(read_buffer != nullptr);
-
-    streaming::read_field_elements_from_file(generator_polynomial, "../post_processing_db/generator.dat", polynomial_degree + 1);
-    g1_x.resize(polynomial_degree + 1);
-    streaming::read_file_into_buffer("../setup_db/g1_x_current.dat", read_buffer, g1_buffer_size);
-    streaming::read_g1_elements_from_buffer<FieldQT, GroupT>(&g1_x[1], read_buffer, g1_buffer_size);
-    streaming::validate_checksum(read_buffer, g1_buffer_size);
-    g1_x[0] = GroupT::one();
-    free(read_buffer);
-
-    std::cerr << "Loaded in " << timer.toString() << "s" << std::endl;
+    return data;
 }
 
 template <typename FieldT, typename GroupT>
-GroupT process_range_zero(const std::vector<GroupT> &powers_of_x, const std::vector<FieldT> &generator_coefficients, size_t start, size_t num)
+GroupT process_range_zero(GroupT *const &powers_of_x, FieldT *const &generator_coefficients, size_t start, size_t num)
 {
-    std::vector<FieldT>
-        range_coefficients(generator_coefficients.begin() + 1 + start, generator_coefficients.begin() + 1 + start + num);
-    GroupT multiexp_result = libff::multi_exp<GroupT, FieldT, libff::multi_exp_method_bos_coster>(
-        powers_of_x.begin() + start,
-        powers_of_x.begin() + start + num,
-        range_coefficients.begin(),
-        range_coefficients.end(),
+    return libff::multi_exp<GroupT, FieldT, libff::multi_exp_method_bos_coster>(
+        (typename std::vector<GroupT>::const_iterator)powers_of_x + start,
+        (typename std::vector<GroupT>::const_iterator)powers_of_x + start + num,
+        (typename std::vector<FieldT>::const_iterator)generator_coefficients + 1 + start,
+        (typename std::vector<FieldT>::const_iterator)generator_coefficients + 1 + start + num,
         1);
-    return multiexp_result;
 }
 
 template <typename FieldT, typename GroupT>
-GroupT process_range_single(int range_index, FieldT &fa, const std::vector<GroupT> &powers_of_x, const std::vector<FieldT> &generator_coefficients, size_t start, size_t num)
+GroupT process_range_single(int range_index, FieldT &fa, GroupT *const powers_of_x, FieldT *const generator_coefficients, size_t start, size_t num)
 {
-    std::vector<FieldT> range_coefficients(generator_coefficients.begin() + start, generator_coefficients.begin() + start + num);
+    std::vector<FieldT> range_coefficients(generator_coefficients + start, generator_coefficients + start + num);
     FieldT divisor = (range_index == 0) ? FieldT::one() : (-FieldT(range_index)).inverse();
     range_coefficients[0] -= fa;
     range_coefficients[0] *= divisor;
@@ -69,8 +66,8 @@ GroupT process_range_single(int range_index, FieldT &fa, const std::vector<Group
     }
 
     GroupT multiexp_result = libff::multi_exp<GroupT, FieldT, libff::multi_exp_method_bos_coster>(
-        powers_of_x.begin() + start,
-        powers_of_x.begin() + start + num,
+        (typename std::vector<GroupT>::const_iterator)powers_of_x + start,
+        (typename std::vector<GroupT>::const_iterator)powers_of_x + start + num,
         range_coefficients.begin(),
         range_coefficients.end(),
         1);
@@ -85,13 +82,13 @@ void compute_range_polynomials(int range_index, size_t polynomial_degree)
 {
     Timer totalTimer;
     using FieldT = libff::Fr<ppT>;
-    using FieldQT = libff::Fq<ppT>;
     using GroupT = libff::G1<ppT>;
 
-    std::vector<FieldT> generator_polynomial;
-    std::vector<GroupT> g1_x;
-
-    load_field_and_group_elements<FieldQT, FieldT, GroupT>(generator_polynomial, g1_x, polynomial_degree);
+    std::cerr << "Loading data..." << std::endl;
+    Timer dataTimer;
+    FieldT *generator_polynomial = (FieldT *)map_file("../post_processing_db/generator_prep.dat");
+    GroupT *g1_x = (GroupT *)map_file("../post_processing_db/g1_x_prep.dat");
+    std::cerr << "Loaded in " << dataTimer.toString() << "s" << std::endl;
 
     size_t batchNum = 4;
     size_t batchSize = polynomial_degree / batchNum;
