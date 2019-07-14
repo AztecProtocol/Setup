@@ -1,0 +1,21 @@
+{
+  "name": "setup-mpc-client",
+  "version": "1.0.0",
+  "main": "dest/index.js",
+  "license": "MIT",
+  "scripts": {
+    "start": "node ./dest",
+    "start:dev": "tsc-watch --onSuccess 'yarn start' 2> ./err.log"
+  },
+  "devDependencies": {
+    "@types/node": "^12.6.2",
+    "@types/terminal-kit": "^1.28.0",
+    "tsc-watch": "^2.2.1",
+    "typescript": "^3.5.3"
+  },
+  "dependencies": {
+    "moment": "^2.24.0",
+    "terminal-kit": "^1.28.7",
+    "web3x": "^4.0.3"
+  }
+}
