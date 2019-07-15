@@ -12,6 +12,7 @@ services:
       - redis
 
   job-server:
+    build: ../job-server
     image: aztec/job-server
     environment:
       NODE_ENV: production

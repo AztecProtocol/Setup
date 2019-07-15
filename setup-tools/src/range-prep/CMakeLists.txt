@@ -2,17 +2,13 @@
 # trusted_setup_post_processing range
 # copyright spilsbury holdings 2019
 
-find_package (Threads)
-
-
 add_executable(
-    compute_range_polynomial
-    range_multi_exp.hpp
+    prep_range_data
     main.cpp
 )
 
 target_link_libraries(
-    compute_range_polynomial
+    prep_range_data
     PRIVATE
         aztec_common
         ff
@@ -21,7 +17,7 @@ target_link_libraries(
 )
 
 target_include_directories(
-    compute_range_polynomial
+    prep_range_data
     PRIVATE
         ${DEPENDS_DIR}/libff
         ${DEPENDS_DIR}/libfqfft
@@ -29,4 +25,4 @@ target_include_directories(
         ${private_include_dir}
 )
 
-set_target_properties(compute_range_polynomial PROPERTIES RUNTIME_OUTPUT_DIRECTORY ../..)
+set_target_properties(prep_range_data PROPERTIES RUNTIME_OUTPUT_DIRECTORY ../..)

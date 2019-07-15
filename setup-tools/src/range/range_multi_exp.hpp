@@ -1,7 +1,6 @@
 /**
  * Setup
  * Copyright Spilsbury Holdings 2019
- *
  **/
 #pragma once
 
@@ -14,87 +13,106 @@
 #include <aztec_common/assert.hpp>
 #include <aztec_common/streaming.hpp>
 #include <aztec_common/batch_normalize.hpp>
+#include <aztec_common/timer.hpp>
 
-#include "window.hpp"
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
 
-namespace range
+void *map_file(std::string const &filename)
 {
-constexpr size_t RANGE_PER_WINDOW = 1;
+    int fd = open(filename.c_str(), O_RDONLY);
+    assert(fd != -1);
 
-namespace
-{
-template <typename FieldQT, typename FieldT, typename GroupT>
-void load_field_and_group_elements(std::vector<FieldT> &generator_polynomial, std::vector<GroupT> &g1_x, size_t polynomial_degree)
-{
-    const size_t g1_buffer_size = sizeof(FieldQT) * 2 * polynomial_degree;
-
-    char *read_buffer = (char *)malloc(g1_buffer_size + checksum::BLAKE2B_CHECKSUM_LENGTH);
-    if (read_buffer == nullptr)
+    struct stat sb;
+    if (fstat(fd, &sb) != -1)
     {
-        // printf("error, could not allocate memory for read buffer!\n");
+        assert(false);
     }
-    streaming::read_field_elements_from_file(generator_polynomial, "../post_processing_db/generator.dat", polynomial_degree + 1);
-    g1_x.resize(polynomial_degree + 1);
-    streaming::read_file_into_buffer("../setup_db/g1_x_current.dat", read_buffer, g1_buffer_size);
-    // printf("read buffer = %lx\n", (size_t)read_buffer);
-    // printf("g1 buffer size = %lx\n", (size_t)G1_BUFFER_SIZE<FieldQT>);
-    // for (size_t i = 0; i < G1_BUFFER_SIZE<FieldQT>; ++i)
-    // {
-    //     printf("[%d]: %d\n", (int)i, (int)read_buffer[i]);
-    // }
-    streaming::read_g1_elements_from_buffer<FieldQT, GroupT>(&g1_x[1], read_buffer, g1_buffer_size);
-    streaming::validate_checksum(read_buffer, g1_buffer_size);
-    g1_x[0] = GroupT::one();
-    // for (size_t i = 0; i < POLYNOMIAL_DEGREE; ++i)
-    // {
-    //     printf("from buffer, g1_x[%d]:\n", (int)i);
-    //     g1_x[i].print();
-    // }
-    // printf("freeing read buffer\n");
-    free(read_buffer);
-    // printf("freed read buffer\n");
+
+    void *data = mmap(0, sb.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
+    assert(data != MAP_FAILED);
+    close(fd);
+
+    return data;
 }
 
-} // namespace
+template <typename FieldT, typename GroupT>
+GroupT process_range_zero(GroupT *const &powers_of_x, FieldT *const &generator_coefficients, size_t start, size_t num)
+{
+    return libff::multi_exp<GroupT, FieldT, libff::multi_exp_method_bos_coster>(
+        (typename std::vector<GroupT>::const_iterator)powers_of_x + start,
+        (typename std::vector<GroupT>::const_iterator)powers_of_x + start + num,
+        (typename std::vector<FieldT>::const_iterator)generator_coefficients + 1 + start,
+        (typename std::vector<FieldT>::const_iterator)generator_coefficients + 1 + start + num,
+        1);
+}
+
+template <typename FieldT, typename GroupT>
+GroupT process_range_single(int range_index, FieldT &fa, GroupT *const powers_of_x, FieldT *const generator_coefficients, size_t start, size_t num)
+{
+    std::vector<FieldT> range_coefficients(generator_coefficients + start, generator_coefficients + start + num);
+    FieldT divisor = (-FieldT(range_index)).inverse();
+    range_coefficients[0] -= fa;
+    range_coefficients[0] *= divisor;
+
+    for (size_t i = 1; i < num; ++i)
+    {
+        range_coefficients[i] -= range_coefficients[i - 1];
+        range_coefficients[i] *= divisor;
+    }
+
+    GroupT multiexp_result = libff::multi_exp<GroupT, FieldT, libff::multi_exp_method_bos_coster>(
+        (typename std::vector<GroupT>::const_iterator)powers_of_x + start,
+        (typename std::vector<GroupT>::const_iterator)powers_of_x + start + num,
+        range_coefficients.begin(),
+        range_coefficients.end(),
+        1);
+
+    fa = range_coefficients.back();
+
+    return multiexp_result;
+}
+
+template <typename FieldT, typename GroupT>
+GroupT process_range(int range_index, FieldT &fa, GroupT *const powers_of_x, FieldT *const generator_coefficients, size_t start, size_t num)
+{
+    return range_index == 0
+               ? process_range_zero(powers_of_x, generator_coefficients, start, num)
+               : process_range_single(range_index, fa, powers_of_x, generator_coefficients, start, num);
+}
 
 template <typename ppT>
 void compute_range_polynomials(int range_index, size_t polynomial_degree)
 {
-    const size_t degree_per_window = polynomial_degree / 2;
-    ASSERT((polynomial_degree / degree_per_window) * degree_per_window == polynomial_degree)
-    using Fr = libff::Fr<ppT>;
-    using Fq = libff::Fq<ppT>;
-    using G1 = libff::G1<ppT>;
-    using WindowInstance = Window<Fr, G1, RANGE_PER_WINDOW>;
+    Timer total_timer;
+    using FieldT = libff::Fr<ppT>;
+    using GroupT = libff::G1<ppT>;
 
-    // ### Setup Fr array
-    std::vector<Fr> generator_polynomial;
-    // ### Setup G1 arrays
-    std::vector<G1> g1_x;
-    load_field_and_group_elements<Fq, Fr, G1>(generator_polynomial, g1_x, polynomial_degree);
+    std::cerr << "Loading data..." << std::endl;
+    Timer data_timer;
+    FieldT *generator_polynomial = (FieldT *)map_file("../post_processing_db/generator_prep.dat");
+    GroupT *g1_x = (GroupT *)map_file("../post_processing_db/g1_x_prep.dat");
+    std::cerr << "Loaded in " << data_timer.toString() << "s" << std::endl;
 
-    WindowInstance window = WindowInstance(&g1_x, &generator_polynomial, range_index, 0, degree_per_window);
+    size_t batch_num = 4;
+    size_t batch_size = polynomial_degree / batch_num;
+    std::vector<int> batches(batch_num);
+    std::iota(batches.begin(), batches.end(), 0);
+    FieldT fa = FieldT::zero();
 
-    for (size_t i = 0; i < (polynomial_degree / degree_per_window) - 1; ++i)
-    {
-        window.process();
-        // printf("advancing window\n");
-        window.advance_window();
-        // printf("advanced window\n");
-    }
-    // printf("calling process for last time \n");
-    window.process();
+    auto batch_process = [&](int i) {
+        return process_range(range_index, fa, g1_x, generator_polynomial, batch_size * i, batch_size);
+    };
 
-    // printf("getting pointers to group and field accumulators\n");
-    std::vector<G1> &group_accumulators = *(window.get_group_accumulators());
+    Timer compute_timer;
+    std::vector<GroupT> results;
+    std::transform(batches.begin(), batches.end(), std::back_inserter(results), batch_process);
+    GroupT result = std::accumulate(results.begin(), results.end(), GroupT::zero());
 
-    // printf("calling batch normalize\n");
-    batch_normalize::batch_normalize<Fq, G1>(0, RANGE_PER_WINDOW, &(group_accumulators[0]));
-    // printf("called batch normalize\n");
-    for (size_t i = 0; i < RANGE_PER_WINDOW; ++i)
-    {
-        group_accumulators[i].print();
-    }
-    // printf("writing field and group accumulators\n");
+    std::cerr << "Compute time: " << compute_timer.toString() << "s" << std::endl;
+    std::cerr << "Total time: " << total_timer.toString() << "s" << std::endl;
+
+    result.print();
 }
-} // namespace range

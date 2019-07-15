@@ -3,19 +3,33 @@ orbs:
   aws-ecr: circleci/aws-ecr@4.0.1
   aws-cli: circleci/aws-cli@0.1.1
 jobs:
+  test:
+    docker:
+      - image: circleci/python:3.7.1
+    steps:
+      - checkout
+      - run:
+          name: "Pull submodules"
+          command: git submodule init && git submodule update
+      - setup_remote_docker
+      - run:
+          name: "Build and test setup-tools"
+          working_directory: "./setup-tools"
+          command: "docker build -t aztec/setup-tools ."
+
   build_and_push_images:
     docker:
       - image: circleci/python:3.7.1
     steps:
       - checkout
       - run:
-          name: "Pull Submodules"
+          name: "Pull submodules"
           command: git submodule init && git submodule update
       - setup_remote_docker
       - aws-cli/install
       - aws-ecr/ecr-login
       - run:
-          name: "Ensure Repos Exist"
+          name: "Ensure repos exist"
           command : |
             aws ecr describe-repositories --repository-names setup-tools > /dev/null 2>&1 || aws ecr create-repository --repository-name setup-tools
             aws ecr describe-repositories --repository-names setup-post-process > /dev/null 2>&1 || aws ecr create-repository --repository-name setup-post-process
@@ -39,7 +53,7 @@ jobs:
       - aws-ecr/push-image:
           repo: job-server
       - run:
-          name: "Remove Untagged Images (replace with lifecycle policy)"
+          name: "Remove untagged images (replace with lifecycle policy)"
           command : |
             aws ecr batch-delete-image --repository-name setup-tools --image-ids "$(aws ecr list-images --repository-name setup-tools --filter "tagStatus=UNTAGGED" --query 'imageIds[*]' --output json)" || true
             aws ecr batch-delete-image --repository-name setup-post-process --image-ids "$(aws ecr list-images --repository-name setup-post-process --filter "tagStatus=UNTAGGED" --query 'imageIds[*]' --output json)" || true
@@ -49,6 +63,10 @@ jobs:
 workflows:
   build_and_push_images:
     jobs:
+      - test:
+          filters:
+            branches:
+              ignore: master
       - build_and_push_images:
           context: global
           filters:

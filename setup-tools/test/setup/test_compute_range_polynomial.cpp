@@ -6,16 +6,13 @@
 #include <libfqfft/evaluation_domain/evaluation_domain.hpp>
 #include <libfqfft/evaluation_domain/domains/arithmetic_sequence_domain.hpp>
 
-#include <range/window.hpp>
+#include <range/range_multi_exp.hpp>
 
 #include "test_utils.hpp"
 
 TEST(range, window)
 {
-    constexpr size_t RANGE = 0x100;
     constexpr size_t DEGREE = 0x100;
-    constexpr size_t WINDOW_DEGREE = 0x20;
-    using WindowInstance = Window<libff::alt_bn128_Fr, libff::alt_bn128_G1, RANGE>;
 
     std::vector<std::vector<std::vector<libff::alt_bn128_Fr>>> subproduct_tree;
 
@@ -36,17 +33,6 @@ TEST(range, window)
         accumulator *= x;
     }
 
-    WindowInstance window = WindowInstance(&g1_x, &generator_polynomial, 0, 0, WINDOW_DEGREE);
-
-    for (size_t i = 0; i < (DEGREE / WINDOW_DEGREE) - 1; ++i)
-    {
-        window.process();
-        window.advance_window();
-    }
-    window.process();
-
-    std::vector<libff::alt_bn128_G1> &group_accumulators = *window.get_group_accumulators();
-
     libff::alt_bn128_G1 h = libff::alt_bn128_G1::zero();
     for (size_t i = 0; i < generator_polynomial.size(); ++i)
     {
@@ -54,10 +40,12 @@ TEST(range, window)
         h = h + pt;
     }
 
-    for (size_t i = 0; i < RANGE; ++i)
+    for (size_t i = 0; i < DEGREE; ++i)
     {
-        libff::alt_bn128_G1 t0 = x * group_accumulators[i];
-        libff::alt_bn128_G1 t1 = (-libff::alt_bn128_Fr(i)) * group_accumulators[i];
+        libff::alt_bn128_Fr fa;
+        libff::alt_bn128_G1 process_result = process_range(i, fa, &g1_x[0], &generator_polynomial[0], 0, DEGREE);
+        libff::alt_bn128_G1 t0 = x * process_result;
+        libff::alt_bn128_G1 t1 = (-libff::alt_bn128_Fr(i)) * process_result;
         libff::alt_bn128_G1 result = t0 + t1;
         result.to_affine_coordinates();
         h.to_affine_coordinates();

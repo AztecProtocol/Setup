@@ -1,18 +1,12 @@
 /**
  * Setup
  * Copyright Spilsbury Holdings 2019
- *
  **/
 #include <libff/algebra/curves/alt_bn128/alt_bn128_pp.hpp>
-
 #include <stdio.h>
-
 #include "range_multi_exp.hpp"
 
-namespace
-{
 constexpr size_t POLYNOMIAL_DEGREE = 0x10000;
-}
 
 int main(int argc, char **argv)
 {
@@ -25,6 +19,6 @@ int main(int argc, char **argv)
 
     libff::alt_bn128_pp::init_public_params();
 
-    range::compute_range_polynomials<libff::alt_bn128_pp>(range_index, polynomial_degree);
+    compute_range_polynomials<libff::alt_bn128_pp>(range_index, polynomial_degree);
     return 0;
 }
