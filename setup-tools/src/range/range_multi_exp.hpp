@@ -75,38 +75,44 @@ GroupT process_range_single(int range_index, FieldT &fa, GroupT *const powers_of
     return multiexp_result;
 }
 
+template <typename FieldT, typename GroupT>
+GroupT process_range(int range_index, FieldT &fa, GroupT *const powers_of_x, FieldT *const generator_coefficients, size_t start, size_t num)
+{
+    return range_index == 0
+               ? process_range_zero(powers_of_x, generator_coefficients, start, num)
+               : process_range_single(range_index, fa, powers_of_x, generator_coefficients, start, num);
+}
+
 template <typename ppT>
 void compute_range_polynomials(int range_index, size_t polynomial_degree)
 {
-    Timer totalTimer;
+    Timer total_timer;
     using FieldT = libff::Fr<ppT>;
     using GroupT = libff::G1<ppT>;
 
     std::cerr << "Loading data..." << std::endl;
-    Timer dataTimer;
+    Timer data_timer;
     FieldT *generator_polynomial = (FieldT *)map_file("../post_processing_db/generator_prep.dat");
     GroupT *g1_x = (GroupT *)map_file("../post_processing_db/g1_x_prep.dat");
-    std::cerr << "Loaded in " << dataTimer.toString() << "s" << std::endl;
+    std::cerr << "Loaded in " << data_timer.toString() << "s" << std::endl;
 
-    size_t batchNum = 4;
-    size_t batchSize = polynomial_degree / batchNum;
-    std::vector<int> batches(batchNum);
+    size_t batch_num = 4;
+    size_t batch_size = polynomial_degree / batch_num;
+    std::vector<int> batches(batch_num);
     std::iota(batches.begin(), batches.end(), 0);
     FieldT fa = FieldT::zero();
 
-    auto batcher = [&](int i) {
-        return range_index == 0
-                   ? process_range_zero(g1_x, generator_polynomial, batchSize * i, batchSize)
-                   : process_range_single(range_index, fa, g1_x, generator_polynomial, batchSize * i, batchSize);
+    auto batch_process = [&](int i) {
+        return process_range(range_index, fa, g1_x, generator_polynomial, batch_size * i, batch_size);
     };
 
-    Timer computeTimer;
+    Timer compute_timer;
     std::vector<GroupT> results;
-    std::transform(batches.begin(), batches.end(), std::back_inserter(results), batcher);
+    std::transform(batches.begin(), batches.end(), std::back_inserter(results), batch_process);
     GroupT result = std::accumulate(results.begin(), results.end(), GroupT::zero());
 
-    std::cerr << "Compute time: " << computeTimer.toString() << "s" << std::endl;
-    std::cerr << "Total time: " << totalTimer.toString() << "s" << std::endl;
+    std::cerr << "Compute time: " << compute_timer.toString() << "s" << std::endl;
+    std::cerr << "Total time: " << total_timer.toString() << "s" << std::endl;
 
     result.print();
 }
