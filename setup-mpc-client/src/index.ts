@@ -6,9 +6,10 @@ import { DemoServer } from './demo-server';
 import { TerminalInterface } from './terminal-interface';
 
 async function main() {
-  const server = new DemoServer(11, moment().add(3, 's'));
-  server.setYouIndex(2);
-  const myPrivateKey = server.getPrivateKeyAt(2);
+  const server = new DemoServer(40, moment().add(10, 's'));
+  const myIndex = 10;
+  server.setYouIndex(myIndex);
+  const myPrivateKey = server.getPrivateKeyAt(myIndex);
   const myAccount = Account.fromPrivate(myPrivateKey);
   const state = await server.getState();
   const terminalInterface = new TerminalInterface(state, myAccount);
