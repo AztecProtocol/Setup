@@ -24,7 +24,7 @@
 #include "utils.hpp"
 #include "verifier.hpp"
 
-#define VERIFY_TRANSCRIPT 0
+#define VERIFY_TRANSCRIPT 1
 
 namespace setup
 {
@@ -75,7 +75,6 @@ void run_setup(size_t polynomial_degree_aztec)
 
     const size_t num_limbs = sizeof(Fq) / GMP_NUMB_BYTES;
     const size_t G1_BUFFER_SIZE_AZTEC = sizeof(Fq) * 2 * polynomial_degree_aztec;
-    const size_t G1_BUFFER_SIZE_SONIC = sizeof(Fq) * 2 * POLYNOMIAL_DEGREE_SONIC;
     const size_t G2_BUFFER_SIZE_SONIC = sizeof(Fq) * 4 * POLYNOMIAL_DEGREE_SONIC;
 
     printf("inside run setup\n");
@@ -99,15 +98,19 @@ void run_setup(size_t polynomial_degree_aztec)
         streaming::read_g1_elements_from_buffer<Fq, G1>(&g1_x[0], read_write_buffer, G1_BUFFER_SIZE_AZTEC);
         streaming::validate_checksum(read_write_buffer, G1_BUFFER_SIZE_AZTEC);
 
-        streaming::read_file_into_buffer("../setup_db/g2_x_current.dat", read_write_buffer, G1_BUFFER_SIZE_SONIC);
-        streaming::read_g2_elements_from_buffer<Fq, G2>(&g2_x[0], read_write_buffer, G1_BUFFER_SIZE_SONIC);
-        streaming::validate_checksum(read_write_buffer, G1_BUFFER_SIZE_SONIC);
+        streaming::read_file_into_buffer("../setup_db/g2_x_current.dat", read_write_buffer, G2_BUFFER_SIZE_SONIC);
+        streaming::read_g2_elements_from_buffer<Fq, G2>(&g2_x[0], read_write_buffer, G2_BUFFER_SIZE_SONIC);
+        streaming::validate_checksum(read_write_buffer, G2_BUFFER_SIZE_SONIC);
 
 #if VERIFY_TRANSCRIPT > 0
         printf("verifying previous transcript...\n");
         bool result = verifier::validate_transcript<ppT>(&g1_x[0], &g2_x[0], POLYNOMIAL_DEGREE_SONIC, polynomial_degree_aztec);
         printf("transcript result = %d\n", (int)result);
         ASSERT(result == true);
+        if (!result)
+        {
+            throw "Failed to verify.";
+        }
 #endif
     }
     else
@@ -134,7 +137,7 @@ void run_setup(size_t polynomial_degree_aztec)
 
     printf("initialized setup polynomials, updating setup transcript...\n");
 
-    size_t num_threads = (size_t)std::thread::hardware_concurrency();
+    size_t num_threads = 1;//(size_t)std::thread::hardware_concurrency();
     if (num_threads == 0)
     {
         // um, make a guess?
