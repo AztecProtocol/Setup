@@ -1,4 +1,4 @@
-import { terminal as term } from 'terminal-kit';
+import { TerminalKit } from './terminal-kit';
 import { Account } from 'web3x/account';
 import { leftPad } from 'web3x/utils';
 import moment from 'moment';
@@ -8,15 +8,13 @@ export class TerminalInterface {
   private ceremonyBegun = false;
   private listY!: number;
   private offset: number = 0;
+  private state?: MpcState;
 
-  constructor(private state: MpcState, private myAccount?: Account, private computeOffline: boolean = false) {
-    this.state = state;
-    this.render();
-  }
+  constructor(private term: TerminalKit, private myAccount?: Account) {}
 
   private async getCursorLocation(): Promise<{ x: number; y: number }> {
     return new Promise((resolve, reject) => {
-      term.getCursorLocation((err: any, x?: number, y?: number) => {
+      this.term.getCursorLocation((err: any, x?: number, y?: number) => {
         if (err) {
           reject(err);
           return;
@@ -27,148 +25,169 @@ export class TerminalInterface {
   }
 
   async render() {
-    term.clear();
-    term.hideCursor();
-    term.cyan('AZTEC Trusted Setup Multi Party Computation\n\n');
+    this.term.clear();
+    this.term.hideCursor();
+    this.term.cyan('AZTEC Trusted Setup Multi Party Computation\n\n');
     await this.renderStatus();
     this.renderList();
   }
 
+  resize(width: number, height: number) {
+    this.term.width = width;
+    this.term.height = height;
+    this.render();
+  }
+
+  hideCursor(hide: boolean = true) {
+    this.term.hideCursor(hide);
+  }
+
   private async renderStatus() {
+    if (!this.state) {
+      return;
+    }
+
     const { startTime, completedAt, participants } = this.state;
 
-    term.moveTo(0, 3);
-    term.eraseLine();
-    term.white();
+    this.term.moveTo(0, 3);
+    this.term.eraseLine();
 
     if (completedAt) {
       const completedStr = `${startTime.utc().format('MMM Do YYYY HH:mm:ss')} UTC`;
       const duration = completedAt.diff(startTime, 's');
-      term(`The ceremony was completed at ${completedStr} taking a total of ${duration}s.\n\n`);
+      this.term.white(`The ceremony was completed at ${completedStr} taking a total of ${duration}s.\n\n`);
     } else if (startTime.isAfter()) {
       const startedStr = `${startTime.utc().format('MMM Do YYYY HH:mm:ss')} UTC`;
-      term(`The ceremony will begin at ${startedStr} in T-${startTime.diff(moment(), 's')}s.\n\n`);
+      this.term.white(`The ceremony will begin at ${startedStr} in T-${startTime.diff(moment(), 's')}s.\n\n`);
     } else {
-      term(`The ceremony is in progress and started at ${startTime.utc().format('MMM Do YYYY HH:mm:ss')} UTC.\n\n`);
+      this.term.white(
+        `The ceremony is in progress and started at ${startTime.utc().format('MMM Do YYYY HH:mm:ss')} UTC.\n\n`
+      );
     }
+
+    this.term.eraseLine();
 
     if (!this.myAccount) {
-      term('No account provided. You are currently spectating.\n');
-      return;
-    }
-
-    term.eraseLine();
-
-    const myIndex = participants.findIndex(p => p.address.equals(this.myAccount!.address));
-    const selectedIndex = participants.findIndex(p => p.state !== 'COMPLETE' && p.state !== 'INVALIDATED');
-    if (myIndex === -1) {
-      term(
-        `The address ${
-          this.myAccount.address
-        } is not recognised as a participant in the ceremony. You are currently spectating.\n`
-      );
-      return;
-    }
-
-    const myState = participants[myIndex];
-    switch (myState.state) {
-      case 'WAITING':
-        term(`You are number ${myIndex - selectedIndex} in the queue.\n`);
-        break;
-      case 'RUNNING':
-        if (myState.runningState === 'OFFLINE') {
-          term(`It's your turn. You have opted to perform the computation externally. Please compute and upload.\n`);
-        } else {
-          term(`You are currently processing your part of the ceremony...\n`);
+      this.term.white('You are currently in spectator mode.\n');
+    } else {
+      const myIndex = participants.findIndex(p => p.address.equals(this.myAccount!.address));
+      const selectedIndex = participants.findIndex(p => p.state !== 'COMPLETE' && p.state !== 'INVALIDATED');
+      if (myIndex === -1) {
+        this.term.white(
+          `The address ${
+            this.myAccount.address
+          } is not recognised as a participant in the ceremony. You are currently spectating.\n`
+        );
+      } else {
+        const myState = participants[myIndex];
+        switch (myState.state) {
+          case 'WAITING':
+            this.term.white(`You are number ${myIndex - selectedIndex} in the queue.\n`);
+            break;
+          case 'RUNNING':
+            if (myState.runningState === 'OFFLINE') {
+              this.term.white(
+                `It's your turn. You have opted to perform the computation externally. Please compute and upload.\n`
+              );
+            } else {
+              this.term.white(`You are currently processing your part of the ceremony...\n`);
+            }
+            break;
+          case 'COMPLETE':
+            this.term.white(
+              `Your part is complete and you can close the program at any time. Thank you for participating.\n`
+            );
+            break;
+          case 'INVALIDATED':
+            this.term.white(`You failed to compute your part of the ceremony within the time limit.\n`);
+            break;
         }
-        break;
-      case 'COMPLETE':
-        term(`Your part is complete and you can close the program at any time. Thank you for participating.\n`);
-        break;
-      case 'INVALIDATED':
-        term(`You failed to compute your part of the ceremony within the time limit.\n`);
-        break;
+      }
     }
 
-    term.nextLine(1);
+    this.term.nextLine(1);
 
     const { y } = await this.getCursorLocation();
     this.listY = y;
   }
 
   private async renderList() {
+    if (!this.state) {
+      return;
+    }
+
     const { participants } = this.state;
     const selectedIndex = participants.findIndex(p => p.state !== 'COMPLETE' && p.state !== 'INVALIDATED');
 
-    const linesLeft = term.height - this.listY;
+    const linesLeft = this.term.height - this.listY;
     this.offset = this.getRenderOffset(linesLeft, selectedIndex);
 
     participants.slice(this.offset, this.offset + linesLeft).forEach((p, i) => {
       this.renderLine(p, i);
-      term.nextLine(1);
+      this.term.nextLine(1);
     });
 
-    term.eraseDisplayBelow();
+    this.term.eraseDisplayBelow();
   }
 
   private getRenderOffset(linesForList: number, selectedIndex: number) {
     const midLine = Math.floor(linesForList / 2);
     return Math.min(
-      Math.max(0, (selectedIndex >= 0 ? selectedIndex : this.state.participants.length - 1) - midLine),
-      Math.max(0, this.state.participants.length - linesForList)
+      Math.max(0, (selectedIndex >= 0 ? selectedIndex : this.state!.participants.length - 1) - midLine),
+      Math.max(0, this.state!.participants.length - linesForList)
     );
   }
 
   private renderLine(p: Participant, i: number) {
-    term.moveTo(0, this.listY + i);
-    term.eraseLine();
-    term.bgDefaultColor.white(`${leftPad(p.position.toString(), 2)}. `);
+    this.term.moveTo(0, this.listY + i);
+    this.term.eraseLine();
+    this.term.white(`${leftPad(p.position.toString(), 2)}. `);
     switch (p.state) {
       case 'WAITING':
-        term.gray(p.address);
+        this.term.grey(p.address.toString());
         break;
       case 'RUNNING':
         this.renderRunningLine(p);
         break;
       case 'COMPLETE':
-        term.green(p.address);
-        term.grey(` (${p.completedAt!.diff(p.startedAt!, 's')}s)`);
+        this.term.green(p.address.toString());
+        this.term.grey(` (${p.completedAt!.diff(p.startedAt!, 's')}s)`);
         break;
       case 'INVALIDATED':
-        term.red(p.address);
+        this.term.red(p.address.toString());
         break;
     }
 
     if (this.myAccount && p.address.equals(this.myAccount.address)) {
-      term.white(' (you)');
+      this.term.white(' (you)');
     }
   }
 
   private renderRunningLine(p: Participant) {
     const addrString = p.address.toString();
     const progIndex = addrString.length * (p.progress / 100);
-    term.green(addrString.slice(0, progIndex)).grey(addrString.slice(progIndex));
+    this.term.green(addrString.slice(0, progIndex)).grey(addrString.slice(progIndex));
 
-    term.white(' <');
+    this.term.white(' <');
     if (p.lastUpdate || p.runningState === 'OFFLINE') {
       switch (p.runningState) {
         case 'OFFLINE':
-          term
+          this.term
             .white(' (')
             .blue('computing offline')
             .white(')');
           break;
         case 'DOWNLOADING':
-          term
+          this.term
             .white(' (')
             .blue('downloading')
             .white(')');
           break;
         case 'COMPUTING':
-          term.white(` (${p.progress}%)`);
+          this.term.white(` (${p.progress}%)`);
           break;
         case 'UPLOADING':
-          term
+          this.term
             .white(' (')
             .blue('uploading')
             .white(')');
@@ -183,12 +202,12 @@ export class TerminalInterface {
         .subtract(5, 's')
         .isAfter(lastInfo)
     ) {
-      term
+      this.term
         .white(' (')
         .red('offline')
         .white(')');
     }
-    term.white(
+    this.term.white(
       ` (skipping in ${moment(p.startedAt!)
         .add(INVALIDATED_AFTER, 's')
         .diff(moment(), 's')}s)`
@@ -196,6 +215,12 @@ export class TerminalInterface {
   }
 
   async updateState(state: MpcState) {
+    if (!this.state) {
+      this.state = state;
+      this.render();
+      return;
+    }
+
     if (moment().isBefore(state.startTime)) {
       await this.renderStatus();
       return;
@@ -218,6 +243,10 @@ export class TerminalInterface {
   }
 
   updateProgress() {
+    if (!this.state) {
+      return;
+    }
+
     const selectedIndex = this.state.participants.findIndex(p => p.state === 'RUNNING');
     if (selectedIndex === -1) {
       return;

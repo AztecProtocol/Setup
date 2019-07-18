@@ -1,0 +1,6 @@
+version: '3'
+services:
+  setup-mpc-client:
+    build: .
+    image: aztec/setup-mpc-client
+    tty: true
