@@ -1,4 +1,4 @@
-import { MpcServer, Participant, INVALIDATED_AFTER, MpcState, ParticipantRunningState } from 'setup-mpc-server';
+import { MpcServer, Participant, INVALIDATED_AFTER, MpcState, ParticipantRunningState } from './mpc-server';
 import { Wallet } from 'web3x/wallet';
 import moment, { Moment } from 'moment';
 

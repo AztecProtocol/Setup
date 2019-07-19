@@ -1,7 +1,7 @@
 import { TerminalKit } from './terminal-kit';
 import { Account } from 'web3x/account';
 import { TerminalInterface } from './terminal-interface';
-import { MpcState, MpcServer } from './mpc-server';
+import { MpcState, MpcServer } from 'setup-mpc-server';
 import { Writable } from 'stream';
 
 export { TerminalKit } from './terminal-kit';

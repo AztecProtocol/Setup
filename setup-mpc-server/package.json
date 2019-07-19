@@ -1,0 +1,27 @@
+{
+  "name": "setup-mpc-server",
+  "version": "1.0.0",
+  "main": "dest/index.js",
+  "license": "MIT",
+  "dependencies": {
+    "@types/node": "^12.6.2",
+    "koa": "^2.7.0",
+    "koa-bodyparser": "^4.2.1",
+    "koa-router": "^7.4.0",
+    "moment": "^2.24.0",
+    "path": "^0.12.7",
+    "q": "^1.5.1",
+    "tsc-watch": "^2.2.1",
+    "typescript": "^3.5.3",
+    "web3x": "^4.0.3"
+  },
+  "scripts": {
+    "start": "node ./dest",
+    "start:dev": "tsc-watch --onSuccess 'yarn start'"
+  },
+  "devDependencies": {
+    "@types/koa": "^2.0.49",
+    "@types/koa-bodyparser": "^4.3.0",
+    "@types/koa-router": "^7.0.42"
+  }
+}

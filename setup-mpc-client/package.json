@@ -5,7 +5,8 @@
   "license": "MIT",
   "scripts": {
     "start": "node ./dest",
-    "start:dev": "tsc-watch --onSuccess 'yarn start' 2> ./err.log"
+    "start:dev": "tsc-watch --onSuccess 'yarn start' 2> ./err.log",
+    "postinstall": "rm -rf ./node_modules/setup-mpc-server/node_modules/web3x"
   },
   "devDependencies": {
     "@types/node": "^12.6.2",
@@ -16,6 +17,7 @@
   "dependencies": {
     "chalk": "^2.4.2",
     "moment": "^2.24.0",
+    "setup-mpc-server": "file:../setup-mpc-server",
     "terminal-kit": "^1.28.7",
     "web3x": "^4.0.3"
   }

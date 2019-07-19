@@ -8,13 +8,13 @@
         height: 100%;
         margin: 0;
       }
-      .box {
-        display: flex;
-        flex-flow: column;
-        height: 100%;
+      #screen {
+        z-index: 10;
+        position: absolute;
+        width: 100%;
+        height: 800px;
       }
       #logo {
-        flex: 0 0 auto;
         background: url(data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTc4IiBoZWlnaHQ9IjQ2IiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxnIGZpbGw9Im5vbmUiIGZpbGwtcnVsZT0iZXZlbm9kZCI+PGcgc3Ryb2tlPSIjRkZGIj48cGF0aCBkPSJNMjIuNjkgNi4zNTNsMTYuODIxIDE2LjgyIDQuNDQ4LTQuNDQ3LTQuNDQ4IDQuNDQ4IDQuMzM4IDQuMzM4LTQuMzM4LTQuMzM4LTE2Ljc4NCAxNi43ODQgNC4zMzggNC4zMzgtNC4zMzgtNC4zMzgtNC4xMDUgNC4xMDUgNC4xMDUtNC4xMDVMNS45MDYgMjMuMTM3IDIyLjY5IDYuMzUzIDE4LjQ1NyAyLjEybDQuMjMzIDQuMjMzTDUuOTA2IDIzLjEzN2wxNi44MiAxNi44MiAxNi43ODUtMTYuNzgzTDIyLjY5IDYuMzUzbDQuNTA0LTQuNTA0LTQuNTA0IDQuNTA0ek01LjkwNiAyMy4xMzdsLTQuMjMzLTQuMjMzIDQuMjMzIDQuMjMzTDEuOCAyNy4yNDJsNC4xMDUtNC4xMDV6IiBzdHJva2Utd2lkdGg9IjMuNzYiIHN0cm9rZS1saW5lY2FwPSJzcXVhcmUiLz48cGF0aCBzdHJva2Utd2lkdGg9IjIuNzIiIGZpbGw9IiNGRkYiIGQ9Ik0yMi42NjggMTQuODZsOC4zMzcgOC4zMzctOC4zMTUgOC4zMTUtOC4zMzctOC4zMzd6Ii8+PC9nPjxwYXRoIGQ9Ik02Mi42OCAyOC4yYzAtNC4yOCA0LjMyLTYuMzIgMTQuNzItNy4yNC0uMDQtMy4xNi0xLjMyLTYuMDgtNS43Mi02LjA4LTIuODggMC01LjY4IDEuNDgtNy4yOCAyLjZsLS44LTEuMzJjMS41Mi0xLjA4IDQuODgtMi44NCA4LjI4LTIuODQgNS4xNiAwIDcuMjggMy4yOCA3LjI4IDcuNFYzM2gtMS40OGwtLjItMi44OGgtLjA4Yy0yLjI0IDEuNzYtNS4yIDMuMzYtOC4wNCAzLjM2LTMuNDQgMC02LjY4LTEuNjQtNi42OC01LjI4em0xLjgtLjA4YzAgMi43NiAyLjYgMy44NCA1LjIgMy44NCAyLjQ0IDAgNS0xLjIgNy43Mi0zLjQ4di02LjE2Yy05Ljc2Ljg4LTEyLjkyIDIuNzItMTIuOTIgNS44ek04Ni4yOTEgMzN2LS45NmwxNS4wNC0xNi43MmgtMTMuNDRWMTMuOGgxNi4xMnYuOTJsLTE1LjA0IDE2LjcyaDE1LjQ4VjMzaC0xOC4xNnptMzAuNTMyLTcuMlYxNS4zMmgtNS44di0xLjM2bDUuODQtLjE2LjI0LTUuNTZoMS40OHY1LjU2aDEwLjI0djEuNTJoLTEwLjI0djEwLjY0YzAgMy43MiAxLjA4IDUuOTYgNS4zMiA1Ljk2IDIuMDQgMCAzLjY0LS4zNiA1LjE2LTFsLjQ4IDEuMzZjLTEuNzIuNzItNC4wNCAxLjItNS44OCAxLjItNS4yNCAwLTYuODQtMy4wOC02Ljg0LTcuNjh6bTE4LjQ5LTIuMzZjMC02LjI4IDQuNzItMTAuMTIgOS42LTEwLjEyIDUuMjQgMCA4LjYgMy4zNiA4LjYgOC44OCAwIC40OCAwIC45Ni0uMDggMS40NGgtMTYuMjhjLjA4IDQuODQgMy40NCA4LjMyIDguNDQgOC4zMiAyLjU2IDAgNC42LS44NCA2LjQtMi4wOGwuNzIgMS4zNmMtMS43NiAxLjEyLTMuOTIgMi4yNC03LjI4IDIuMjQtNS41MiAwLTEwLjEyLTMuNzYtMTAuMTItMTAuMDR6bTEuODQtMS4yNGgxNC42NGMwLTQuODQtMi43Mi03LjM2LTYuODQtNy4zNi0zLjggMC03LjI0IDIuOC03LjggNy4zNnptMjIuOTcyIDEuMjRjMC02LjQ0IDQuNzItMTAuMTIgMTAuNDgtMTAuMTIgMy4yIDAgNS4zMiAxLjQgNi45MiAyLjkybC0xLjA0IDEuMmMtMS42NC0xLjUyLTMuNDgtMi41Ni01Ljg0LTIuNTYtNS4xMiAwLTguNjQgMy40OC04LjY0IDguNTYgMCA1LjA0IDMuNDQgOC40OCA4LjYgOC40OCAyLjYgMCA0Ljc2LTEuMTYgNi40OC0yLjc2bC45MiAxLjI0Yy0xLjk2IDEuODQtNC40OCAzLjA4LTcuNDggMy4wOC01Ljk2IDAtMTAuNC0zLjY4LTEwLjQtMTAuMDR6IiBmaWxsPSIjRkZGIi8+PC9nPjwvc3ZnPg==);
         background-size: auto 100%;
         background-repeat: no-repeat;
@@ -27,13 +27,9 @@
         margin-left: auto;
         margin-right: auto;
       }
-      .content {
-        flex: 1 1 auto;
-        min-height: 0;
-      }
       #terminal {
         width: 800px;
-        height: 100%;
+        height: 800px;
         margin: auto;
       }
     </style>
@@ -42,11 +38,8 @@
   </head>
 
   <body>
-    <div class="box">
-      <div id="logo"></div>
-      <div class="content">
-        <div id="terminal"></div>
-      </div>
-    </div>
+    <div id="screen"></div>
+    <div id="logo"></div>
+    <div id="terminal"></div>
   </body>
 </html>

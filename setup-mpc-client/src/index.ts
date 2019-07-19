@@ -1,5 +1,5 @@
 import { App } from './app';
-import { DemoServer } from './demo-server';
+import { DemoServer } from 'setup-mpc-server';
 import moment from 'moment';
 import { Account } from 'web3x/account';
 
