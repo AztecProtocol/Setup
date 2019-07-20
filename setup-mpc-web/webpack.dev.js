@@ -24,6 +24,9 @@ module.exports = {
   resolve: {
     extensions: ['.ts', '.tsx', '.js'],
   },
+  node: {
+    fs: 'empty',
+  },
   devServer: {
     hot: true,
   },

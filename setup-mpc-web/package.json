@@ -27,7 +27,8 @@
   },
   "dependencies": {
     "koa": "^2.5.2",
-    "koa-static": "^5.0.0"
+    "koa-static": "^5.0.0",
+    "setup-mpc-server": "file:../setup-mpc-server"
   },
   "devDependencies": {
     "@babel/core": "^7.1.2",

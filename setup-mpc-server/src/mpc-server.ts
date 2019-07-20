@@ -4,7 +4,14 @@ import { Address } from 'web3x/address';
 export const INVALIDATED_AFTER = 60;
 
 export type ParticipantState = 'WAITING' | 'RUNNING' | 'COMPLETE' | 'INVALIDATED';
-export type ParticipantRunningState = 'OFFLINE' | 'WAITING' | 'DOWNLOADING' | 'COMPUTING' | 'UPLOADING' | 'COMPLETE';
+export type ParticipantRunningState =
+  | 'OFFLINE'
+  | 'WAITING'
+  | 'DOWNLOADING'
+  | 'COMPUTING'
+  | 'UPLOADING'
+  | 'VERIFYING'
+  | 'COMPLETE';
 
 export interface Participant {
   state: ParticipantState;
@@ -15,6 +22,7 @@ export interface Participant {
   lastUpdate?: Moment;
   completedAt?: Moment;
   address: Address;
+  error?: string;
 }
 
 export interface MpcState {
@@ -25,5 +33,6 @@ export interface MpcState {
 
 export interface MpcServer {
   getState(): Promise<MpcState>;
-  updateRunningState(index: number, runningState: ParticipantRunningState): Promise<MpcState>;
+  updateParticipant(participant: Participant): Promise<void>;
+  uploadData(address: Address, g1Path: string, g2Path: string): Promise<void>;
 }

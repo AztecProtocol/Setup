@@ -1,45 +1,37 @@
 import { TerminalKit } from './terminal-kit';
 import { Account } from 'web3x/account';
 import { TerminalInterface } from './terminal-interface';
+import { Compute } from './compute';
 import { MpcState, MpcServer } from 'setup-mpc-server';
 import { Writable } from 'stream';
 
 export { TerminalKit } from './terminal-kit';
-export { DemoServer } from './demo-server';
 
 export class App {
   private i1!: NodeJS.Timeout;
   private i2!: NodeJS.Timeout;
   private terminalInterface!: TerminalInterface;
+  private compute?: Compute;
 
   constructor(
     private server: MpcServer,
     private account: Account | undefined,
     stream: Writable,
     height: number,
-    width: number
+    width: number,
+    private computeOffline = false
   ) {
     const termKit = new TerminalKit(stream, height, width);
     this.terminalInterface = new TerminalInterface(termKit, this.account);
   }
 
   async start() {
-    const state = await this.server.getState();
-    await this.terminalInterface.updateState(state);
-
-    this.i1 = setInterval(async () => {
-      let state = await this.server.getState();
-      state = (await this.processState(state)) || state;
-      await this.terminalInterface.updateState(state);
-    }, 100);
-
-    this.i2 = setInterval(async () => {
-      this.terminalInterface.updateProgress();
-    }, 100);
+    this.updateState();
+    this.i2 = setInterval(async () => this.terminalInterface.updateProgress(), 1000);
   }
 
   stop() {
-    clearInterval(this.i1);
+    clearTimeout(this.i1);
     clearInterval(this.i2);
     this.terminalInterface.hideCursor(false);
   }
@@ -48,17 +40,44 @@ export class App {
     this.terminalInterface.resize(width, height);
   }
 
+  private updateState = async () => {
+    try {
+      const state = await this.server.getState();
+      await this.terminalInterface.updateState(state);
+      await this.processState(state);
+    } catch (err) {
+      console.error(err);
+    }
+
+    this.scheduleUpdate();
+  };
+
+  private scheduleUpdate = () => {
+    this.i1 = setTimeout(this.updateState, 1000);
+  };
+
   private async processState(state: MpcState) {
     if (!this.account) {
+      // We are in spectator mode.
       return;
     }
-    const myIndex = state.participants.findIndex(p => p.address.equals(this.account!.address));
-    const myState = state.participants[myIndex];
-    if (!myState || myState.state !== 'RUNNING') {
+
+    const myState = state.participants.find(p => p.address.equals(this.account!.address));
+    if (!myState) {
+      // We're an unknown participant.
       return;
     }
-    if (myState.runningState === 'WAITING') {
-      return await this.server.updateRunningState(myIndex, 'OFFLINE');
+
+    if (myState.state === 'RUNNING' && !this.compute) {
+      this.compute = new Compute(this.server, this.computeOffline);
+      this.compute.start(myState).catch(() => (this.compute = undefined));
+      return;
+    }
+
+    if (myState.state === 'INVALIDATED' && this.compute) {
+      this.compute.cancel();
+      this.compute = undefined;
+      return;
     }
   }
 }

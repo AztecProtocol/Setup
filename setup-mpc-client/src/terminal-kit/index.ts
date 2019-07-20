@@ -32,6 +32,12 @@ export class TerminalKit {
     return this;
   }
 
+  yellow(str: string = '') {
+    this.y = this.getNewYPos(str);
+    this.stream.write(chalk.yellow(str));
+    return this;
+  }
+
   cyan(str: string = '') {
     this.y = this.getNewYPos(str);
     this.stream.write(chalk.cyan(str));

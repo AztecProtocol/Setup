@@ -1,14 +1,11 @@
 import { App } from './app';
-import { DemoServer } from 'setup-mpc-server';
-import moment from 'moment';
-import { Account } from 'web3x/account';
+import { HttpClient } from 'setup-mpc-server';
+import { Wallet } from 'web3x/wallet';
 
 async function main() {
-  const myIndex = 10;
-  const server = new DemoServer(40, moment().add(10, 's'));
-  const myPrivateKey = server.getPrivateKeyAt(myIndex);
-  const myAccount = Account.fromPrivate(myPrivateKey);
-  server.setYouIndex(myIndex);
+  const wallet = Wallet.fromMnemonic('face cook metal cost prevent term foam drive sure caught pet gentle', 50);
+  const myAccount = wallet.get(0)!;
+  const server = new HttpClient('localhost', myAccount);
   const app = new App(server, myAccount, process.stdout, process.stdout.rows!, process.stdout.columns!);
 
   await app.start();

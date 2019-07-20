@@ -4,8 +4,11 @@ import { leftPad } from 'web3x/utils';
 import moment from 'moment';
 import { MpcState, Participant, INVALIDATED_AFTER } from 'setup-mpc-server';
 
+const DISPLAY_AS_OFFLINE_AFTER = 10;
+
 export class TerminalInterface {
   private ceremonyBegun = false;
+  private currentlySelectedIndex?: number;
   private listY!: number;
   private offset: number = 0;
   private state?: MpcState;
@@ -82,7 +85,8 @@ export class TerminalInterface {
         const myState = participants[myIndex];
         switch (myState.state) {
           case 'WAITING':
-            this.term.white(`You are number ${myIndex - selectedIndex} in the queue.\n`);
+            const position = myIndex - selectedIndex;
+            this.term.white(`You are ${position ? `number ${myIndex - selectedIndex}` : 'first'} in the queue.\n`);
             break;
           case 'RUNNING':
             if (myState.runningState === 'OFFLINE') {
@@ -155,6 +159,9 @@ export class TerminalInterface {
         break;
       case 'INVALIDATED':
         this.term.red(p.address.toString());
+        if (p.error) {
+          this.term.grey(` (${p.error})`);
+        }
         break;
     }
 
@@ -166,7 +173,7 @@ export class TerminalInterface {
   private renderRunningLine(p: Participant) {
     const addrString = p.address.toString();
     const progIndex = addrString.length * (p.progress / 100);
-    this.term.green(addrString.slice(0, progIndex)).grey(addrString.slice(progIndex));
+    this.term.yellow(addrString.slice(0, progIndex)).grey(addrString.slice(progIndex));
 
     this.term.white(' <');
     if (p.lastUpdate || p.runningState === 'OFFLINE') {
@@ -181,6 +188,12 @@ export class TerminalInterface {
           this.term
             .white(' (')
             .blue('downloading')
+            .white(')');
+          break;
+        case 'VERIFYING':
+          this.term
+            .white(' (')
+            .blue('verifying')
             .white(')');
           break;
         case 'COMPUTING':
@@ -199,7 +212,7 @@ export class TerminalInterface {
       p.runningState != 'OFFLINE' &&
       lastInfo &&
       moment()
-        .subtract(5, 's')
+        .subtract(DISPLAY_AS_OFFLINE_AFTER, 's')
         .isAfter(lastInfo)
     ) {
       this.term
@@ -208,9 +221,12 @@ export class TerminalInterface {
         .white(')');
     }
     this.term.white(
-      ` (skipping in ${moment(p.startedAt!)
-        .add(INVALIDATED_AFTER, 's')
-        .diff(moment(), 's')}s)`
+      ` (skipping in ${Math.max(
+        0,
+        moment(p.startedAt!)
+          .add(INVALIDATED_AFTER, 's')
+          .diff(moment(), 's')
+      )}s)`
     );
   }
 
@@ -221,7 +237,15 @@ export class TerminalInterface {
       return;
     }
 
+    this.state = state;
+
     if (moment().isBefore(state.startTime)) {
+      if (this.ceremonyBegun) {
+        this.ceremonyBegun = false;
+        this.currentlySelectedIndex = 0;
+        this.render();
+        return;
+      }
       await this.renderStatus();
       return;
     }
@@ -231,12 +255,9 @@ export class TerminalInterface {
       await this.renderStatus();
     }
 
-    const currentSelectedIndex = this.state.participants.findIndex(
-      p => p.state !== 'COMPLETE' && p.state !== 'INVALIDATED'
-    );
     const newSelectedIndex = state.participants.findIndex(p => p.state !== 'COMPLETE' && p.state !== 'INVALIDATED');
-    this.state = state;
-    if (currentSelectedIndex != newSelectedIndex) {
+    if (this.currentlySelectedIndex != newSelectedIndex) {
+      this.currentlySelectedIndex = newSelectedIndex;
       await this.renderStatus();
       this.renderList();
     }
