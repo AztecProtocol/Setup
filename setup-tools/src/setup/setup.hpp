@@ -11,7 +11,7 @@
 namespace setup
 {
 
-constexpr size_t POLYNOMIAL_DEGREE_SONIC = 0x1;     // 0x1000000;
+constexpr size_t POLYNOMIAL_DEGREE_SONIC = 0x10;     // 0x1000000;
 constexpr size_t POLYNOMIAL_DEGREE_AZTEC = 0x10000; // 33 million // 0x1000000;
 
 // template <typename FieldT, typename G1, typename G2>
