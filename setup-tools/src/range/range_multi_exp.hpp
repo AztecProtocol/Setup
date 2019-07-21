@@ -92,8 +92,8 @@ void compute_range_polynomials(int range_index, size_t polynomial_degree)
 
     std::cerr << "Loading data..." << std::endl;
     Timer data_timer;
-    FieldT *generator_polynomial = (FieldT *)map_file("../post_processing_db/generator_prep.dat");
-    GroupT *g1_x = (GroupT *)map_file("../post_processing_db/g1_x_prep.dat");
+    FieldT *generator_polynomial = (FieldT *)map_file("../setup_db/generator_prep.dat");
+    GroupT *g1_x = (GroupT *)map_file("../setup_db/g1_x_prep.dat");
     std::cerr << "Loaded in " << data_timer.toString() << "s" << std::endl;
 
     size_t batch_num = 4;

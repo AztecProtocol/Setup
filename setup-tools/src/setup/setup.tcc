@@ -23,27 +23,12 @@
 
 namespace setup
 {
-namespace
-{
-constexpr size_t WNAF_WINDOW_SIZE = 5;
-
-bool is_file_exist(const char *fileName)
-{
-    std::ifstream infile(fileName);
-    return infile.good();
-}
-} // namespace
-
-std::string create_file_name(size_t k)
-{
-    std::stringstream ss;
-    ss << "./range_" << k << ".dat";
-    return ss.str();
-}
 
 template <typename FieldT, typename GroupT, size_t N>
 void compute_aztec_polynomial_section(FieldT y, GroupT *g1_x, size_t start, size_t interval)
 {
+    constexpr size_t WNAF_WINDOW_SIZE = 5;
+
     FieldT accumulator = y ^ (unsigned long)(start + 1);
     FieldT multiplicand = accumulator;
 
@@ -59,65 +44,9 @@ void compute_aztec_polynomial_section(FieldT y, GroupT *g1_x, size_t start, size
     }
 }
 
-template <typename ppT>
-void run_setup(size_t polynomial_degree_aztec)
-{
-    using Fr = libff::Fr<ppT>;
-    using Fq = libff::Fq<ppT>;
-    using Fqe = libff::Fqe<ppT>;
-    using G1 = libff::G1<ppT>;
-    using G2 = libff::G2<ppT>;
-
+template<typename Fr, typename Fq, typename GroupT>
+void compute_polynomial(std::vector<GroupT>& g_x, Fr& multiplicand) {
     const size_t num_limbs = sizeof(Fq) / GMP_NUMB_BYTES;
-    const size_t G1_BUFFER_SIZE_AZTEC = sizeof(Fq) * 2 * polynomial_degree_aztec;
-    const size_t G2_BUFFER_SIZE_SONIC = sizeof(Fq) * 4 * polynomial_degree_aztec;
-
-    printf("inside run setup\n");
-
-    // our toxic waste... we must ensure this is wiped before this function goes out of scope!
-    Fr accumulator = Fr::random_element();
-    Fr multiplicand = accumulator;
-
-    printf("allocating memory\n");
-
-    std::unique_ptr<G1[]> g1_x(new G1[polynomial_degree_aztec]);
-    std::unique_ptr<G2[]> g2_x(new G2[polynomial_degree_aztec]);
-    std::unique_ptr<char[]> read_write_buffer(new char(G2_BUFFER_SIZE_SONIC + checksum::BLAKE2B_CHECKSUM_LENGTH));
-
-    if (is_file_exist("../setup_db/g1_x_current.dat"))
-    {
-        printf("previous setup transcript found, reading from disk...\n");
-        streaming::read_file_into_buffer("../setup_db/g1_x_current.dat", read_write_buffer.get(), G1_BUFFER_SIZE_AZTEC);
-        streaming::read_g1_elements_from_buffer<Fq, G1>(&g1_x[0], read_write_buffer.get(), G1_BUFFER_SIZE_AZTEC);
-        streaming::validate_checksum(read_write_buffer.get(), G1_BUFFER_SIZE_AZTEC);
-
-        streaming::read_file_into_buffer("../setup_db/g2_x_current.dat", read_write_buffer.get(), G2_BUFFER_SIZE_SONIC);
-        streaming::read_g2_elements_from_buffer<Fq, G2>(&g2_x[0], read_write_buffer.get(), G2_BUFFER_SIZE_SONIC);
-        streaming::validate_checksum(read_write_buffer.get(), G2_BUFFER_SIZE_SONIC);
-    }
-    else
-    {
-        printf("could not find previous setup transcript, creating initial transcript...\n");
-        for (size_t i = 0; i < polynomial_degree_aztec; ++i)
-        {
-            if (i % 100000 == 0)
-            {
-                printf("i = %d\n", (int)i);
-            }
-            g1_x[i] = G1::one();
-            g2_x[i] = G2::one();
-        }
-        for (size_t i = polynomial_degree_aztec; i < polynomial_degree_aztec; ++i)
-        {
-            if (i % 100000 == 0)
-            {
-                printf("i = %d\n", (int)i);
-            }
-            g1_x[i] = G1::one();
-        }
-    }
-
-    printf("initialized setup polynomials, updating setup transcript...\n");
 
     size_t num_threads = 1; //(size_t)std::thread::hardware_concurrency();
     if (num_threads == 0)
@@ -127,10 +56,10 @@ void run_setup(size_t polynomial_degree_aztec)
         num_threads = 4;
     }
 
-    printf("computing g1 multiple-exponentiations\n");
-    size_t range_per_thread = polynomial_degree_aztec / num_threads;
-    size_t leftovers = polynomial_degree_aztec - (range_per_thread * num_threads);
+    size_t range_per_thread = g_x.size() / num_threads;
+    size_t leftovers = g_x.size() - (range_per_thread * num_threads);
     std::vector<std::thread> threads;
+
     for (uint i = 0; i < num_threads; i++)
     {
         size_t thread_range_start = (i * range_per_thread);
@@ -138,52 +67,76 @@ void run_setup(size_t polynomial_degree_aztec)
         {
             range_per_thread += leftovers;
         }
-        threads.push_back(std::thread(compute_aztec_polynomial_section<Fr, G1, num_limbs>, multiplicand, g1_x.get(), thread_range_start, range_per_thread));
+        threads.push_back(std::thread(compute_aztec_polynomial_section<Fr, GroupT, num_limbs>, multiplicand, &g_x[0], thread_range_start, range_per_thread));
     }
+
     for (uint i = 0; i < num_threads; i++)
     {
         threads[i].join();
     }
+}
+
+template <typename ppT>
+void run_setup(size_t polynomial_degree)
+{
+    using Fr = libff::Fr<ppT>;
+    using Fq = libff::Fq<ppT>;
+    using Fqe = libff::Fqe<ppT>;
+    using G1 = libff::G1<ppT>;
+    using G2 = libff::G2<ppT>;
+
+
+    printf("inside run setup\n");
+
+    // our toxic waste... we must ensure this is wiped before this function goes out of scope!
+    Fr multiplicand = Fr::random_element();
+
+    printf("allocating memory\n");
+
+    std::vector<G1> g1_x(polynomial_degree);
+    std::vector<G2> g2_x(polynomial_degree);
+
+    if (streaming::is_file_exist("../setup_db/transcript.dat"))
+    {
+        streaming::read_transcript<Fq>(g1_x, g2_x, "../setup_db/transcript.dat");
+    }
+    else
+    {
+        std::cout << "Creating initial transcript..." << std::endl;
+        for (size_t i = 0; i < polynomial_degree; ++i)
+        {
+            if (i % 100000 == 0)
+            {
+                printf("i = %d\n", (int)i);
+            }
+            g1_x[i] = G1::one();
+            g2_x[i] = G2::one();
+        }
+        /*
+        for (size_t i = polynomial_degree; i < polynomial_degree; ++i)
+        {
+            if (i % 100000 == 0)
+            {
+                printf("i = %d\n", (int)i);
+            }
+            g1_x[i] = G1::one();
+        }
+        */
+    }
+
+    printf("computing g1 multiple-exponentiations\n");
+    compute_polynomial<Fr, Fq>(g1_x, multiplicand);
 
     printf("computing g2 multiple-exponentiations\n");
-    range_per_thread = polynomial_degree_aztec / num_threads;
-    leftovers = polynomial_degree_aztec - (range_per_thread * num_threads);
-    threads.clear();
-    for (uint i = 0; i < num_threads; i++)
-    {
-        size_t thread_range_start = (i * range_per_thread);
-        if (i == num_threads - 1)
-        {
-            range_per_thread += leftovers;
-        }
-        threads.push_back(std::thread(compute_aztec_polynomial_section<Fr, G2, num_limbs>, multiplicand, g2_x.get(), thread_range_start, range_per_thread));
-    }
-    for (uint i = 0; i < num_threads; i++)
-    {
-        threads[i].join();
-    }
+    compute_polynomial<Fr, Fq>(g2_x, multiplicand);
 
     printf("updated setup transcript, converting points into affine form...\n");
-    utils::batch_normalize<Fq, G1>(0, polynomial_degree_aztec, &g1_x[0]);
-    utils::batch_normalize<Fqe, G2>(0, polynomial_degree_aztec, &g2_x[0]);
+    utils::batch_normalize<Fq, G1>(0, polynomial_degree, &g1_x[0]);
+    utils::batch_normalize<Fqe, G2>(0, polynomial_degree, &g2_x[0]);
 
-    printf("writing setup transcript to disk...\n");
-    std::rename("../setup_db/g1_x_current.dat", "../setup_db/g1_x_previous.dat");
-    std::rename("../setup_db/g2_x_current.dat", "../setup_db/g2_x_previous.dat");
+    streaming::write_transcript<Fq, Fqe>(g1_x, g2_x, "../setup_db/transcript.dat");
 
-    // write g1_x to file
-    streaming::write_g1_elements_to_buffer<Fq, G1>(&g1_x[0], read_write_buffer.get(), polynomial_degree_aztec); // "g1_x.dat");
-    streaming::add_checksum_to_buffer(read_write_buffer.get(), G1_BUFFER_SIZE_AZTEC);
-    streaming::write_buffer_to_file("../setup_db/g1_x_current.dat", read_write_buffer.get(), G1_BUFFER_SIZE_AZTEC);
-
-    // write g2_x to file
-    streaming::write_g2_elements_to_buffer<Fqe, G2>(&g2_x[0], read_write_buffer.get(), polynomial_degree_aztec); // "g2_x.dat");
-    streaming::add_checksum_to_buffer(read_write_buffer.get(), G2_BUFFER_SIZE_SONIC);
-    streaming::write_buffer_to_file("../setup_db/g2_x_current.dat", read_write_buffer.get(), G2_BUFFER_SIZE_SONIC);
-
-    // wipe out accumulator. Use explicit_bzero so that this does not get optimized away
-    explicit_bzero((void *)&accumulator, sizeof(Fr));
-    // and wipe out our multiplicand
+    // wipe out multiplicand. Use explicit_bzero so that this does not get optimized away.
     explicit_bzero((void *)&multiplicand, sizeof(Fr));
 
     printf("done.\n");

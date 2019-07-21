@@ -15,7 +15,16 @@ int main(int argc, char **argv)
     printf("initializing libff \n");
     libff::alt_bn128_pp::init_public_params();
     printf("attempting to generate setup variables %zu\n", polynomial_degree_aztec);
-    setup::run_setup<libff::alt_bn128_pp>(polynomial_degree_aztec);
+
+    try
+    {
+        setup::run_setup<libff::alt_bn128_pp>(polynomial_degree_aztec);
+    }
+    catch (char const *err)
+    {
+        std::cout << err << std::endl;
+        return 1;
+    }
 
     return 0;
 }

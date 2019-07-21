@@ -19,7 +19,7 @@
 
 #include <setup/setup.hpp>
 #include <setup/utils.hpp>
-#include <setup/verifier.hpp>
+#include <verify/verifier.hpp>
 
 #include "test_utils.hpp"
 
@@ -104,7 +104,7 @@ TEST(setup, validate_transcript)
     size_t N = 100;
     std::vector<libff::alt_bn128_G1> g1_x;
     std::vector<libff::alt_bn128_G2> g2_x;
-    g1_x.reserve(N + N);
+    g1_x.reserve(N);
     g2_x.reserve(N);
 
     libff::alt_bn128_Fr y = libff::alt_bn128_Fr::random_element();
@@ -117,11 +117,11 @@ TEST(setup, validate_transcript)
 
         accumulator = accumulator * y;
     }
-    for (size_t i = N; i < N + N; ++i)
+    for (size_t i = N; i < N; ++i)
     {
         g1_x.emplace_back(accumulator * libff::alt_bn128_G1::one());
         accumulator = accumulator * y;
     }
-    bool result = verifier::validate_transcript<libff::alt_bn128_pp>(&g1_x[0], &g2_x[0], N, N + N);
+    bool result = verifier::validate_transcript<libff::alt_bn128_pp>(&g1_x[0], &g2_x[0], N);
     EXPECT_EQ(result, true);
 }

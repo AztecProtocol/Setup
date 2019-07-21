@@ -5,6 +5,7 @@
  **/
 #include <gmp.h>
 #include <memory.h>
+#include <stdint.h>
 #include <fstream>
 #include <vector>
 
@@ -27,7 +28,7 @@ bool isLittleEndian()
 }
 
 template <size_t N>
-void __bswap_bigint(libff::bigint<N>& val)
+void __bswap_bigint(libff::bigint<N> &val)
 {
     for (size_t i = 0; i < N; ++i)
     {
@@ -37,7 +38,7 @@ void __bswap_bigint(libff::bigint<N>& val)
 } // namespace
 
 template <size_t N>
-void write_bigint_to_buffer(libff::bigint<N>& value, char* buffer)
+void write_bigint_to_buffer(libff::bigint<N> &value, char *buffer)
 {
     mp_limb_t temp;
     for (size_t i = 0; i < N; ++i)
@@ -51,7 +52,7 @@ void write_bigint_to_buffer(libff::bigint<N>& value, char* buffer)
 }
 
 template <typename FieldT>
-void write_fq_to_buffer(FieldT& element, char* buffer)
+void write_fq_to_buffer(FieldT &element, char *buffer)
 {
     constexpr size_t num_limbs = sizeof(FieldT) / GMP_NUMB_BYTES;
     libff::bigint<num_limbs> value = element.as_bigint();
@@ -111,7 +112,24 @@ void read_field_elements_from_file(std::vector<FieldT> &coefficients, const char
     }
 }
 
+inline bool is_file_exist(const char *fileName)
+{
+    std::ifstream infile(fileName);
+    return infile.good();
+}
+
+inline size_t read_length(char const *buffer)
+{
+    return isLittleEndian() ? __builtin_bswap32(*buffer) : *(int32_t *)buffer;
+}
+
+inline void write_length(char const *buffer, int32_t length)
+{
+    *(int32_t *)buffer = isLittleEndian() ? __builtin_bswap32(length) : length;
+}
+
 } // namespace streaming
 
 #include "streaming_g1.tcc"
 #include "streaming_g2.tcc"
+#include "streaming_transcript.tcc"
