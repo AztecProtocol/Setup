@@ -5,5 +5,7 @@ services:
     image: aztec/setup-tools
     entrypoint: /bin/bash
     tty: true
+    environment:
+      MAKEFLAGS: '-j8'
     volumes:
       - .:/usr/src/app

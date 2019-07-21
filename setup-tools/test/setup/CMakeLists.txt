@@ -10,7 +10,6 @@ add_executable(
     test_aztec_common.cpp
     test_setup.cpp
     test_compute_range_polynomial.cpp
-    test_streaming.cpp
 )
 target_link_libraries(
     setup_tests

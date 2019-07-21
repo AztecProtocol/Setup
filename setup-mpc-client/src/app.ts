@@ -45,11 +45,14 @@ export class App {
       const state = await this.server.getState();
       await this.terminalInterface.updateState(state);
       await this.processState(state);
+
+      if (!state.completedAt) {
+        this.scheduleUpdate();
+      }
     } catch (err) {
+      this.scheduleUpdate();
       console.error(err);
     }
-
-    this.scheduleUpdate();
   };
 
   private scheduleUpdate = () => {

@@ -1,7 +1,6 @@
 /**
  * Setup
  * Copyright Spilsbury Holdings 2019
- *
  **/
 #pragma once
 
@@ -124,15 +123,15 @@ bool validate_polynomial_evaluation(Group1T *evaluation, Group2T comparator, siz
 
 // Validate that a provided transcript conforms to the powering sequences required for our structured reference string
 template <typename ppT>
-bool validate_transcript(G1<ppT> *g1_x, G2<ppT> *g2_x, size_t polynomial_degree_sonic, size_t polynomial_degree_aztec)
+bool validate_transcript(G1<ppT> *g1_x, G2<ppT> *g2_x, size_t polynomial_degree)
 {
     bool result = true;
 
     // validate that the ratio between successive g1_x elements is defined by g2_x[0]
-    result &= validate_polynomial_evaluation<ppT, G1<ppT>, G2<ppT>>(g1_x, g2_x[0], polynomial_degree_aztec);
+    result &= validate_polynomial_evaluation<ppT, G1<ppT>, G2<ppT>>(g1_x, g2_x[0], polynomial_degree);
 
     // validate that the ratio between successive g2_x elements is defined by g1_x[0]
-    result &= validate_polynomial_evaluation<ppT, G2<ppT>, G1<ppT>>(g2_x, g1_x[0], polynomial_degree_sonic);
+    result &= validate_polynomial_evaluation<ppT, G2<ppT>, G1<ppT>>(g2_x, g1_x[0], polynomial_degree);
 
     return result;
 }
