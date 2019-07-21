@@ -41,8 +41,6 @@ SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -Wno-unused-parameter")
 # Create a directory to store the trusted setup output
 add_custom_target(create-setup-db-directory ALL
     COMMAND ${CMAKE_COMMAND} -E make_directory ${PROJECT_SOURCE_DIR}/setup_db)
-add_custom_target(create-post-processing-db-directory ALL
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${PROJECT_SOURCE_DIR}/post_processing_db)
 
 ### DEPENDENCIES
 

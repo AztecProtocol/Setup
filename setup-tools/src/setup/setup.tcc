@@ -25,12 +25,11 @@ namespace setup
 {
 
 template <typename FieldT, typename GroupT, size_t N>
-void compute_aztec_polynomial_section(FieldT y, GroupT *g1_x, size_t start, size_t interval)
+void compute_aztec_polynomial_section(FieldT *y, GroupT *g_x, size_t start, size_t interval)
 {
     constexpr size_t WNAF_WINDOW_SIZE = 5;
 
-    FieldT accumulator = y ^ (unsigned long)(start + 1);
-    FieldT multiplicand = accumulator;
+    FieldT accumulator = *y ^ (unsigned long)(start + 1);
 
     for (size_t i = start; i < start + interval; ++i)
     {
@@ -39,16 +38,17 @@ void compute_aztec_polynomial_section(FieldT y, GroupT *g1_x, size_t start, size
             printf("i = %d\n", (int)i);
         }
         libff::bigint<N> x_bigint = accumulator.as_bigint();
-        g1_x[i] = libff::fixed_window_wnaf_exp<GroupT, N>(WNAF_WINDOW_SIZE, g1_x[i], x_bigint);
-        accumulator = accumulator * multiplicand;
+        g_x[i] = libff::fixed_window_wnaf_exp<GroupT, N>(WNAF_WINDOW_SIZE, g_x[i], x_bigint);
+        accumulator = accumulator * *y;
     }
 }
 
-template<typename Fr, typename Fq, typename GroupT>
-void compute_polynomial(std::vector<GroupT>& g_x, Fr& multiplicand) {
+template <typename Fr, typename Fq, typename GroupT>
+void compute_polynomial(std::vector<GroupT> &g_x, Fr &multiplicand)
+{
     const size_t num_limbs = sizeof(Fq) / GMP_NUMB_BYTES;
 
-    size_t num_threads = 1; //(size_t)std::thread::hardware_concurrency();
+    size_t num_threads = (size_t)std::thread::hardware_concurrency();
     if (num_threads == 0)
     {
         // um, make a guess?
@@ -67,10 +67,10 @@ void compute_polynomial(std::vector<GroupT>& g_x, Fr& multiplicand) {
         {
             range_per_thread += leftovers;
         }
-        threads.push_back(std::thread(compute_aztec_polynomial_section<Fr, GroupT, num_limbs>, multiplicand, &g_x[0], thread_range_start, range_per_thread));
+        threads.push_back(std::thread(compute_aztec_polynomial_section<Fr, GroupT, num_limbs>, &multiplicand, &g_x[0], thread_range_start, range_per_thread));
     }
 
-    for (uint i = 0; i < num_threads; i++)
+    for (uint i = 0; i < threads.size(); i++)
     {
         threads[i].join();
     }
@@ -84,7 +84,6 @@ void run_setup(size_t polynomial_degree)
     using Fqe = libff::Fqe<ppT>;
     using G1 = libff::G1<ppT>;
     using G2 = libff::G2<ppT>;
-
 
     printf("inside run setup\n");
 

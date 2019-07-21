@@ -60,6 +60,7 @@ int main(int argc, char **argv)
   catch (char const *err)
   {
     std::cout << err << std::endl;
+    return 1;
   }
 
   return 0;
