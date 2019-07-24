@@ -47,11 +47,15 @@ export class Compute {
 
   private async compute() {
     return new Promise((resolve, reject) => {
-      const { SETUP_PATH = '../setup-tools/setup', POLYNOMIAL_DEGREE = '0x10000' } = process.env;
+      const { SETUP_PATH = '../setup-tools/setup', POLYNOMIAL_DEGREE = '0x20000' } = process.env;
       const setup = spawn(SETUP_PATH, [POLYNOMIAL_DEGREE]);
 
       setup.stdout.on('data', data => {
-        console.error(`setup: ${data}`);
+        this.updateMyProgress(Number(data));
+      });
+
+      setup.stderr.on('data', data => {
+        console.error(data.toString());
       });
 
       setup.on('close', code => {
@@ -69,6 +73,12 @@ export class Compute {
   private async updateMyRunningState(runningState: ParticipantRunningState) {
     console.error(`${this.myState.runningState} => ${runningState}`);
     this.myState.runningState = runningState;
+    this.myState.lastUpdate = moment();
+    await this.server.updateParticipant(this.myState);
+  }
+
+  private async updateMyProgress(progress: number) {
+    this.myState.progress = progress;
     this.myState.lastUpdate = moment();
     await this.server.updateParticipant(this.myState);
   }

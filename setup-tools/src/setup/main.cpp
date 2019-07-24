@@ -12,9 +12,7 @@
 int main(int argc, char **argv)
 {
     const size_t polynomial_degree_aztec = argc > 1 ? strtol(argv[1], NULL, 0) : setup::POLYNOMIAL_DEGREE_AZTEC;
-    printf("initializing libff \n");
     libff::alt_bn128_pp::init_public_params();
-    printf("attempting to generate setup variables %zu\n", polynomial_degree_aztec);
 
     try
     {
@@ -22,7 +20,7 @@ int main(int argc, char **argv)
     }
     catch (char const *err)
     {
-        std::cout << err << std::endl;
+        std::cerr << err << std::endl;
         return 1;
     }
 

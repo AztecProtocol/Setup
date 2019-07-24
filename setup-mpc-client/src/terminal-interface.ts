@@ -197,7 +197,10 @@ export class TerminalInterface {
             .white(')');
           break;
         case 'COMPUTING':
-          this.term.white(` (${p.progress}%)`);
+          this.term
+            .white(' (')
+            .blue('computing')
+            .white(`) (${p.progress}%)`);
           break;
         case 'UPLOADING':
           this.term

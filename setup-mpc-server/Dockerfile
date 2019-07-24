@@ -15,11 +15,9 @@ RUN apt update && \
   apt update && \
   apt install -y nodejs yarn make g++ && \
   apt clean
-WORKDIR /usr/src/setup-tools
-COPY --from=0 /usr/src/app/build/verify .
-WORKDIR /usr/src/setup-mpc-common
-COPY setup-mpc-common .
-RUN yarn install && yarn build && rm -rf node_modules && yarn install --production && yarn cache clean
+COPY --from=0 /usr/src/app/build/verify /usr/src/setup-tools/verify
+RUN mkdir /usr/src/setup_db
+COPY setup-mpc-common /usr/src/setup-mpc-common
 WORKDIR /usr/src/setup-mpc-server
 COPY setup-mpc-server .
 RUN yarn install && yarn build && rm -rf node_modules && yarn install --production && yarn cache clean
