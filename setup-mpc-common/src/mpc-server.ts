@@ -1,7 +1,7 @@
 import { Moment } from 'moment';
 import { Address } from 'web3x/address';
 
-export const INVALIDATED_AFTER = 60;
+export const INVALIDATED_AFTER = 180;
 
 export type ParticipantState = 'WAITING' | 'RUNNING' | 'COMPLETE' | 'INVALIDATED';
 export type ParticipantRunningState =

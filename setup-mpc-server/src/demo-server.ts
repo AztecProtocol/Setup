@@ -3,14 +3,14 @@ import { Wallet } from 'web3x/wallet';
 import moment, { Moment } from 'moment';
 import { Address } from 'web3x/address';
 
-const TEST_BAD_THINGS = [2];
+const TEST_BAD_THINGS: number[] = [];
 
 export class DemoServer implements MpcServer {
   private wallet: Wallet;
   private state: MpcState;
   private interval?: NodeJS.Timer;
 
-  constructor(numParticipants: number, private startTime: Moment, private youIndex?: number) {
+  constructor(numParticipants: number, private startTime: Moment, private youIndicies: number[] = []) {
     this.wallet = Wallet.fromMnemonic(
       'face cook metal cost prevent term foam drive sure caught pet gentle',
       numParticipants
@@ -75,7 +75,7 @@ export class DemoServer implements MpcServer {
       return;
     }
 
-    if (i === this.youIndex) {
+    if (this.youIndicies.includes(i)) {
       // Only simulate other users.
       return;
     }

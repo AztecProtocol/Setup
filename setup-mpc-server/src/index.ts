@@ -3,10 +3,10 @@ import { app } from './app';
 import { DemoServer } from './demo-server';
 import moment from 'moment';
 
-const { PORT = 80 } = process.env;
+const { PORT = 80, YOU_INDICIES = '' } = process.env;
 
 async function main() {
-  const demoServer = new DemoServer(50, moment().add(5, 's'), 0);
+  const demoServer = new DemoServer(50, moment().add(5, 's'), YOU_INDICIES.split(',').map(i => +i));
   demoServer.start();
 
   const httpServer = http.createServer(app(demoServer).callback());

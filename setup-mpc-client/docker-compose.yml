@@ -9,6 +9,21 @@ services:
     command: ["yarn", "start:dev"]
     environment:
       SERVER_HOST: 'setup-mpc-server'
+      ACCOUNT_INDEX: '0'
+    volumes:
+      - .:/usr/src/setup-mpc-client
+      - ../setup-mpc-common/src:/usr/src/setup-mpc-client/src/setup-mpc-common
+
+  setup-mpc-client1:
+    build:
+      context: ..
+      dockerfile: setup-mpc-client/Dockerfile
+    image: aztec/setup-mpc-client
+    tty: true
+    command: ["yarn", "start:dev"]
+    environment:
+      SERVER_HOST: 'setup-mpc-server'
+      ACCOUNT_INDEX: '1'
     volumes:
       - .:/usr/src/setup-mpc-client
       - ../setup-mpc-common/src:/usr/src/setup-mpc-client/src/setup-mpc-common
@@ -18,6 +33,8 @@ services:
       context: ..
       dockerfile: setup-mpc-server/Dockerfile
     image: aztec/setup-mpc-server
+    environment:
+      YOU_INDICIES: '0,1'
     expose:
       - 80
     volumes:
