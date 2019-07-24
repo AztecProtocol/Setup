@@ -1,6 +1,5 @@
 import { Readable } from 'stream';
 import { hashStreams } from './hash-files';
-import { createReadStream } from 'fs';
 
 describe('hash-files', () => {
   it('should create create hash', async () => {

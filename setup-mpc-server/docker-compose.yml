@@ -1,16 +1,11 @@
 version: '3'
 services:
-  job-server:
-    build: .
-    image: aztec/job-server
-    command: yarn start:dev
-    environment:
-      NODE_ENV: production
-      REDIS_URL: redis://redis
+  setup-mpc-server:
+    build:
+      context: ..
+      dockerfile: setup-mpc-server/Dockerfile
+    image: aztec/setup-mpc-server
     ports:
       - "8080:80"
     volumes:
       - .:/usr/src/app
-
-  redis:
-    image: redis

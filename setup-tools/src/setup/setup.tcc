@@ -85,12 +85,8 @@ void run_setup(size_t polynomial_degree)
     using G1 = libff::G1<ppT>;
     using G2 = libff::G2<ppT>;
 
-    printf("inside run setup\n");
-
     // our toxic waste... we must ensure this is wiped before this function goes out of scope!
     Fr multiplicand = Fr::random_element();
-
-    printf("allocating memory\n");
 
     std::vector<G1> g1_x(polynomial_degree);
     std::vector<G2> g2_x(polynomial_degree);
@@ -102,25 +98,8 @@ void run_setup(size_t polynomial_degree)
     else
     {
         std::cout << "Creating initial transcript..." << std::endl;
-        for (size_t i = 0; i < polynomial_degree; ++i)
-        {
-            if (i % 100000 == 0)
-            {
-                printf("i = %d\n", (int)i);
-            }
-            g1_x[i] = G1::one();
-            g2_x[i] = G2::one();
-        }
-        /*
-        for (size_t i = polynomial_degree; i < polynomial_degree; ++i)
-        {
-            if (i % 100000 == 0)
-            {
-                printf("i = %d\n", (int)i);
-            }
-            g1_x[i] = G1::one();
-        }
-        */
+        std::fill(g1_x.begin(), g1_x.end(), G1::one());
+        std::fill(g2_x.begin(), g2_x.end(), G2::one());
     }
 
     printf("computing g1 multiple-exponentiations\n");

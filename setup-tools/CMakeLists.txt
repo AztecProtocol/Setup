@@ -6,18 +6,7 @@ include(CableCompilerSettings)
 include(CableToolchains)
 include(GNUInstallDirs)
 
-
-option(
-    DOCKER
-    "remove unneccesary options for pos-processing docker images"
-    OFF
-)
-
-if (DOCKER)
-set(CMAKE_CXX_STANDARD 11)
-else()
 cable_configure_toolchain(DEFAULT cxx17-pic)
-endif()
 
 include(HunterConfig)
 
@@ -26,9 +15,7 @@ cable_set_build_type(DEFAULT Release CONFIGURATION_TYPES Debug Release)
 set(PROJECT_VERSION 0.1.0)
 project(aztec-trusted-setup)
 
-if (NOT DOCKER)
 cable_configure_compiler(NO_PEDANTIC NO_CONVERSION_WARNINGS)
-endif()
 
 set(include_dir ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
@@ -48,6 +35,8 @@ add_custom_target(create-setup-db-directory ALL
 find_path(GMP_INCLUDE_DIR NAMES gmp.h)
 find_library(GMP_LIBRARIES NAMES gmp libgmp)
 find_library(GMPXX_LIBRARIES NAMES gmpxx libgmpxx)
+
+add_compile_options(-fno-stack-protector)
 
 option(
     ENABLE_LIBFF_PROFILING
@@ -88,14 +77,13 @@ add_definitions(
 -DNO_PROCPS
 )
 
-
 add_subdirectory(depends)
 
 add_subdirectory(src)
 
 option(SETUP_TESTING "Build tests" ON)
 
-if(SETUP_TESTING AND NOT DOCKER)
+if(SETUP_TESTING)
     enable_testing()
     add_subdirectory(test)
 endif()

@@ -2,7 +2,7 @@ import { TerminalKit } from './terminal-kit';
 import { Account } from 'web3x/account';
 import { leftPad } from 'web3x/utils';
 import moment from 'moment';
-import { MpcState, Participant, INVALIDATED_AFTER } from 'setup-mpc-server';
+import { MpcState, Participant, INVALIDATED_AFTER } from './setup-mpc-common';
 
 const DISPLAY_AS_OFFLINE_AFTER = 10;
 

@@ -23,6 +23,7 @@ export interface Participant {
   completedAt?: Moment;
   address: Address;
   error?: string;
+  transcriptUrl?: string;
 }
 
 export interface MpcState {
@@ -34,5 +35,5 @@ export interface MpcState {
 export interface MpcServer {
   getState(): Promise<MpcState>;
   updateParticipant(participant: Participant): Promise<void>;
-  uploadData(address: Address, g1Path: string, g2Path: string): Promise<void>;
+  uploadData(address: Address, transcriptPath: string): Promise<void>;
 }

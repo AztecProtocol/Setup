@@ -1,27 +1,16 @@
 {
-  "name": "setup-mpc-server",
+  "name": "setup-mpc-common",
   "version": "1.0.0",
   "main": "dest/index.js",
   "license": "MIT",
   "dependencies": {
-    "@koa/cors": "^3.0.0",
-    "@types/node": "^12.6.8",
     "form-data": "^2.5.0",
     "isomorphic-fetch": "^2.2.1",
-    "koa": "^2.7.0",
-    "koa-body": "^4.1.0",
-    "koa-router": "^7.4.0",
     "moment": "^2.24.0",
-    "path": "^0.12.7",
-    "q": "^1.5.1",
-    "tsc-watch": "^2.2.1",
-    "typescript": "^3.5.3",
     "web3x": "^4.0.3"
   },
   "scripts": {
     "build": "tsc",
-    "start": "node ./dest",
-    "start:dev": "tsc-watch --onSuccess 'yarn start'",
     "test": "jest"
   },
   "jest": {
@@ -40,11 +29,11 @@
     "rootDir": "./src"
   },
   "devDependencies": {
+    "@types/node": "^12.6.8",
     "@types/isomorphic-fetch": "^0.0.35",
     "@types/jest": "^24.0.15",
-    "@types/koa": "^2.0.49",
-    "@types/koa-router": "^7.0.42",
     "jest": "^24.8.0",
-    "ts-jest": "^24.0.2"
+    "ts-jest": "^24.0.2",
+    "typescript": "^3.5.3"
   }
 }

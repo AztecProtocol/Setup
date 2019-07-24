@@ -1,4 +1,4 @@
-import { MpcServer, Participant, INVALIDATED_AFTER, MpcState } from './mpc-server';
+import { MpcServer, Participant, INVALIDATED_AFTER, MpcState } from './setup-mpc-common';
 import { Wallet } from 'web3x/wallet';
 import moment, { Moment } from 'moment';
 import { Address } from 'web3x/address';
@@ -8,6 +8,7 @@ const TEST_BAD_THINGS = [2];
 export class DemoServer implements MpcServer {
   private wallet: Wallet;
   private state: MpcState;
+  private interval?: NodeJS.Timer;
 
   constructor(numParticipants: number, private startTime: Moment, private youIndex?: number) {
     this.wallet = Wallet.fromMnemonic(
@@ -32,7 +33,11 @@ export class DemoServer implements MpcServer {
   }
 
   start() {
-    setInterval(() => this.advanceState(), 500);
+    this.interval = setInterval(() => this.advanceState(), 500);
+  }
+
+  stop() {
+    clearInterval(this.interval!);
   }
 
   private advanceState() {
@@ -168,7 +173,7 @@ export class DemoServer implements MpcServer {
     p.lastUpdate = moment();
   }
 
-  async uploadData(address: Address, g1Path: string, g2Path: string) {
+  async uploadData(address: Address, transcriptPath: string) {
     const p = this.getRunningParticipant(address);
     p.runningState = 'VERIFYING';
     p.lastUpdate = moment();

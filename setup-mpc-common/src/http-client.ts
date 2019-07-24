@@ -3,7 +3,7 @@ import fetch from 'isomorphic-fetch';
 import moment = require('moment');
 import { Address } from 'web3x/address';
 import { Account } from 'web3x/account';
-import { createReadStream } from 'fs';
+import { createReadStream, existsSync } from 'fs';
 import FormData from 'form-data';
 import { bufferToHex } from 'web3x/utils';
 import { hashFiles } from './hash-files';
@@ -56,25 +56,42 @@ export class HttpClient implements MpcServer {
     }
   }
 
-  async uploadData(address: Address, g1Path: string, g2Path: string) {
-    if (!this.account) {
-      throw new Error('No account provided. Can only request server state, not modify.');
-    }
+  async uploadData(address: Address, transcriptPath: string) {
+    return new Promise<void>(async (resolve, reject) => {
+      try {
+        if (!this.account) {
+          throw new Error('No account provided. Can only request server state, not modify.');
+        }
 
-    const hash = await hashFiles([g1Path, g2Path]);
+        if (!existsSync(transcriptPath)) {
+          throw new Error('Transcript not found.');
+        }
 
-    const { signature } = this.account.sign(bufferToHex(hash));
+        const hash = await hashFiles([transcriptPath]);
 
-    const formData = new FormData();
-    formData.append('g1', createReadStream(g1Path));
-    formData.append('g2', createReadStream(g2Path));
+        const { signature } = this.account.sign(bufferToHex(hash));
 
-    await fetch(`http://localhost/data/${address.toString().toLowerCase()}`, {
-      method: 'POST',
-      body: formData as any,
-      headers: {
-        'X-Signature': signature,
-      },
+        const transcriptStream = createReadStream(transcriptPath);
+        transcriptStream.on('error', error => {
+          console.error('Transcript read error: ', error);
+          reject(new Error('Failed to read transcript.'));
+        });
+
+        const formData = new FormData();
+        formData.append('transcript', transcriptStream);
+
+        await fetch(`http://${this.host}/data/${address.toString().toLowerCase()}`, {
+          method: 'POST',
+          body: formData as any,
+          headers: {
+            'X-Signature': signature,
+          },
+        });
+
+        resolve();
+      } catch (err) {
+        reject(err);
+      }
     });
   }
 }

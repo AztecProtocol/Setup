@@ -1,19 +1,14 @@
 import Koa from 'koa';
 import Router from 'koa-router';
 import koaBody from 'koa-body';
-import { DemoServer } from './demo-server';
-import moment from 'moment';
 import { Address } from 'web3x/address';
 import { recover, bufferToHex } from 'web3x/utils';
 import { unlink } from 'fs';
-import { hashFiles } from './hash-files';
+import { hashFiles, MpcServer } from './setup-mpc-common';
 
 const cors = require('@koa/cors');
 
-export function app() {
-  const server = new DemoServer(50, moment().add(5, 's'), 0);
-  server.start();
-
+export function app(server: MpcServer) {
   const router = new Router();
 
   router.get('/', async (ctx: Koa.Context) => {
@@ -40,22 +35,20 @@ export function app() {
 
   router.post('/data/:address', koaBody({ multipart: true }), async (ctx: Koa.Context) => {
     const {
-      g1: { path: g1Path },
-      g2: { path: g2Path },
+      transcript: { path: transcriptPath },
     } = ctx.request.files!;
     try {
-      const hash = await hashFiles([g1Path, g2Path]);
+      const hash = await hashFiles([transcriptPath]);
       const signature = ctx.get('X-Signature');
       const address = Address.fromString(ctx.params['address']);
       if (!address.equals(recover(bufferToHex(hash), signature))) {
         ctx.status = 401;
         return;
       }
-      await server.uploadData(address, g1Path, g2Path);
+      await server.uploadData(address, transcriptPath);
       ctx.status = 200;
     } finally {
-      unlink(g1Path, () => {});
-      unlink(g2Path, () => {});
+      unlink(transcriptPath, () => {});
     }
   });
 

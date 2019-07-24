@@ -1,6 +1,24 @@
 version: '3'
 services:
   setup-mpc-client:
-    build: .
+    build:
+      context: ..
+      dockerfile: setup-mpc-client/Dockerfile
     image: aztec/setup-mpc-client
     tty: true
+    command: ["yarn", "start:dev"]
+    environment:
+      SERVER_HOST: 'setup-mpc-server'
+    volumes:
+      - .:/usr/src/setup-mpc-client
+      - ../setup-mpc-common/src:/usr/src/setup-mpc-client/src/setup-mpc-common
+
+  setup-mpc-server:
+    build:
+      context: ..
+      dockerfile: setup-mpc-server/Dockerfile
+    image: aztec/setup-mpc-server
+    expose:
+      - 80
+    volumes:
+      - ../setup-mpc-server:/usr/src/setup-mpc-server
