@@ -16,12 +16,7 @@ async function main() {
   httpServer.listen(PORT);
   console.log(`Server listening on port ${PORT}.`);
 
-  const shutdown = async () => {
-    console.log('Shutting down.');
-    demoServer.stop();
-    await new Promise(resolve => httpServer.close(resolve));
-    console.log('Shutdown complete.');
-  };
+  const shutdown = async () => process.exit(0);
 
   process.once('SIGINT', shutdown);
   process.once('SIGTERM', shutdown);
