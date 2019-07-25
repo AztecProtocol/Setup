@@ -213,6 +213,7 @@ export class TerminalInterface {
     const lastInfo = p.lastUpdate || p.startedAt;
     if (
       p.runningState !== 'OFFLINE' &&
+      p.runningState !== 'VERIFYING' &&
       lastInfo &&
       moment()
         .subtract(DISPLAY_AS_OFFLINE_AFTER, 's')
@@ -223,14 +224,16 @@ export class TerminalInterface {
         .red('offline')
         .white(')');
     }
-    this.term.white(
-      ` (skipping in ${Math.max(
-        0,
-        moment(p.startedAt!)
-          .add(INVALIDATED_AFTER, 's')
-          .diff(moment(), 's')
-      )}s)`
-    );
+    if (p.runningState !== 'VERIFYING') {
+      this.term.white(
+        ` (skipping in ${Math.max(
+          0,
+          moment(p.startedAt!)
+            .add(INVALIDATED_AFTER, 's')
+            .diff(moment(), 's')
+        )}s)`
+      );
+    }
   }
 
   public async updateState(state: MpcState) {

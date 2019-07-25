@@ -16,7 +16,6 @@ RUN apt update && \
   apt install -y nodejs yarn make g++ && \
   apt clean
 COPY --from=0 /usr/src/app/build/verify /usr/src/setup-tools/verify
-RUN mkdir /usr/src/setup_db
 COPY setup-mpc-common /usr/src/setup-mpc-common
 WORKDIR /usr/src/setup-mpc-server
 COPY setup-mpc-server .

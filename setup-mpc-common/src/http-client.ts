@@ -2,6 +2,7 @@ import FormData from 'form-data';
 import { createReadStream, existsSync } from 'fs';
 import fetch from 'isomorphic-fetch';
 import moment = require('moment');
+import { Readable } from 'stream';
 import { Account } from 'web3x/account';
 import { Address } from 'web3x/address';
 import { bufferToHex } from 'web3x/utils';
@@ -54,6 +55,14 @@ export class HttpClient implements MpcServer {
     if (response.status !== 200) {
       throw new Error(`Bad status code from server: ${response.status}`);
     }
+  }
+
+  public async downloadData(address: Address) {
+    const response = await fetch(`http://${this.host}/data/${address.toString().toLowerCase()}`);
+    if (response.status !== 200) {
+      throw new Error(`Download failed, bad status code: ${response.status}`);
+    }
+    return (response.body! as any) as Readable;
   }
 
   public async uploadData(address: Address, transcriptPath: string) {

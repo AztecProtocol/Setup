@@ -9,7 +9,8 @@ const { PORT = 80, YOU_INDICIES = '', STORE_PATH = '../store' } = process.env;
 async function main() {
   const transcriptStore = new DiskTranscriptStore(STORE_PATH);
   const youIndicies = YOU_INDICIES.split(',').map(i => +i);
-  const demoServer = new DemoServer(50, moment().add(5, 's'), transcriptStore, youIndicies);
+  const demoServer = new DemoServer(50, transcriptStore, youIndicies);
+  demoServer.resetState(moment().add(5, 's'));
   demoServer.start();
 
   const httpServer = http.createServer(app(demoServer).callback());

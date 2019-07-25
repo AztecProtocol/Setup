@@ -1,4 +1,5 @@
 import { Moment } from 'moment';
+import { Readable } from 'stream';
 import { Address } from 'web3x/address';
 
 export const INVALIDATED_AFTER = 180;
@@ -36,4 +37,5 @@ export interface MpcServer {
   getState(): Promise<MpcState>;
   updateParticipant(participant: Participant): Promise<void>;
   uploadData(address: Address, transcriptPath: string, signature?: string): Promise<void>;
+  downloadData(address: Address): Promise<Readable>;
 }

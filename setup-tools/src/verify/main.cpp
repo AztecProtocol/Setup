@@ -31,15 +31,23 @@ int main(int argc, char **argv)
     using G1 = libff::G1<libff::alt_bn128_pp>;
     using G2 = libff::G2<libff::alt_bn128_pp>;
 
-    std::vector<G1> g1_x(polynomial_degree);
-    std::vector<G2> g2_x(polynomial_degree);
+    try
+    {
+        std::vector<G1> g1_x(polynomial_degree);
+        std::vector<G2> g2_x(polynomial_degree);
 
-    streaming::read_transcript<Fq>(g1_x, g2_x, "../setup_db/transcript.dat");
+        streaming::read_transcript<Fq>(g1_x, g2_x, transcript_path);
 
-    std::cout << "Verifying..." << std::endl;
-    bool result = verifier::validate_transcript<libff::alt_bn128_pp>(&g1_x[0], &g2_x[0], polynomial_degree);
+        std::cout << "Verifying..." << std::endl;
+        bool result = verifier::validate_transcript<libff::alt_bn128_pp>(&g1_x[0], &g2_x[0], polynomial_degree);
 
-    std::cout << (result ? "Success." : "Failed.") << std::endl;
+        std::cout << (result ? "Success." : "Failed.") << std::endl;
 
-    return result ? 0 : 1;
+        return result ? 0 : 1;
+    }
+    catch (std::exception const &err)
+    {
+        std::cerr << err.what() << std::endl;
+        return 1;
+    }
 }

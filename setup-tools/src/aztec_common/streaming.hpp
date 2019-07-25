@@ -84,7 +84,7 @@ inline void validate_checksum(char *buffer, size_t message_size)
         ASSERT(checksum[i] == comparison[i]);
         if (checksum[i] != comparison[i])
         {
-            throw "Checksum failed.";
+            throw std::runtime_error("Checksum failed.");
         }
     }
 }

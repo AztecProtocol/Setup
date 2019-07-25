@@ -1,11 +1,20 @@
 import { ChildProcess, spawn } from 'child_process';
+import { createWriteStream } from 'fs';
+import fetch from 'isomorphic-fetch';
 import moment = require('moment');
-import { MpcServer, Participant, ParticipantRunningState } from './setup-mpc-common';
+import { MpcServer, MpcState, Participant, ParticipantRunningState } from './setup-mpc-common';
+
+const TRANSCRIPT_PATH = '/usr/src/setup_db/transcript.dat';
 
 export class Compute {
   private proc?: ChildProcess;
 
-  constructor(private myState: Participant, private server: MpcServer, private computeOffline: boolean) {}
+  constructor(
+    private state: MpcState,
+    private myState: Participant,
+    private server: MpcServer,
+    private computeOffline: boolean
+  ) {}
 
   public async start() {
     const myState = this.myState;
@@ -15,8 +24,13 @@ export class Compute {
       return;
     }
 
+    const lastCompletedParticipant = this.state.participants
+      .slice()
+      .reverse()
+      .find(p => p.state === 'COMPLETE');
+
     if (myState.runningState === 'WAITING') {
-      if (myState.transcriptUrl) {
+      if (lastCompletedParticipant) {
         await this.updateMyRunningState('DOWNLOADING');
       } else {
         await this.updateMyRunningState('COMPUTING');
@@ -24,7 +38,13 @@ export class Compute {
     }
 
     if (myState.runningState === 'DOWNLOADING') {
-      await new Promise(resolve => setTimeout(resolve, 5000));
+      const readStream = await this.server.downloadData(lastCompletedParticipant!.address);
+      await new Promise((resolve, reject) => {
+        const writeStream = createWriteStream(TRANSCRIPT_PATH);
+        writeStream.on('close', resolve);
+        readStream.on('error', err => reject(err));
+        readStream.pipe(writeStream);
+      });
       await this.updateMyRunningState('COMPUTING');
     }
 
@@ -34,8 +54,7 @@ export class Compute {
     }
 
     if (myState.runningState === 'UPLOADING') {
-      const transcriptPath = '/usr/src/setup_db/transcript.dat';
-      await this.server.uploadData(myState.address, transcriptPath);
+      await this.server.uploadData(myState.address, TRANSCRIPT_PATH);
     }
   }
 
@@ -49,6 +68,7 @@ export class Compute {
     return new Promise((resolve, reject) => {
       const { SETUP_PATH = '../setup-tools/setup', POLYNOMIAL_DEGREE = '0x10000' } = process.env;
       const setup = spawn(SETUP_PATH, [POLYNOMIAL_DEGREE]);
+      this.proc = setup;
 
       setup.stdout.on('data', data => {
         this.updateMyProgress(Number(data));

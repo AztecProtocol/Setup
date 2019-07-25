@@ -18,9 +18,9 @@ int main(int argc, char **argv)
     {
         setup::run_setup<libff::alt_bn128_pp>(polynomial_degree_aztec);
     }
-    catch (char const *err)
+    catch (std::exception const &err)
     {
-        std::cerr << err << std::endl;
+        std::cerr << err.what() << std::endl;
         return 1;
     }
 

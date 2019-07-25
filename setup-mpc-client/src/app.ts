@@ -70,7 +70,7 @@ export class App {
     }
 
     if (myState.state === 'RUNNING' && !this.compute) {
-      this.compute = new Compute(myState, this.server, this.computeOffline);
+      this.compute = new Compute(state, myState, this.server, this.computeOffline);
       this.compute
         .start()
         .catch(err => {
@@ -80,7 +80,7 @@ export class App {
       return;
     }
 
-    if (myState.state === 'INVALIDATED' && this.compute) {
+    if (myState.state !== 'RUNNING' && this.compute) {
       this.compute.cancel();
       this.compute = undefined;
       return;
