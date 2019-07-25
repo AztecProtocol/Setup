@@ -37,5 +37,22 @@ services:
       YOU_INDICIES: '0,1'
     expose:
       - 80
+    ports:
+      - "8081:80"
     volumes:
       - ../setup-mpc-server:/usr/src/setup-mpc-server
+      - ../setup-mpc-common/src:/usr/src/setup-mpc-server/src/setup-mpc-common
+
+  setup-mpc-web:
+    build:
+      context: ..
+      dockerfile: setup-mpc-web/Dockerfile
+    image: aztec/setup-mpc-web
+    environment:
+      PORT: '80'
+    expose:
+      - 80
+    ports:
+      - "8080:80"
+    volumes:
+      - ../setup-mpc-web:/usr/src/setup-mpc-web

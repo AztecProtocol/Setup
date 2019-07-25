@@ -1,9 +1,9 @@
-import Koa from 'koa';
-import Router from 'koa-router';
-import koaBody from 'koa-body';
-import { Address } from 'web3x/address';
-import { recover, bufferToHex } from 'web3x/utils';
 import { unlink } from 'fs';
+import Koa from 'koa';
+import koaBody from 'koa-body';
+import Router from 'koa-router';
+import { Address } from 'web3x/address';
+import { bufferToHex, recover } from 'web3x/utils';
 import { hashFiles, MpcServer } from './setup-mpc-common';
 
 const cors = require('@koa/cors');
@@ -21,7 +21,7 @@ export function app(server: MpcServer) {
 
   router.patch('/participant/:address', koaBody(), async (ctx: Koa.Context) => {
     const signature = ctx.get('X-Signature');
-    const address = Address.fromString(ctx.params['address']);
+    const address = Address.fromString(ctx.params.address);
     if (!address.equals(recover(JSON.stringify(ctx.request.body), signature))) {
       ctx.status = 401;
       return;
@@ -40,12 +40,12 @@ export function app(server: MpcServer) {
     try {
       const hash = await hashFiles([transcriptPath]);
       const signature = ctx.get('X-Signature');
-      const address = Address.fromString(ctx.params['address']);
+      const address = Address.fromString(ctx.params.address);
       if (!address.equals(recover(bufferToHex(hash), signature))) {
         ctx.status = 401;
         return;
       }
-      await server.uploadData(address, transcriptPath);
+      await server.uploadData(address, transcriptPath, signature);
       ctx.status = 200;
     } finally {
       unlink(transcriptPath, () => {});

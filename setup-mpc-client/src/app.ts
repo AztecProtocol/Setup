@@ -1,9 +1,9 @@
-import { TerminalKit } from './terminal-kit';
-import { Account } from 'web3x/account';
-import { TerminalInterface } from './terminal-interface';
-import { Compute } from './compute';
-import { MpcState, MpcServer } from './setup-mpc-common';
 import { Writable } from 'stream';
+import { Account } from 'web3x/account';
+import { Compute } from './compute';
+import { MpcServer, MpcState } from './setup-mpc-common';
+import { TerminalInterface } from './terminal-interface';
+import { TerminalKit } from './terminal-kit';
 
 export class App {
   private i1!: NodeJS.Timeout;
@@ -23,18 +23,18 @@ export class App {
     this.terminalInterface = new TerminalInterface(termKit, this.account);
   }
 
-  start() {
+  public start() {
     this.updateState();
     this.i2 = setInterval(async () => this.terminalInterface.updateProgress(), 1000);
   }
 
-  stop() {
+  public stop() {
     clearTimeout(this.i1);
     clearInterval(this.i2);
     this.terminalInterface.hideCursor(false);
   }
 
-  resize(width: number, height: number) {
+  public resize(width: number, height: number) {
     this.terminalInterface.resize(width, height);
   }
 
@@ -71,10 +71,12 @@ export class App {
 
     if (myState.state === 'RUNNING' && !this.compute) {
       this.compute = new Compute(myState, this.server, this.computeOffline);
-      this.compute.start().catch(err => {
-        console.error(`Compute failed: `, err);
-        this.compute = undefined;
-      });
+      this.compute
+        .start()
+        .catch(err => {
+          console.error(`Compute failed: `, err);
+        })
+        .finally(() => (this.compute = undefined));
       return;
     }
 

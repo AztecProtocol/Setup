@@ -1,6 +1,6 @@
+import { Wallet } from 'web3x/wallet';
 import { App } from './app';
 import { HttpClient } from './setup-mpc-common';
-import { Wallet } from 'web3x/wallet';
 
 async function main() {
   const { SERVER_HOST = 'localhost', ACCOUNT_INDEX = '0' } = process.env;

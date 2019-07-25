@@ -1,6 +1,6 @@
+import { App, HttpClient } from 'setup-mpc-client';
 import { Terminal } from 'xterm';
-import { App } from 'setup-mpc-client';
-import { HttpClient } from 'setup-mpc-server';
+import 'xterm/dist/xterm.css';
 
 import * as fit from 'xterm/lib/addons/fit/fit';
 
@@ -32,7 +32,8 @@ async function main() {
   term.setOption('fontSize', 12);
   term.open(document.getElementById('terminal') as HTMLElement);
 
-  const server = new HttpClient('localhost');
+  const { SERVER_HOST = 'localhost:8081' } = process.env;
+  const server = new HttpClient(SERVER_HOST);
   const app = new App(server, undefined, term as any, term.rows, term.cols);
 
   term.on('resize', ({ cols, rows }) => app.resize(cols, rows));

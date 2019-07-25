@@ -1,17 +1,17 @@
-import { MpcServer, MpcState, Participant } from './mpc-server';
+import FormData from 'form-data';
+import { createReadStream, existsSync } from 'fs';
 import fetch from 'isomorphic-fetch';
 import moment = require('moment');
-import { Address } from 'web3x/address';
 import { Account } from 'web3x/account';
-import { createReadStream, existsSync } from 'fs';
-import FormData from 'form-data';
+import { Address } from 'web3x/address';
 import { bufferToHex } from 'web3x/utils';
 import { hashFiles } from './hash-files';
+import { MpcServer, MpcState, Participant } from './mpc-server';
 
 export class HttpClient implements MpcServer {
   constructor(private host: string, private account?: Account) {}
 
-  async getState(): Promise<MpcState> {
+  public async getState(): Promise<MpcState> {
     const response = await fetch(`http://${this.host}/state`);
     if (response.status !== 200) {
       throw new Error(`Bad status code from server: ${response.status}`);
@@ -31,7 +31,7 @@ export class HttpClient implements MpcServer {
     };
   }
 
-  async updateParticipant(participant: Participant) {
+  public async updateParticipant(participant: Participant) {
     if (!this.account) {
       throw new Error('No account provided. Can only request server state, not modify.');
     }
@@ -56,7 +56,7 @@ export class HttpClient implements MpcServer {
     }
   }
 
-  async uploadData(address: Address, transcriptPath: string) {
+  public async uploadData(address: Address, transcriptPath: string) {
     return new Promise<void>(async (resolve, reject) => {
       try {
         if (!this.account) {

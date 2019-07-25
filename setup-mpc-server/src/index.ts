@@ -1,12 +1,15 @@
 import http from 'http';
+import moment from 'moment';
 import { app } from './app';
 import { DemoServer } from './demo-server';
-import moment from 'moment';
+import { DiskTranscriptStore } from './transcript-store';
 
-const { PORT = 80, YOU_INDICIES = '' } = process.env;
+const { PORT = 80, YOU_INDICIES = '', STORE_PATH = '../store' } = process.env;
 
 async function main() {
-  const demoServer = new DemoServer(50, moment().add(5, 's'), YOU_INDICIES.split(',').map(i => +i));
+  const transcriptStore = new DiskTranscriptStore(STORE_PATH);
+  const youIndicies = YOU_INDICIES.split(',').map(i => +i);
+  const demoServer = new DemoServer(50, moment().add(5, 's'), transcriptStore, youIndicies);
   demoServer.start();
 
   const httpServer = http.createServer(app(demoServer).callback());

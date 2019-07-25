@@ -1,13 +1,13 @@
-import { Participant, MpcServer, ParticipantRunningState } from './setup-mpc-common';
+import { ChildProcess, spawn } from 'child_process';
 import moment = require('moment');
-import { spawn, ChildProcess } from 'child_process';
+import { MpcServer, Participant, ParticipantRunningState } from './setup-mpc-common';
 
 export class Compute {
   private proc?: ChildProcess;
 
   constructor(private myState: Participant, private server: MpcServer, private computeOffline: boolean) {}
 
-  async start() {
+  public async start() {
     const myState = this.myState;
 
     if (this.computeOffline) {
@@ -39,7 +39,7 @@ export class Compute {
     }
   }
 
-  cancel() {
+  public cancel() {
     if (this.proc) {
       this.proc.kill('SIGINT');
     }
@@ -47,7 +47,7 @@ export class Compute {
 
   private async compute() {
     return new Promise((resolve, reject) => {
-      const { SETUP_PATH = '../setup-tools/setup', POLYNOMIAL_DEGREE = '0x20000' } = process.env;
+      const { SETUP_PATH = '../setup-tools/setup', POLYNOMIAL_DEGREE = '0x10000' } = process.env;
       const setup = spawn(SETUP_PATH, [POLYNOMIAL_DEGREE]);
 
       setup.stdout.on('data', data => {

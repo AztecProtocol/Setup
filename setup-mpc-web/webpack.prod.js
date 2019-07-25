@@ -8,13 +8,28 @@ module.exports = {
     rules: [
       {
         test: /\.tsx?$/,
-        use: ['ts-loader'],
+        use: [
+          {
+            loader: 'ts-loader',
+            options: {
+              transpileOnly: true,
+            },
+          },
+        ],
         exclude: /node_modules/,
+      },
+      {
+        test: /\.css$/,
+        use: ['style-loader', 'css-loader'],
       },
     ],
   },
   resolve: {
     extensions: ['.ts', '.tsx', '.js'],
+  },
+  node: {
+    fs: 'empty',
+    child_process: 'empty',
   },
   plugins: [new HtmlWebpackPlugin({ template: './src/index.html' })],
 };

@@ -1,7 +1,8 @@
-import { MpcServer, Participant, INVALIDATED_AFTER, MpcState } from './setup-mpc-common';
-import { Wallet } from 'web3x/wallet';
 import moment, { Moment } from 'moment';
 import { Address } from 'web3x/address';
+import { Wallet } from 'web3x/wallet';
+import { INVALIDATED_AFTER, MpcServer, MpcState, Participant } from './setup-mpc-common';
+import { TranscriptStore } from './transcript-store';
 
 const TEST_BAD_THINGS: number[] = [];
 
@@ -10,7 +11,12 @@ export class DemoServer implements MpcServer {
   private state: MpcState;
   private interval?: NodeJS.Timer;
 
-  constructor(numParticipants: number, private startTime: Moment, private youIndicies: number[] = []) {
+  constructor(
+    numParticipants: number,
+    private startTime: Moment,
+    private store: TranscriptStore,
+    private youIndicies: number[] = []
+  ) {
     this.wallet = Wallet.fromMnemonic(
       'face cook metal cost prevent term foam drive sure caught pet gentle',
       numParticipants
@@ -32,11 +38,11 @@ export class DemoServer implements MpcServer {
     };
   }
 
-  start() {
+  public start() {
     this.interval = setInterval(() => this.advanceState(), 500);
   }
 
-  stop() {
+  public stop() {
     clearInterval(this.interval!);
   }
 
@@ -160,11 +166,11 @@ export class DemoServer implements MpcServer {
     }
   }
 
-  async getState(): Promise<MpcState> {
+  public async getState(): Promise<MpcState> {
     return this.state;
   }
 
-  async updateParticipant(participantData: Participant) {
+  public async updateParticipant(participantData: Participant) {
     const { address, runningState, progress, error } = participantData;
     const p = this.getRunningParticipant(address);
     p.runningState = runningState;
@@ -173,10 +179,15 @@ export class DemoServer implements MpcServer {
     p.lastUpdate = moment();
   }
 
-  async uploadData(address: Address, transcriptPath: string) {
+  public async uploadData(address: Address, transcriptPath: string, signature: string) {
     const p = this.getRunningParticipant(address);
     p.runningState = 'VERIFYING';
     p.lastUpdate = moment();
+
+    await this.store.saveTranscript(address, transcriptPath);
+    await this.store.saveSignature(address, signature);
+
+    // TODO: Fake verify. Make this call verify exe.
     setTimeout(() => {
       p.state = 'COMPLETE';
       p.runningState = 'COMPLETE';
@@ -201,7 +212,7 @@ export class DemoServer implements MpcServer {
     return p;
   }
 
-  getPrivateKeyAt(i: number) {
+  public getPrivateKeyAt(i: number) {
     return this.wallet.get(i)!.privateKey;
   }
 }

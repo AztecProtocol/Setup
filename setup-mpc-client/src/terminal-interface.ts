@@ -1,8 +1,8 @@
-import { TerminalKit } from './terminal-kit';
+import moment from 'moment';
 import { Account } from 'web3x/account';
 import { leftPad } from 'web3x/utils';
-import moment from 'moment';
-import { MpcState, Participant, INVALIDATED_AFTER } from './setup-mpc-common';
+import { INVALIDATED_AFTER, MpcState, Participant } from './setup-mpc-common';
+import { TerminalKit } from './terminal-kit';
 
 const DISPLAY_AS_OFFLINE_AFTER = 10;
 
@@ -27,7 +27,7 @@ export class TerminalInterface {
     });
   }
 
-  async render() {
+  public async render() {
     this.term.clear();
     this.term.hideCursor();
     this.term.cyan('AZTEC Trusted Setup Multi Party Computation\n\n');
@@ -35,13 +35,13 @@ export class TerminalInterface {
     this.renderList();
   }
 
-  resize(width: number, height: number) {
+  public resize(width: number, height: number) {
     this.term.width = width;
     this.term.height = height;
     this.render();
   }
 
-  hideCursor(hide: boolean = true) {
+  public hideCursor(hide: boolean = true) {
     this.term.hideCursor(hide);
   }
 
@@ -212,7 +212,7 @@ export class TerminalInterface {
     }
     const lastInfo = p.lastUpdate || p.startedAt;
     if (
-      p.runningState != 'OFFLINE' &&
+      p.runningState !== 'OFFLINE' &&
       lastInfo &&
       moment()
         .subtract(DISPLAY_AS_OFFLINE_AFTER, 's')
@@ -233,7 +233,7 @@ export class TerminalInterface {
     );
   }
 
-  async updateState(state: MpcState) {
+  public async updateState(state: MpcState) {
     if (!this.state) {
       this.state = state;
       this.render();
@@ -259,14 +259,14 @@ export class TerminalInterface {
     }
 
     const newSelectedIndex = state.participants.findIndex(p => p.state !== 'COMPLETE' && p.state !== 'INVALIDATED');
-    if (this.currentlySelectedIndex != newSelectedIndex) {
+    if (this.currentlySelectedIndex !== newSelectedIndex) {
       this.currentlySelectedIndex = newSelectedIndex;
       await this.renderStatus();
       this.renderList();
     }
   }
 
-  updateProgress() {
+  public updateProgress() {
     if (!this.state) {
       return;
     }

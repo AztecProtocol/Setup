@@ -35,5 +35,5 @@ export interface MpcState {
 export interface MpcServer {
   getState(): Promise<MpcState>;
   updateParticipant(participant: Participant): Promise<void>;
-  uploadData(address: Address, transcriptPath: string): Promise<void>;
+  uploadData(address: Address, transcriptPath: string, signature?: string): Promise<void>;
 }
