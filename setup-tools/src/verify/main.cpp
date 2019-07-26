@@ -11,19 +11,18 @@
 
 int main(int argc, char **argv)
 {
-    if (argc < 3)
+    if (argc < 2)
     {
-        std::cout << "usage: " << argv[0] << " <transcript path> <polynomials>" << std::endl;
+        std::cout << "usage: " << argv[0] << " <transcript path>" << std::endl;
         return 1;
     }
-    const char *transcript_path = argv[1];
-    const size_t polynomial_degree = strtol(argv[2], NULL, 0);
+    std::string transcript_path(argv[1]);
 
     libff::alt_bn128_pp::init_public_params();
 
     if (!streaming::is_file_exist(transcript_path))
     {
-        std::cout << "Transcript not found." << std::endl;
+        std::cout << "Transcript not found: " << transcript_path << std::endl;
         return 1;
     }
 
@@ -33,13 +32,14 @@ int main(int argc, char **argv)
 
     try
     {
-        std::vector<G1> g1_x(polynomial_degree);
-        std::vector<G2> g2_x(polynomial_degree);
+        std::vector<G1> g1_x;
+        std::vector<G2> g2_x;
+        size_t start_from;
 
-        streaming::read_transcript<Fq>(g1_x, g2_x, transcript_path);
+        streaming::read_transcript<Fq>(g1_x, g2_x, start_from, transcript_path);
 
         std::cout << "Verifying..." << std::endl;
-        bool result = verifier::validate_transcript<libff::alt_bn128_pp>(&g1_x[0], &g2_x[0], polynomial_degree);
+        bool result = verifier::validate_transcript<libff::alt_bn128_pp>(&g1_x[0], &g2_x[0], g1_x.size());
 
         std::cout << (result ? "Success." : "Failed.") << std::endl;
 

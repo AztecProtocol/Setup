@@ -10,6 +10,7 @@ services:
     environment:
       SERVER_HOST: 'setup-mpc-server'
       ACCOUNT_INDEX: '0'
+      POLYNOMIAL_DEGREE: '100000000'
     volumes:
       - .:/usr/src/setup-mpc-client
       - ../setup-mpc-common/src:/usr/src/setup-mpc-client/src/setup-mpc-common
@@ -24,6 +25,7 @@ services:
     environment:
       SERVER_HOST: 'setup-mpc-server'
       ACCOUNT_INDEX: '1'
+      POLYNOMIAL_DEGREE: '100000000'
     volumes:
       - .:/usr/src/setup-mpc-client
       - ../setup-mpc-common/src:/usr/src/setup-mpc-client/src/setup-mpc-common
@@ -35,6 +37,7 @@ services:
     image: aztec/setup-mpc-server
     environment:
       YOU_INDICIES: '0,1'
+      POLYNOMIAL_DEGREE: '100000000'
     expose:
       - 80
     ports:
