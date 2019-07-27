@@ -1,17 +1,28 @@
 import { spawn } from 'child_process';
+import { unlink } from 'fs';
 import moment, { Moment } from 'moment';
+import { INVALIDATED_AFTER, MemoryFifo, MpcServer, MpcState, Participant } from 'setup-mpc-common';
 import { Address } from 'web3x/address';
 import { Wallet } from 'web3x/wallet';
-import { INVALIDATED_AFTER, MpcServer, MpcState, Participant } from './setup-mpc-common';
 import { TranscriptStore } from './transcript-store';
 
 const TEST_BAD_THINGS: number[] = [];
 
+interface VerifyItem {
+  address: Address;
+  transcriptNumber: number;
+  transcriptPath: string;
+  signature: string;
+}
+
 export class Server implements MpcServer {
   private interval?: NodeJS.Timer;
-  protected state: MpcState = { startTime: moment(), participants: [] };
+  private verifyQueue: MemoryFifo<VerifyItem> = new MemoryFifo();
+  protected state: MpcState = { polynomials: 1000000, startTime: moment(), participants: [] };
 
-  constructor(private store: TranscriptStore) {}
+  constructor(private store: TranscriptStore) {
+    this.verifier().catch(console.error);
+  }
 
   public setState(state: MpcState) {
     this.state = state;
@@ -21,8 +32,22 @@ export class Server implements MpcServer {
     return this.state;
   }
 
-  public resetState(startTime: Moment) {
-    this.setState({ startTime, participants: [] });
+  public resetState(startTime: Moment, polynomials: number) {
+    this.setState({ polynomials, startTime, participants: [] });
+  }
+
+  public addParticipant(address: Address) {
+    const participant: Participant = {
+      state: 'WAITING',
+      runningState: 'WAITING',
+      position: this.state.participants.length + 1,
+      computeProgress: 0,
+      verifyProgress: 0,
+      transcripts: [],
+      address,
+    };
+
+    this.state.participants.push(participant);
   }
 
   public start() {
@@ -60,8 +85,7 @@ export class Server implements MpcServer {
     if (
       moment()
         .subtract(INVALIDATED_AFTER, 's')
-        .isAfter(p.startedAt!) &&
-      p.runningState !== 'VERIFYING'
+        .isAfter(p.startedAt!)
     ) {
       p.state = 'INVALIDATED';
       p.error = 'timed out';
@@ -71,10 +95,15 @@ export class Server implements MpcServer {
   }
 
   public async updateParticipant(participantData: Participant) {
-    const { address, runningState, progress, error } = participantData;
+    const { transcripts, address, runningState, computeProgress, error } = participantData;
     const p = this.getRunningParticipant(address);
+    // Complete flag is always controlled by the server. Don't allow client to overwrite.
+    p.transcripts = transcripts.map((t, i) => ({
+      ...t,
+      complete: p.transcripts[i] ? p.transcripts[i].complete : false,
+    }));
     p.runningState = runningState;
-    p.progress = progress;
+    p.computeProgress = computeProgress;
     p.error = error;
     p.lastUpdate = moment();
   }
@@ -83,31 +112,60 @@ export class Server implements MpcServer {
     return this.store.loadTranscript(address);
   }
 
-  public async uploadData(address: Address, transcriptPath: string, signature: string) {
-    const p = this.getRunningParticipant(address);
-    p.runningState = 'VERIFYING';
-    p.lastUpdate = moment();
+  public async uploadData(address: Address, transcriptNumber: number, transcriptPath: string, signature: string) {
+    this.verifyQueue.put({ address, transcriptNumber, transcriptPath, signature });
+  }
 
-    if (await this.verifyTranscript(transcriptPath)) {
-      await this.store.saveTranscript(address, transcriptPath);
-      await this.store.saveSignature(address, signature);
+  private async verifier() {
+    while (true) {
+      const item = await this.verifyQueue.get();
+      if (!item) {
+        return;
+      }
+      const { address, transcriptNumber, transcriptPath, signature } = item;
 
-      p.state = 'COMPLETE';
-      p.runningState = 'COMPLETE';
-      p.lastUpdate = moment();
-      p.completedAt = moment();
-    } else {
-      p.state = 'INVALIDATED';
-      p.runningState = 'COMPLETE';
-      p.error = 'verify failed';
-      p.lastUpdate = moment();
+      try {
+        const p = this.getRunningParticipant(address);
+
+        if (!p.transcripts[transcriptNumber]) {
+          throw new Error(`Unknown transcript number: ${transcriptNumber}`);
+        }
+
+        if (await this.verifyTranscript(transcriptPath)) {
+          await this.store.saveTranscript(address, transcriptPath);
+          await this.store.saveSignature(address, signature);
+
+          p.transcripts[transcriptNumber].complete = true;
+          p.lastUpdate = moment();
+
+          // TODO: We need to assert that all transcripts together make a full sequence to the polynomial count.
+          // Otherwise a participant could upload a transcript that on it's own verifies, but isn't part of a complete set.
+          if (p.transcripts.every(t => t.complete)) {
+            p.state = 'COMPLETE';
+            p.runningState = 'COMPLETE';
+            p.completedAt = moment();
+          }
+        } else {
+          p.state = 'INVALIDATED';
+          p.runningState = 'COMPLETE';
+          p.error = 'verify failed';
+          p.lastUpdate = moment();
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        unlink(transcriptPath, () => {});
+      }
     }
   }
 
   private async verifyTranscript(transcriptPath: string) {
+    console.error(`Verifiying ${transcriptPath}...`);
+    return new Promise<boolean>(resolve => setTimeout(() => resolve(true), 10000));
+    /*
     return new Promise<boolean>(resolve => {
-      const { VERIFY_PATH = '../setup-tools/verify', POLYNOMIAL_DEGREE = '0x10000' } = process.env;
-      const verify = spawn(VERIFY_PATH, [transcriptPath, POLYNOMIAL_DEGREE]);
+      const { VERIFY_PATH = '../setup-tools/verify' } = process.env;
+      const verify = spawn(VERIFY_PATH, [transcriptPath, this.state.polynomials.toString()]);
 
       verify.stdout.on('data', data => {
         console.error(data.toString());
@@ -126,6 +184,7 @@ export class Server implements MpcServer {
         }
       });
     });
+    */
   }
 
   private getRunningParticipant(address: Address) {
@@ -156,25 +215,9 @@ export class DemoServer extends Server {
     );
   }
 
-  public resetState(startTime: Moment) {
-    this.setState(this.getNewState(startTime));
-  }
-
-  private getNewState(startTime: Moment) {
-    const participants = this.wallet.currentAddresses().map(
-      (address, i): Participant => ({
-        state: 'WAITING',
-        runningState: 'WAITING',
-        position: i + 1,
-        progress: 0,
-        address,
-      })
-    );
-
-    return {
-      startTime,
-      participants,
-    };
+  public resetState(startTime: Moment, polynomials: number) {
+    super.resetState(startTime, polynomials);
+    this.wallet.currentAddresses().forEach(address => super.addParticipant(address));
   }
 
   protected advanceState() {
@@ -232,6 +275,7 @@ export class DemoServer extends Server {
         return;
       }
 
+      /*
       if (i === 2) {
         if (p.runningState === 'VERIFYING') {
           p.state = 'INVALIDATED';
@@ -241,6 +285,7 @@ export class DemoServer extends Server {
           return;
         }
       }
+      */
 
       // Exceptional case: Simulate a user that never participates.
       if (i === 3) {
@@ -260,40 +305,16 @@ export class DemoServer extends Server {
     p.lastUpdate = moment();
 
     if (p.runningState === 'WAITING') {
-      if (i === 4) {
-        p.runningState = 'OFFLINE';
-        setTimeout(() => {
-          p.completedAt = moment();
-          p.state = 'COMPLETE';
-        }, 15000);
-      } else {
-        p.runningState = 'DOWNLOADING';
-        setTimeout(() => {
-          p.runningState = 'COMPUTING';
-        }, 3000);
-      }
-      return;
+      p.runningState = 'RUNNING';
     }
 
-    if (p.runningState === 'COMPUTING') {
-      p.progress = Math.min(100, p.progress + Math.floor(3 + Math.random() * 5));
-      if (p.progress >= 100) {
-        p.runningState = 'UPLOADING';
-        setTimeout(() => {
-          p.runningState = 'VERIFYING';
-          this.advanceState();
-        }, 3000);
-      }
-      return;
-    }
-
-    if (p.runningState === 'VERIFYING') {
-      setTimeout(() => {
+    if (p.runningState === 'RUNNING') {
+      p.computeProgress = Math.min(100, p.computeProgress + Math.floor(3 + Math.random() * 5));
+      if (p.computeProgress >= 100) {
+        p.state = 'COMPLETE';
         p.completedAt = moment();
         p.runningState = 'COMPLETE';
-        p.state = 'COMPLETE';
-        this.advanceState();
-      }, 3000);
+      }
     }
   }
 }

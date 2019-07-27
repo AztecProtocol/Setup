@@ -34,9 +34,9 @@ int main(int argc, char **argv)
     {
         std::vector<G1> g1_x;
         std::vector<G2> g2_x;
-        size_t start_from;
+        streaming::Manifest manifest;
 
-        streaming::read_transcript<Fq>(g1_x, g2_x, start_from, transcript_path);
+        streaming::read_transcript<Fq>(g1_x, g2_x, manifest, transcript_path);
 
         std::cout << "Verifying..." << std::endl;
         bool result = verifier::validate_transcript<libff::alt_bn128_pp>(&g1_x[0], &g2_x[0], g1_x.size());

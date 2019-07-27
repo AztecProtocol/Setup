@@ -1,4 +1,5 @@
-import { App, HttpClient } from 'setup-mpc-client';
+import { App } from 'setup-mpc-client';
+import { HttpClient } from 'setup-mpc-common';
 import { Terminal } from 'xterm';
 import 'xterm/dist/xterm.css';
 

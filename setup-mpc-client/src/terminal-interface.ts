@@ -1,7 +1,7 @@
 import moment from 'moment';
+import { INVALIDATED_AFTER, MpcState, Participant } from 'setup-mpc-common';
 import { Account } from 'web3x/account';
 import { leftPad } from 'web3x/utils';
-import { INVALIDATED_AFTER, MpcState, Participant } from './setup-mpc-common';
 import { TerminalKit } from './terminal-kit';
 
 const DISPLAY_AS_OFFLINE_AFTER = 10;
@@ -172,7 +172,7 @@ export class TerminalInterface {
 
   private renderRunningLine(p: Participant) {
     const addrString = p.address.toString();
-    const progIndex = addrString.length * (p.progress / 100);
+    const progIndex = addrString.length * (p.computeProgress / 100);
     this.term.yellow(addrString.slice(0, progIndex)).grey(addrString.slice(progIndex));
 
     this.term.white(' <');
@@ -184,6 +184,10 @@ export class TerminalInterface {
             .blue('computing offline')
             .white(')');
           break;
+        case 'RUNNING':
+          this.term.white(` (${p.computeProgress.toFixed(2)}%)`);
+          break;
+        /*
         case 'DOWNLOADING':
           this.term
             .white(' (')
@@ -200,7 +204,7 @@ export class TerminalInterface {
           this.term
             .white(' (')
             .blue('computing')
-            .white(`) (${p.progress}%)`);
+            .white(`) (${p.computeProgress}%)`);
           break;
         case 'UPLOADING':
           this.term
@@ -208,12 +212,12 @@ export class TerminalInterface {
             .blue('uploading')
             .white(')');
           break;
+          */
       }
     }
     const lastInfo = p.lastUpdate || p.startedAt;
     if (
       p.runningState !== 'OFFLINE' &&
-      p.runningState !== 'VERIFYING' &&
       lastInfo &&
       moment()
         .subtract(DISPLAY_AS_OFFLINE_AFTER, 's')
@@ -224,16 +228,14 @@ export class TerminalInterface {
         .red('offline')
         .white(')');
     }
-    if (p.runningState !== 'VERIFYING') {
-      this.term.white(
-        ` (skipping in ${Math.max(
-          0,
-          moment(p.startedAt!)
-            .add(INVALIDATED_AFTER, 's')
-            .diff(moment(), 's')
-        )}s)`
-      );
-    }
+    this.term.white(
+      ` (skipping in ${Math.max(
+        0,
+        moment(p.startedAt!)
+          .add(INVALIDATED_AFTER, 's')
+          .diff(moment(), 's')
+      )}s)`
+    );
   }
 
   public async updateState(state: MpcState) {

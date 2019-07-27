@@ -22,7 +22,8 @@
     "build": "tsc",
     "start": "node ./dest",
     "start:dev": "tsc-watch --onSuccess 'yarn start'",
-    "test": "jest"
+    "test": "jest",
+    "postinstall": "yarn link setup-mpc-common"
   },
   "jest": {
     "transform": {

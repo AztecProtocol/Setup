@@ -1,7 +1,6 @@
 /**
  * Setup
  * Copyright Spilsbury Holdings 2019
- *
  **/
 #include <libff/algebra/curves/alt_bn128/alt_bn128_pp.hpp>
 
@@ -11,12 +10,20 @@
 
 int main(int argc, char **argv)
 {
-    const size_t polynomial_degree_aztec = argc > 1 ? strtol(argv[1], NULL, 0) : setup::POLYNOMIAL_DEGREE_AZTEC;
+    if (argc < 2)
+    {
+        std::cerr << "usage: " << argv[0] << " <transcript dir>" << std::endl;
+        return 1;
+    }
+    std::string const dir = argv[1];
+
+    size_t polynomial_degree = (argc == 3) ? strtol(argv[2], NULL, 0) : 0;
+
     libff::alt_bn128_pp::init_public_params();
 
     try
     {
-        setup::run_setup<libff::alt_bn128_pp>(polynomial_degree_aztec);
+        run_setup<libff::alt_bn128_pp>(dir, polynomial_degree);
     }
     catch (std::exception const &err)
     {

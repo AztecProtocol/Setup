@@ -6,14 +6,13 @@ services:
       dockerfile: setup-mpc-client/Dockerfile
     image: aztec/setup-mpc-client
     tty: true
-    command: ["yarn", "start:dev"]
     environment:
       SERVER_HOST: 'setup-mpc-server'
       ACCOUNT_INDEX: '0'
       POLYNOMIAL_DEGREE: '100000000'
     volumes:
       - .:/usr/src/setup-mpc-client
-      - ../setup-mpc-common/src:/usr/src/setup-mpc-client/src/setup-mpc-common
+      - ../setup-mpc-common:/usr/src/setup-mpc-client/node_modules/setup-mpc-common
 
   setup-mpc-client1:
     build:
@@ -21,14 +20,13 @@ services:
       dockerfile: setup-mpc-client/Dockerfile
     image: aztec/setup-mpc-client
     tty: true
-    command: ["yarn", "start:dev"]
     environment:
       SERVER_HOST: 'setup-mpc-server'
       ACCOUNT_INDEX: '1'
       POLYNOMIAL_DEGREE: '100000000'
     volumes:
       - .:/usr/src/setup-mpc-client
-      - ../setup-mpc-common/src:/usr/src/setup-mpc-client/src/setup-mpc-common
+      - ../setup-mpc-common:/usr/src/setup-mpc-client/node_modules/setup-mpc-common
 
   setup-mpc-server:
     build:
@@ -36,7 +34,7 @@ services:
       dockerfile: setup-mpc-server/Dockerfile
     image: aztec/setup-mpc-server
     environment:
-      YOU_INDICIES: '0,1'
+      YOU_INDICIES: '0'
       POLYNOMIAL_DEGREE: '100000000'
     expose:
       - 80
@@ -44,7 +42,7 @@ services:
       - "8081:80"
     volumes:
       - ../setup-mpc-server:/usr/src/setup-mpc-server
-      - ../setup-mpc-common/src:/usr/src/setup-mpc-server/src/setup-mpc-common
+      - ../setup-mpc-common:/usr/src/setup-mpc-server/node_modules/setup-mpc-common
 
   setup-mpc-web:
     build:
