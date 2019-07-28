@@ -177,7 +177,7 @@ export class Server implements MpcServer {
           resolve(true);
         }
       }, 1000);
-    }
+    });
     /*
     return new Promise<boolean>(resolve => {
       const { VERIFY_PATH = '../setup-tools/verify' } = process.env;
