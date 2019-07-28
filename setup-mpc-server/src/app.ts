@@ -18,13 +18,19 @@ export function app(server: Server) {
     ctx.body = 'OK\n';
   });
 
-  router.post('/reset', async (ctx: Koa.Context) => {
+  router.post('/reset', koaBody(), async (ctx: Koa.Context) => {
     const signature = ctx.get('X-Signature');
     if (!adminAddress.equals(recover('SignMeWithYourPrivateKey', signature))) {
       ctx.status = 401;
       return;
     }
-    server.resetState(moment().add(5, 's'), 250000, 180);
+    const settings = {
+      startTime: moment().add(5, 's'),
+      polynomials: 250000,
+      invalidateAfter: 180,
+      ...ctx.request.body,
+    };
+    server.resetState(settings.startTime, settings.polynomials, settings.invalidateAfter);
     ctx.body = 'OK\n';
   });
 
