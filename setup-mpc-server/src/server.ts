@@ -108,8 +108,8 @@ export class Server implements MpcServer {
     p.lastUpdate = moment();
   }
 
-  public async downloadData(address: Address) {
-    return this.store.loadTranscript(address);
+  public async downloadData(address: Address, num: number) {
+    return this.store.loadTranscript(address, num);
   }
 
   public async uploadData(address: Address, transcriptNumber: number, transcriptPath: string, signature: string) {
@@ -132,14 +132,15 @@ export class Server implements MpcServer {
         }
 
         if (await this.verifyTranscript(transcriptPath)) {
-          await this.store.saveTranscript(address, transcriptPath);
-          await this.store.saveSignature(address, signature);
+          await this.store.saveTranscript(address, transcriptNumber, transcriptPath);
+          await this.store.saveSignature(address, transcriptNumber, signature);
 
           p.transcripts[transcriptNumber].complete = true;
           p.lastUpdate = moment();
 
           // TODO: We need to assert that all transcripts together make a full sequence to the polynomial count.
           // Otherwise a participant could upload a transcript that on it's own verifies, but isn't part of a complete set.
+          // Probably don't use the transcript array at all. It's basically client controlled.
           if (p.transcripts.every(t => t.complete)) {
             p.state = 'COMPLETE';
             p.runningState = 'COMPLETE';

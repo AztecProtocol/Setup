@@ -10,6 +10,7 @@
 #include <thread>
 #include <atomic>
 #include <chrono>
+#include <unistd.h>
 
 #include <libff/common/profiling.hpp>
 #include <libff/common/utils.hpp>
@@ -28,9 +29,14 @@ constexpr size_t G1_WEIGHT = 2;
 constexpr size_t G2_WEIGHT = 9;
 constexpr size_t TOTAL_WEIGHT = G1_WEIGHT + G2_WEIGHT;
 
-auto getTranscriptPath(std::string const &dir, size_t num)
+auto getTranscriptInPath(std::string const &dir, size_t num)
 {
     return dir + "/transcript" + std::to_string(num) + ".dat";
+};
+
+auto getTranscriptOutPath(std::string const &dir, size_t num)
+{
+    return dir + "/transcript" + std::to_string(num) + "_out.dat";
 };
 
 // A compute thread. A job consists of multiple threads.
@@ -80,7 +86,7 @@ void compute_job(std::vector<GroupT> &g_x, size_t start_from, size_t polynomial_
         std::this_thread::sleep_for(std::chrono::seconds(1));
         const double progress_total = double(progress + (job_progress * weight)) / double(polynomial_degree * TOTAL_WEIGHT / 100);
         // Signals calling process the progress.
-        std::cout << "p " << progress_total << std::endl;
+        std::cout << "progress " << progress_total << std::endl;
     }
 
     progress += job_progress * weight;
@@ -93,7 +99,7 @@ void compute_job(std::vector<GroupT> &g_x, size_t start_from, size_t polynomial_
 
 // Runs two jobs over G1 and G2 data and writes results to a given transcript file.
 template <typename Fr, typename Fqe, typename Fq, typename G1, typename G2>
-void compute_transcript(std::string const &filename, std::vector<G1> &g1_x, std::vector<G2> &g2_x, streaming::Manifest const &manifest, Fr &multiplicand, size_t &progress)
+void compute_transcript(std::string const &dir, std::vector<G1> &g1_x, std::vector<G2> &g2_x, streaming::Manifest const &manifest, Fr &multiplicand, size_t &progress)
 {
     std::cerr << "Computing g1 multiple-exponentiations..." << std::endl;
     compute_job<Fr, Fq>(g1_x, manifest.start_from, manifest.total_points, multiplicand, progress, G1_WEIGHT);
@@ -106,44 +112,45 @@ void compute_transcript(std::string const &filename, std::vector<G1> &g1_x, std:
     utils::batch_normalize<Fqe, G2>(0, g2_x.size(), &g2_x[0]);
 
     std::cerr << "Writing transcript..." << std::endl;
+    std::string const filename = getTranscriptOutPath(dir, manifest.transcript_number);
     streaming::write_transcript<Fq, Fqe>(g1_x, g2_x, manifest, filename);
 
     // Signals calling process this transcript file is complete.
-    std::cout << "w " << manifest.transcript_number << " " << filename << std::endl;
+    std::cout << "wrote " << manifest.transcript_number << std::endl;
 }
 
 // Given an existing transcript file, read it and start computation.
 template <typename Fr, typename Fqe, typename Fq, typename G1, typename G2>
-void compute_existing_transcript(std::string const &filename, Fr &multiplicand, size_t &progress)
+void compute_existing_transcript(std::string const &dir, size_t num, Fr &multiplicand, size_t &progress)
 {
     streaming::Manifest manifest;
     std::vector<G1> g1_x;
     std::vector<G2> g2_x;
 
-    if (!streaming::is_file_exist(filename))
-    {
-        throw std::runtime_error("File not found: " + filename);
-    }
-
     std::cerr << "Reading transcript..." << std::endl;
+    std::string const filename = getTranscriptInPath(dir, num);
     streaming::read_transcript<Fq, G1, G2>(g1_x, g2_x, manifest, filename);
 
-    std::cerr << "Will compute " << manifest.num_points << " points on top of " << filename << std::endl;
+    std::cerr << "Will compute " << manifest.num_points << " points on top of transcript " << manifest.transcript_number << std::endl;
 
-    compute_transcript<Fr, Fqe, Fq, G1, G2>(filename, g1_x, g2_x, manifest, multiplicand, progress);
+    compute_transcript<Fr, Fqe, Fq, G1, G2>(dir, g1_x, g2_x, manifest, multiplicand, progress);
 }
 
 // Computes initial transcripts.
 template <typename Fr, typename Fqe, typename Fq, typename G1, typename G2>
-void compute_initial_transcripts(const std::string &dir, size_t polynomial_degree, Fr &multiplicand, size_t &progress)
+void compute_initial_transcripts(const std::string &dir, size_t polynomial_degree, size_t start_from, Fr &multiplicand, size_t &progress)
 {
     std::cerr << "Creating initial transcripts..." << std::endl;
+
+    progress = start_from * POINTS_PER_TRANSCRIPT * TOTAL_WEIGHT;
 
     std::vector<streaming::Manifest> manifests;
     const size_t total_transcripts = polynomial_degree / POINTS_PER_TRANSCRIPT + (polynomial_degree % POINTS_PER_TRANSCRIPT ? 1 : 0);
     manifests.resize(total_transcripts);
 
-    for (size_t i = 0; i < total_transcripts; ++i)
+    // Define transcripts and signal their sizes to calling process.
+    std::cout << "creating";
+    for (size_t i = start_from; i < total_transcripts; ++i)
     {
         streaming::Manifest &manifest = manifests[i];
         manifest.transcript_number = i;
@@ -152,19 +159,18 @@ void compute_initial_transcripts(const std::string &dir, size_t polynomial_degre
         manifest.start_from = i * POINTS_PER_TRANSCRIPT;
         manifest.num_points = std::min(POINTS_PER_TRANSCRIPT, (size_t)manifest.total_points - manifest.start_from);
 
-        // Signals calling process we are going to create these transcripts.
-        std::cout << "c " << i << " " << streaming::get_transcript_size<Fq, G1, G2>(manifest.num_points) << std::endl;
+        std::cout << " " << i << ":" << streaming::get_transcript_size<Fq, G1, G2>(manifest.num_points);
     }
+    std::cout << std::endl;
 
-    for (auto it = manifests.begin(); it != manifests.end(); ++it)
+    for (auto it = manifests.begin() + start_from; it != manifests.end(); ++it)
     {
-        std::string filename(getTranscriptPath(dir, it->transcript_number));
         std::vector<G1> g1_x(it->num_points, G1::one());
         std::vector<G2> g2_x(it->num_points, G2::one());
 
-        std::cerr << "Will compute " << it->num_points << " points starting from " << it->start_from << " in " << filename << std::endl;
+        std::cerr << "Will compute " << it->num_points << " points starting from " << it->start_from << " in transcript " << it->transcript_number << std::endl;
 
-        compute_transcript<Fr, Fqe, Fq, G1, G2>(filename, g1_x, g2_x, *it, multiplicand, progress);
+        compute_transcript<Fr, Fqe, Fq, G1, G2>(dir, g1_x, g2_x, *it, multiplicand, progress);
     }
 }
 
@@ -207,8 +213,10 @@ void run_setup(std::string const &dir, size_t polynomial_degree)
     // Our toxic waste. Will be zeroed before going out of scope.
     Secret<Fr> multiplicand(Fr::random_element());
 
-    if (dir == "-")
+    if (!isatty(fileno(stdin)))
     {
+        std::cerr << "Awaiting commands from stdin..." << std::endl;
+
         // Being controlled via commands over stdin.
         for (std::string cmd_line; std::getline(std::cin, cmd_line);)
         {
@@ -216,18 +224,19 @@ void run_setup(std::string const &dir, size_t polynomial_degree)
             std::string cmd;
 
             iss >> cmd;
-            if (cmd == "c")
+            if (cmd == "create")
             {
-                std::string dir;
                 size_t polynomial_degree;
-                iss >> dir >> polynomial_degree;
-                compute_initial_transcripts<Fr, Fqe, Fq, G1, G2>(dir, polynomial_degree, multiplicand, progress);
+                size_t start_from;
+                iss >> polynomial_degree >> start_from;
+                compute_initial_transcripts<Fr, Fqe, Fq, G1, G2>(dir, polynomial_degree, start_from, multiplicand, progress);
             }
-            else if (cmd == "r")
+            else if (cmd == "process")
             {
-                std::string filename;
-                iss >> filename;
-                compute_existing_transcript<Fr, Fqe, Fq, G1, G2>(filename, multiplicand, progress);
+                size_t num;
+                iss >> num;
+                progress = num * POINTS_PER_TRANSCRIPT * TOTAL_WEIGHT;
+                compute_existing_transcript<Fr, Fqe, Fq, G1, G2>(dir, num, multiplicand, progress);
             }
         }
     }
@@ -236,16 +245,24 @@ void run_setup(std::string const &dir, size_t polynomial_degree)
         // Being manually run.
         if (polynomial_degree > 0)
         {
-            compute_initial_transcripts<Fr, Fqe, Fq, G1, G2>(dir, polynomial_degree, multiplicand, progress);
+            size_t start_from = 0;
+            std::string filename = getTranscriptOutPath(dir, start_from);
+            while (streaming::is_file_exist(filename)) {
+                filename = getTranscriptOutPath(dir, ++start_from);
+            }
+            compute_initial_transcripts<Fr, Fqe, Fq, G1, G2>(dir, polynomial_degree, start_from, multiplicand, progress);
         }
         else
         {
             size_t num = 0;
-            std::string filename = getTranscriptPath(dir, num);
+            std::string filename = getTranscriptInPath(dir, num);
             while (streaming::is_file_exist(filename))
             {
-                compute_existing_transcript<Fr, Fqe, Fq, G1, G2>(filename, multiplicand, progress);
-                filename = getTranscriptPath(dir, ++num);
+                if (!streaming::is_file_exist(getTranscriptOutPath(dir, num))) {
+                    progress = num * POINTS_PER_TRANSCRIPT * TOTAL_WEIGHT;
+                    compute_existing_transcript<Fr, Fqe, Fq, G1, G2>(dir, num, multiplicand, progress);
+                }
+                filename = getTranscriptInPath(dir, ++num);
             }
         }
 

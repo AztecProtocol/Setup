@@ -8,9 +8,9 @@ import { Address } from 'web3x/address';
 
 export class Compute {
   private setupProc?: ChildProcessWithoutNullStreams;
-  private downloadQueue: MemoryFifo<{ address: Address; transcript: Transcript }> = new MemoryFifo();
+  private downloadQueue: MemoryFifo<Transcript> = new MemoryFifo();
   private computeQueue: MemoryFifo<string> = new MemoryFifo();
-  private uploadQueue: MemoryFifo<{ num: number; filename: string }> = new MemoryFifo();
+  private uploadQueue: MemoryFifo<number> = new MemoryFifo();
 
   constructor(
     private state: MpcState,
@@ -31,7 +31,7 @@ export class Compute {
       await this.updateParticipant();
     }
 
-    this.populateQueues();
+    await this.populateQueues();
 
     await Promise.all([this.downloader(), this.compute(), this.uploader()]).catch(err => {
       console.error(err);
@@ -51,7 +51,7 @@ export class Compute {
     }
   }
 
-  private populateQueues() {
+  private async populateQueues() {
     const previousParticipant = this.state.participants
       .slice()
       .reverse()
@@ -59,14 +59,34 @@ export class Compute {
 
     if (previousParticipant) {
       console.error('Previous participant found.');
-      const { address, transcripts } = previousParticipant;
+
+      if (this.myState.transcripts.length > 0) {
+        // We haven't yet defined our transcripts. Base them off the previous participants.
+        this.myState.transcripts = previousParticipant.transcripts.map(t => ({
+          ...t,
+          fromAddress: previousParticipant.address,
+          uploaded: 0,
+          downloaded: 0,
+          complete: false,
+        }));
+        await this.updateParticipant();
+      }
+
       // Download incomplete transcripts.
-      transcripts.filter(t => !t.complete).forEach(transcript => this.downloadQueue.put({ address, transcript }));
+      this.myState.transcripts.filter(t => !t.complete).forEach(transcript => this.downloadQueue.put(transcript));
+
       this.downloadQueue.end();
     } else {
       console.error('We are the first participant.');
       this.downloadQueue.end();
-      this.computeQueue.put(`c ../setup_db ${this.state.polynomials}`);
+
+      const { transcripts } = this.myState;
+
+      // Start from first incomplete transcript.
+      const firstIncomplete = transcripts.find(t => !t.complete);
+      const startFromNum = firstIncomplete ? firstIncomplete.num : 0;
+
+      this.computeQueue.put(`create ${this.state.polynomials} ${startFromNum}`);
       this.computeQueue.end();
     }
   }
@@ -74,21 +94,21 @@ export class Compute {
   private async downloader() {
     console.error('Downloader starting...');
     while (true) {
-      const item = await this.downloadQueue.get();
-      if (!item) {
+      const transcript = await this.downloadQueue.get();
+      if (!transcript) {
         break;
       }
-      console.error(`Downloader dequeued: `, item);
-      const filename = await this.downloadTranscript(item.address, item.transcript);
-      this.computeQueue.put(`r ${filename}`);
+      console.error(`Downloader dequeued: `, transcript);
+      await this.downloadTranscript(transcript);
+      this.computeQueue.put(`process ${transcript.num}`);
     }
     this.computeQueue.end();
     console.error('Downloader complete.');
   }
 
-  private async downloadTranscript(address: Address, transcript: Transcript): Promise<string> {
+  private async downloadTranscript(transcript: Transcript): Promise<string> {
     const filename = `../setup_db/transcript${transcript.num}.dat`;
-    const readStream = await this.server.downloadData(address, transcript.num);
+    const readStream = await this.server.downloadData(transcript.fromAddress!, transcript.num);
     const progStream = progress({ length: transcript.size, time: 1000 });
     const writeStream = createWriteStream(filename);
 
@@ -107,7 +127,7 @@ export class Compute {
   private async compute() {
     return new Promise(async (resolve, reject) => {
       const { SETUP_PATH = '../setup-tools/setup' } = process.env;
-      const setup = spawn(SETUP_PATH, ['-']);
+      const setup = spawn(SETUP_PATH, ['../setup_db']);
       this.setupProc = setup;
 
       readline
@@ -141,7 +161,7 @@ export class Compute {
           setup.stdin.end();
           break;
         }
-        console.error(`Compute dequeued command: ${cmd}`);
+        console.error(`Setup command: ${cmd}`);
         setup.stdin.write(`${cmd}\n`);
       }
     });
@@ -153,26 +173,31 @@ export class Compute {
       .toString()
       .replace('\n', '')
       .split(' ');
-    switch (params[0]) {
-      case 'c': {
-        const [, num, size] = params;
-        this.myState.transcripts.push({
-          num: +num,
-          size: +size,
-          uploaded: 0,
-          downloaded: 0,
-          complete: false,
-        });
+    const cmd = params.shift()!;
+    switch (cmd) {
+      case 'creating': {
+        if (this.myState.transcripts.length > 0) {
+          break;
+        }
+        for (const transcriptDef of params) {
+          const [num, size] = transcriptDef.split(':');
+          this.myState.transcripts[+num] = {
+            num: +num,
+            size: +size,
+            uploaded: 0,
+            downloaded: 0,
+            complete: false,
+          };
+        }
         this.updateParticipant();
         break;
       }
-      case 'w': {
-        const [, num, filename] = params;
-        this.uploadQueue.put({ num: +num, filename });
+      case 'wrote': {
+        this.uploadQueue.put(+params[0]);
         break;
       }
-      case 'p': {
-        this.myState.computeProgress = +params[1];
+      case 'progress': {
+        this.myState.computeProgress = +params[0];
         this.updateParticipant();
         break;
       }
@@ -181,12 +206,13 @@ export class Compute {
 
   private async uploader() {
     while (true) {
-      const item = await this.uploadQueue.get();
-      if (!item) {
+      const num = await this.uploadQueue.get();
+      if (!num) {
         break;
       }
-      console.error(`Uploader dequeued: `, item);
-      await this.server.uploadData(this.myState.address, item.num, item.filename);
+      const filename = `../setup_db/transcript${num}_out.dat`;
+      console.error(`Uploading: `, filename);
+      await this.server.uploadData(this.myState.address, num, filename);
     }
   }
 

@@ -12,6 +12,7 @@ export interface Transcript {
   complete: boolean;
   // Client controlled data.
   num: number;
+  fromAddress?: Address;
   size: number;
   downloaded: number;
   uploaded: number;

@@ -23,12 +23,16 @@ export class HttpClient implements MpcServer {
       ...rest,
       startTime: moment(startTime),
       completedAt: completedAt ? moment(completedAt) : undefined,
-      participants: participants.map(({ startedAt, lastUpdated, completedAt, address, ...rest }: any) => ({
+      participants: participants.map(({ startedAt, lastUpdate, completedAt, address, transcripts, ...rest }: any) => ({
         ...rest,
         startedAt: startedAt ? moment(startedAt) : undefined,
-        lastUpdated: lastUpdated ? moment(lastUpdated) : undefined,
+        lastUpdate: lastUpdate ? moment(lastUpdate) : undefined,
         completedAt: completedAt ? moment(completedAt) : undefined,
         address: Address.fromString(address),
+        transcripts: transcripts.map(({ fromAddress, ...rest }: any) => ({
+          ...rest,
+          fromAddress: fromAddress ? Address.fromString(fromAddress) : undefined,
+        })),
       })),
     };
   }

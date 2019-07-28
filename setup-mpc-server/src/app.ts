@@ -46,8 +46,9 @@ export function app(server: Server) {
     ctx.status = 200;
   });
 
-  router.get('/data/:address', async (ctx: Koa.Context) => {
-    ctx.body = await server.downloadData(Address.fromString(ctx.params.address));
+  router.get('/data/:address/:num', async (ctx: Koa.Context) => {
+    const { address, num } = ctx.params;
+    ctx.body = await server.downloadData(Address.fromString(address), num);
   });
 
   router.put('/data/:address/:num', koaBody({ multipart: true }), async (ctx: Koa.Context) => {
