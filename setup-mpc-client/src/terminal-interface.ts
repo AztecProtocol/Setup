@@ -57,8 +57,8 @@ export class TerminalInterface {
 
     if (completedAt) {
       const completedStr = `${startTime.utc().format('MMM Do YYYY HH:mm:ss')} UTC`;
-      const duration = completedAt.diff(startTime, 's');
-      this.term.white(`The ceremony was completed at ${completedStr} taking a total of ${duration}s.\n\n`);
+      const duration = moment.duration(completedAt.diff(startTime));
+      this.term.white(`The ceremony was completed at ${completedStr} taking a total of ${duration.humanize()}.\n\n`);
     } else if (startTime.isAfter()) {
       const startedStr = `${startTime.utc().format('MMM Do YYYY HH:mm:ss')} UTC`;
       this.term.white(`The ceremony will begin at ${startedStr} in T-${startTime.diff(moment(), 's')}s.\n\n`);
@@ -193,6 +193,7 @@ export class TerminalInterface {
           const downloadProgress = (totalDownloaded / totalData) * 100;
           const uploadProgress = (totalUploaded / totalData) * 100;
           const computeProgress = p.computeProgress;
+          const verifyProgress = p.verifyProgress;
           term
             .white(` (`)
             .blue('\u2b07')
@@ -208,34 +209,13 @@ export class TerminalInterface {
             .blue('\u2b06')
             .white(` ${uploadProgress.toFixed(uploadProgress < 100 ? 2 : 0)}%`)
             .white(`)`);
+          term
+            .white(` (`)
+            .blue('\u2714')
+            .white(` ${verifyProgress.toFixed(verifyProgress < 100 ? 2 : 0)}%`)
+            .white(`)`);
           break;
         }
-        /*
-        case 'DOWNLOADING':
-          this.term
-            .white(' (')
-            .blue('downloading')
-            .white(')');
-          break;
-        case 'VERIFYING':
-          this.term
-            .white(' (')
-            .blue('verifying')
-            .white(')');
-          break;
-        case 'COMPUTING':
-          this.term
-            .white(' (')
-            .blue('computing')
-            .white(`) (${p.computeProgress}%)`);
-          break;
-        case 'UPLOADING':
-          this.term
-            .white(' (')
-            .blue('uploading')
-            .white(')');
-          break;
-          */
       }
     }
     const lastInfo = p.lastUpdate || p.startedAt;
@@ -251,14 +231,17 @@ export class TerminalInterface {
         .red('offline')
         .white(')');
     }
-    this.term.white(
-      ` (skip ${Math.max(
-        0,
-        moment(p.startedAt!)
-          .add(INVALIDATED_AFTER, 's')
-          .diff(moment(), 's')
-      )}s)`
-    );
+    this.term
+      .white(` (`)
+      .blue('\u25b6\u25b6')
+      .white(
+        ` ${Math.max(
+          0,
+          moment(p.startedAt!)
+            .add(INVALIDATED_AFTER, 's')
+            .diff(moment(), 's')
+        )}s)`
+      );
   }
 
   public async updateState(state: MpcState) {

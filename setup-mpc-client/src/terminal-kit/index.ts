@@ -50,6 +50,12 @@ export class TerminalKit {
     return this;
   }
 
+  public redBright(str: string = '') {
+    this.y = this.getNewYPos(str);
+    this.stream.write(chalk.redBright(str));
+    return this;
+  }
+
   public blue(str: string = '') {
     this.y = this.getNewYPos(str);
     this.stream.write(chalk.blue(str));

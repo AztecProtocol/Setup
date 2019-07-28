@@ -30,6 +30,7 @@ module.exports = {
   node: {
     fs: 'empty',
     child_process: 'empty',
+    readline: 'empty',
   },
   plugins: [new HtmlWebpackPlugin({ template: './src/index.html' })],
 };

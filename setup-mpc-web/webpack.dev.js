@@ -27,6 +27,7 @@ module.exports = {
   node: {
     fs: 'empty',
     child_process: 'empty',
+    readline: 'empty',
   },
   devServer: {
     hot: true,

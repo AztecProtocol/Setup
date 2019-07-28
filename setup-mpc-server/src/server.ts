@@ -9,7 +9,7 @@ import { TranscriptStore } from './transcript-store';
 const TEST_BAD_THINGS: number[] = [];
 
 interface VerifyItem {
-  address: Address;
+  participant: Participant;
   transcriptNumber: number;
   transcriptPath: string;
   signature: string;
@@ -114,7 +114,8 @@ export class Server implements MpcServer {
   }
 
   public async uploadData(address: Address, transcriptNumber: number, transcriptPath: string, signature: string) {
-    this.verifyQueue.put({ address, transcriptNumber, transcriptPath, signature });
+    const participant = this.getRunningParticipant(address);
+    this.verifyQueue.put({ participant, transcriptNumber, transcriptPath, signature });
   }
 
   private async verifier() {
@@ -123,7 +124,8 @@ export class Server implements MpcServer {
       if (!item) {
         return;
       }
-      const { address, transcriptNumber, transcriptPath, signature } = item;
+      const { participant, transcriptNumber, transcriptPath, signature } = item;
+      const { address } = participant;
 
       try {
         const p = this.getRunningParticipant(address);
@@ -132,7 +134,7 @@ export class Server implements MpcServer {
           throw new Error(`Unknown transcript number: ${transcriptNumber}`);
         }
 
-        if (await this.verifyTranscript(transcriptPath)) {
+        if (await this.verifyTranscript(participant, transcriptPath)) {
           console.error(`Verification succeeded: ${transcriptPath}...`);
 
           await this.store.saveTranscript(address, transcriptNumber, transcriptPath);
@@ -164,9 +166,18 @@ export class Server implements MpcServer {
     }
   }
 
-  private async verifyTranscript(transcriptPath: string) {
+  private async verifyTranscript(participant: Participant, transcriptPath: string) {
     console.error(`Verifiying ${transcriptPath}...`);
-    return new Promise<boolean>(resolve => setTimeout(() => resolve(true), 10000));
+    return new Promise<boolean>(resolve => {
+      const vi = setInterval(() => {
+        participant.verifyProgress = Math.min(100, participant.verifyProgress + 3.13);
+        participant.lastUpdate = moment();
+        if (participant.verifyProgress >= 100) {
+          clearInterval(vi);
+          resolve(true);
+        }
+      }, 1000);
+    }
     /*
     return new Promise<boolean>(resolve => {
       const { VERIFY_PATH = '../setup-tools/verify' } = process.env;
@@ -327,10 +338,13 @@ export class DemoServer extends Server {
       if (p.transcripts[0].downloaded > 20) {
         p.computeProgress = Math.min(100, p.computeProgress + 2.13);
       }
-      if (p.computeProgress > 40) {
+      if (p.computeProgress > 20) {
         p.transcripts[0].uploaded = Math.min(100, p.transcripts[0].uploaded + 2.13);
       }
-      if (p.transcripts[0].uploaded >= 100) {
+      if (p.transcripts[0].uploaded > 20) {
+        p.verifyProgress = Math.min(100, p.verifyProgress + 2.13);
+      }
+      if (p.verifyProgress >= 100) {
         p.state = 'COMPLETE';
         p.completedAt = moment();
         p.runningState = 'COMPLETE';
