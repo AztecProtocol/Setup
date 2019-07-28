@@ -1,5 +1,5 @@
 import moment from 'moment';
-import { INVALIDATED_AFTER, MpcState, Participant } from 'setup-mpc-common';
+import { MpcState, Participant } from 'setup-mpc-common';
 import { Account } from 'web3x/account';
 import { leftPad } from 'web3x/utils';
 import { TerminalKit } from './terminal-kit';
@@ -220,7 +220,7 @@ export class TerminalInterface {
     }
     const lastInfo = p.lastUpdate || p.startedAt;
     if (
-      p.runningState !== 'OFFLINE' &&
+      (p.runningState === 'WAITING' || p.runningState === 'RUNNING') &&
       lastInfo &&
       moment()
         .subtract(DISPLAY_AS_OFFLINE_AFTER, 's')
@@ -238,7 +238,7 @@ export class TerminalInterface {
         ` ${Math.max(
           0,
           moment(p.startedAt!)
-            .add(INVALIDATED_AFTER, 's')
+            .add(this.state!.invalidateAfter, 's')
             .diff(moment(), 's')
         )}s)`
       );

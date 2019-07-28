@@ -3,8 +3,6 @@ import { Progress } from 'progress-stream';
 import { Readable } from 'stream';
 import { Address } from 'web3x/address';
 
-export const INVALIDATED_AFTER = 180;
-
 export type ParticipantState = 'WAITING' | 'RUNNING' | 'COMPLETE' | 'INVALIDATED';
 export type ParticipantRunningState = 'OFFLINE' | 'WAITING' | 'RUNNING' | 'COMPLETE';
 
@@ -37,6 +35,7 @@ export interface Participant {
 
 export interface MpcState {
   polynomials: number;
+  invalidateAfter: number;
   startTime: Moment;
   completedAt?: Moment;
   participants: Participant[];

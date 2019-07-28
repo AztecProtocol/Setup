@@ -1,7 +1,7 @@
 import { spawn } from 'child_process';
 import { unlink } from 'fs';
 import moment, { Moment } from 'moment';
-import { INVALIDATED_AFTER, MemoryFifo, MpcServer, MpcState, Participant } from 'setup-mpc-common';
+import { MemoryFifo, MpcServer, MpcState, Participant } from 'setup-mpc-common';
 import { Address } from 'web3x/address';
 import { Wallet } from 'web3x/wallet';
 import { TranscriptStore } from './transcript-store';
@@ -18,7 +18,7 @@ interface VerifyItem {
 export class Server implements MpcServer {
   private interval?: NodeJS.Timer;
   private verifyQueue: MemoryFifo<VerifyItem> = new MemoryFifo();
-  protected state: MpcState = { polynomials: 1000000, startTime: moment(), participants: [] };
+  protected state!: MpcState;
 
   constructor(private store: TranscriptStore) {
     this.verifier().catch(console.error);
@@ -32,8 +32,8 @@ export class Server implements MpcServer {
     return this.state;
   }
 
-  public resetState(startTime: Moment, polynomials: number) {
-    this.setState({ polynomials, startTime, participants: [] });
+  public resetState(startTime: Moment, polynomials: number, invalidateAfter: number) {
+    this.setState({ polynomials, startTime, invalidateAfter, participants: [] });
   }
 
   public addParticipant(address: Address) {
@@ -63,7 +63,7 @@ export class Server implements MpcServer {
       return;
     }
 
-    const { completedAt, participants } = this.state;
+    const { completedAt, invalidateAfter, participants } = this.state;
 
     if (!completedAt && participants.every(p => p.state === 'COMPLETE' || p.state === 'INVALIDATED')) {
       this.state.completedAt = moment();
@@ -85,7 +85,7 @@ export class Server implements MpcServer {
 
     if (
       moment()
-        .subtract(INVALIDATED_AFTER, 's')
+        .subtract(invalidateAfter, 's')
         .isAfter(p.startedAt!)
     ) {
       p.state = 'INVALIDATED';
@@ -171,7 +171,6 @@ export class Server implements MpcServer {
     return new Promise<boolean>(resolve => {
       const vi = setInterval(() => {
         participant.verifyProgress = Math.min(100, participant.verifyProgress + 3.13);
-        participant.lastUpdate = moment();
         if (participant.verifyProgress >= 100) {
           clearInterval(vi);
           resolve(true);
@@ -231,8 +230,8 @@ export class DemoServer extends Server {
     );
   }
 
-  public resetState(startTime: Moment, polynomials: number) {
-    super.resetState(startTime, polynomials);
+  public resetState(startTime: Moment, polynomials: number, invalidateAfter: number) {
+    super.resetState(startTime, polynomials, invalidateAfter);
     this.wallet.currentAddresses().forEach(address => super.addParticipant(address));
   }
 
@@ -241,7 +240,7 @@ export class DemoServer extends Server {
       return;
     }
 
-    const { completedAt, participants } = this.state;
+    const { completedAt, invalidateAfter, participants } = this.state;
 
     if (!completedAt && participants.every(p => p.state === 'COMPLETE' || p.state === 'INVALIDATED')) {
       this.state.completedAt = moment();
@@ -262,7 +261,7 @@ export class DemoServer extends Server {
 
     if (
       moment()
-        .subtract(INVALIDATED_AFTER, 's')
+        .subtract(invalidateAfter, 's')
         .isAfter(p.startedAt!)
     ) {
       p.state = 'INVALIDATED';
@@ -307,7 +306,7 @@ export class DemoServer extends Server {
       if (i === 3) {
         if (
           moment()
-            .subtract(INVALIDATED_AFTER, 's')
+            .subtract(invalidateAfter, 's')
             .isAfter(p.startedAt!)
         ) {
           p.state = 'INVALIDATED';

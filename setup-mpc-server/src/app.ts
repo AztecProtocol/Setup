@@ -24,7 +24,7 @@ export function app(server: Server) {
       ctx.status = 401;
       return;
     }
-    server.resetState(moment().add(5, 's'), 250000);
+    server.resetState(moment().add(5, 's'), 250000, 180);
     ctx.body = 'OK\n';
   });
 

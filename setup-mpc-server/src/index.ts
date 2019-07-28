@@ -10,7 +10,7 @@ async function main() {
   const transcriptStore = new DiskTranscriptStore(STORE_PATH);
   const youIndicies = YOU_INDICIES.split(',').map(i => +i);
   const demoServer = new DemoServer(50, transcriptStore, youIndicies);
-  demoServer.resetState(moment().add(5, 's'), 250000);
+  demoServer.resetState(moment().add(5, 's'), 250000, 180);
   demoServer.start();
 
   const httpServer = http.createServer(app(demoServer).callback());
