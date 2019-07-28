@@ -1,6 +1,6 @@
 version: '3'
 services:
-  build-env:
+  setup-tools:
     build: .
     image: aztec/setup-tools
     entrypoint: /bin/bash

@@ -4,9 +4,9 @@
   "main": "dest/index.js",
   "license": "MIT",
   "dependencies": {
-    "form-data": "^2.5.0",
     "isomorphic-fetch": "^2.2.1",
     "moment": "^2.24.0",
+    "progress-stream": "^2.0.0",
     "web3x": "^4.0.3"
   },
   "scripts": {
@@ -32,6 +32,7 @@
     "@types/isomorphic-fetch": "^0.0.35",
     "@types/jest": "^24.0.15",
     "@types/node": "^12.6.8",
+    "@types/progress-stream": "^2.0.0",
     "jest": "^24.8.0",
     "ts-jest": "^24.0.2",
     "tslint": "^5.18.0",

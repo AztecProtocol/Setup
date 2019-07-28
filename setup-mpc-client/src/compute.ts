@@ -1,10 +1,9 @@
 import { ChildProcessWithoutNullStreams, spawn } from 'child_process';
-import { createWriteStream } from 'fs';
+import { createWriteStream, unlink } from 'fs';
 import moment = require('moment');
 import progress from 'progress-stream';
 import readline from 'readline';
 import { MemoryFifo, MpcServer, MpcState, Participant, Transcript } from 'setup-mpc-common';
-import { Address } from 'web3x/address';
 
 export class Compute {
   private setupProc?: ChildProcessWithoutNullStreams;
@@ -36,6 +35,7 @@ export class Compute {
     await Promise.all([this.downloader(), this.compute(), this.uploader()]).catch(err => {
       console.error(err);
       this.cancel();
+      throw err;
     });
 
     this.myState.runningState = 'COMPLETE';
@@ -60,7 +60,7 @@ export class Compute {
     if (previousParticipant) {
       console.error('Previous participant found.');
 
-      if (this.myState.transcripts.length > 0) {
+      if (this.myState.transcripts.length === 0) {
         // We haven't yet defined our transcripts. Base them off the previous participants.
         this.myState.transcripts = previousParticipant.transcripts.map(t => ({
           ...t,
@@ -98,7 +98,7 @@ export class Compute {
       if (!transcript) {
         break;
       }
-      console.error(`Downloader dequeued: `, transcript);
+      console.error(`Downloading transcript ${transcript.num}`);
       await this.downloadTranscript(transcript);
       this.computeQueue.put(`process ${transcript.num}`);
     }
@@ -185,7 +185,7 @@ export class Compute {
             num: +num,
             size: +size,
             uploaded: 0,
-            downloaded: 0,
+            downloaded: +size,
             complete: false,
           };
         }
@@ -205,14 +205,19 @@ export class Compute {
   };
 
   private async uploader() {
+    console.error('Uploader starting...');
     while (true) {
       const num = await this.uploadQueue.get();
-      if (!num) {
+      if (num === null) {
         break;
       }
       const filename = `../setup_db/transcript${num}_out.dat`;
       console.error(`Uploading: `, filename);
-      await this.server.uploadData(this.myState.address, num, filename);
+      await this.server.uploadData(this.myState.address, num, filename, undefined, progress => {
+        this.myState.transcripts[num].uploaded = progress.transferred;
+        this.updateParticipant();
+      });
+      unlink(filename, () => {});
     }
   }
 

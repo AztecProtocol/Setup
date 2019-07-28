@@ -1,4 +1,5 @@
 import { Moment } from 'moment';
+import { Progress } from 'progress-stream';
 import { Readable } from 'stream';
 import { Address } from 'web3x/address';
 
@@ -45,5 +46,11 @@ export interface MpcServer {
   getState(): Promise<MpcState>;
   updateParticipant(participant: Participant): Promise<void>;
   downloadData(address: Address, transcriptNumber: number): Promise<Readable>;
-  uploadData(address: Address, transcriptNumber: number, transcriptPath: string, signature?: string): Promise<void>;
+  uploadData(
+    address: Address,
+    transcriptNumber: number,
+    transcriptPath: string,
+    signature?: string,
+    progressCb?: (progress: Progress) => void
+  ): Promise<void>;
 }

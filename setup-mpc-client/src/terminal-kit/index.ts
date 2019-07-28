@@ -62,6 +62,18 @@ export class TerminalKit {
     return this;
   }
 
+  public magentaBright(str: string = '') {
+    this.y = this.getNewYPos(str);
+    this.stream.write(chalk.magentaBright(str));
+    return this;
+  }
+
+  public yellowBright(str: string = '') {
+    this.y = this.getNewYPos(str);
+    this.stream.write(chalk.yellowBright(str));
+    return this;
+  }
+
   public grey(str: string = '') {
     this.y = this.getNewYPos(str);
     this.stream.write(chalk.gray(str));

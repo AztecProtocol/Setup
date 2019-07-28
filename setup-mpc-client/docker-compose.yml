@@ -34,7 +34,7 @@ services:
       dockerfile: setup-mpc-server/Dockerfile
     image: aztec/setup-mpc-server
     environment:
-      YOU_INDICIES: '0'
+      YOU_INDICIES: '0,1'
       POLYNOMIAL_DEGREE: '100000000'
     expose:
       - 80

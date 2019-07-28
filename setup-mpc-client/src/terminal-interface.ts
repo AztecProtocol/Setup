@@ -171,22 +171,45 @@ export class TerminalInterface {
   }
 
   private renderRunningLine(p: Participant) {
+    const { term } = this;
     const addrString = p.address.toString();
     const progIndex = addrString.length * (p.computeProgress / 100);
-    this.term.yellow(addrString.slice(0, progIndex)).grey(addrString.slice(progIndex));
+    term.yellow(addrString.slice(0, progIndex)).grey(addrString.slice(progIndex));
 
-    this.term.white(' <');
+    term.red(' <');
     if (p.lastUpdate || p.runningState === 'OFFLINE') {
       switch (p.runningState) {
         case 'OFFLINE':
-          this.term
+          term
             .white(' (')
             .blue('computing offline')
             .white(')');
           break;
         case 'RUNNING':
-          this.term.white(` (${p.computeProgress.toFixed(2)}%)`);
+        case 'COMPLETE': {
+          const totalData = p.transcripts.reduce((a, t) => a + t.size, 0);
+          const totalDownloaded = p.transcripts.reduce((a, t) => a + t.downloaded, 0);
+          const totalUploaded = p.transcripts.reduce((a, t) => a + t.uploaded, 0);
+          const downloadProgress = (totalDownloaded / totalData) * 100;
+          const uploadProgress = (totalUploaded / totalData) * 100;
+          const computeProgress = p.computeProgress;
+          term
+            .white(` (`)
+            .blue('\u2b07')
+            .white(` ${downloadProgress.toFixed(downloadProgress < 100 ? 2 : 0)}%`)
+            .white(`)`);
+          term
+            .white(` (`)
+            .blue('\u2699')
+            .white(` ${computeProgress.toFixed(computeProgress < 100 ? 2 : 0)}%`)
+            .white(`)`);
+          term
+            .white(` (`)
+            .blue('\u2b06')
+            .white(` ${uploadProgress.toFixed(uploadProgress < 100 ? 2 : 0)}%`)
+            .white(`)`);
           break;
+        }
         /*
         case 'DOWNLOADING':
           this.term
@@ -229,7 +252,7 @@ export class TerminalInterface {
         .white(')');
     }
     this.term.white(
-      ` (skipping in ${Math.max(
+      ` (skip ${Math.max(
         0,
         moment(p.startedAt!)
           .add(INVALIDATED_AFTER, 's')

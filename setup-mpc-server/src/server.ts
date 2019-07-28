@@ -67,9 +67,10 @@ export class Server implements MpcServer {
 
     if (!completedAt && participants.every(p => p.state === 'COMPLETE' || p.state === 'INVALIDATED')) {
       this.state.completedAt = moment();
+      return;
     }
 
-    const i = participants.findIndex(p => p.state !== 'COMPLETE' && p.state !== 'INVALIDATED');
+    const i = participants.findIndex(p => p.state === 'WAITING' || p.state === 'RUNNING');
     const p = participants[i];
 
     if (!p) {
@@ -132,6 +133,8 @@ export class Server implements MpcServer {
         }
 
         if (await this.verifyTranscript(transcriptPath)) {
+          console.error(`Verification succeeded: ${transcriptPath}...`);
+
           await this.store.saveTranscript(address, transcriptNumber, transcriptPath);
           await this.store.saveSignature(address, transcriptNumber, signature);
 
@@ -147,6 +150,7 @@ export class Server implements MpcServer {
             p.completedAt = moment();
           }
         } else {
+          console.error(`Verification failed: ${transcriptPath}...`);
           p.state = 'INVALIDATED';
           p.runningState = 'COMPLETE';
           p.error = 'verify failed';
@@ -307,14 +311,30 @@ export class DemoServer extends Server {
 
     if (p.runningState === 'WAITING') {
       p.runningState = 'RUNNING';
+      p.transcripts = [
+        {
+          num: 0,
+          size: 100,
+          downloaded: 0,
+          uploaded: 0,
+          complete: false,
+        },
+      ];
     }
 
     if (p.runningState === 'RUNNING') {
-      p.computeProgress = Math.min(100, p.computeProgress + Math.floor(3 + Math.random() * 5));
-      if (p.computeProgress >= 100) {
+      p.transcripts[0].downloaded = Math.min(100, p.transcripts[0].downloaded + 2.13);
+      if (p.transcripts[0].downloaded > 20) {
+        p.computeProgress = Math.min(100, p.computeProgress + 2.13);
+      }
+      if (p.computeProgress > 40) {
+        p.transcripts[0].uploaded = Math.min(100, p.transcripts[0].uploaded + 2.13);
+      }
+      if (p.transcripts[0].uploaded >= 100) {
         p.state = 'COMPLETE';
         p.completedAt = moment();
         p.runningState = 'COMPLETE';
+        this.advanceState();
       }
     }
   }

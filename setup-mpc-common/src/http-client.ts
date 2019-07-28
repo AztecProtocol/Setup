@@ -1,7 +1,8 @@
-import FormData from 'form-data';
-import { createReadStream, existsSync } from 'fs';
+// import FormData from 'form-data';
+import { createReadStream, existsSync, statSync } from 'fs';
 import fetch from 'isomorphic-fetch';
 import moment = require('moment');
+import progress, { Progress } from 'progress-stream';
 import { Readable } from 'stream';
 import { Account } from 'web3x/account';
 import { Address } from 'web3x/address';
@@ -71,7 +72,13 @@ export class HttpClient implements MpcServer {
     return (response.body! as any) as Readable;
   }
 
-  public async uploadData(address: Address, transcriptNumber: number, transcriptPath: string) {
+  public async uploadData(
+    address: Address,
+    transcriptNumber: number,
+    transcriptPath: string,
+    signature?: string,
+    progressCb?: (progress: Progress) => void
+  ) {
     return new Promise<void>(async (resolve, reject) => {
       try {
         if (!this.account) {
@@ -92,12 +99,16 @@ export class HttpClient implements MpcServer {
           reject(new Error('Failed to read transcript.'));
         });
 
-        const formData = new FormData();
-        formData.append('transcript', transcriptStream);
+        const stats = statSync(transcriptPath);
+        const progStream = progress({ length: stats.size, time: 1000 });
+        if (progressCb) {
+          progStream.on('progress', progressCb);
+        }
+        transcriptStream.pipe(progStream);
 
         await fetch(`http://${this.host}/data/${address.toString().toLowerCase()}/${transcriptNumber}`, {
           method: 'PUT',
-          body: formData as any,
+          body: progStream as any,
           headers: {
             'X-Signature': signature,
           },

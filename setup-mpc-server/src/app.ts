@@ -1,4 +1,4 @@
-import { unlink } from 'fs';
+import { createWriteStream } from 'fs';
 import Koa from 'koa';
 import koaBody from 'koa-body';
 import Router from 'koa-router';
@@ -51,10 +51,15 @@ export function app(server: Server) {
     ctx.body = await server.downloadData(Address.fromString(address), num);
   });
 
-  router.put('/data/:address/:num', koaBody({ multipart: true }), async (ctx: Koa.Context) => {
-    const {
-      transcript: { path: transcriptPath },
-    } = ctx.request.files!;
+  router.put('/data/:address/:num', async (ctx: Koa.Context) => {
+    const transcriptPath = `/tmp/transcript_${ctx.params.address}_${ctx.params.num}.dat`;
+    await new Promise((resolve, reject) => {
+      const writeStream = createWriteStream(transcriptPath);
+      writeStream.on('close', resolve);
+      ctx.req.on('error', (err: Error) => reject(err));
+      ctx.req.pipe(writeStream);
+    });
+
     console.error(`Transcript uploaded to: ${transcriptPath}`);
     const hash = await hashFiles([transcriptPath]);
     const signature = ctx.get('X-Signature');
