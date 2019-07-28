@@ -1,3 +1,4 @@
+import humanizeDuration from 'humanize-duration';
 import moment from 'moment';
 import { MpcState, Participant } from 'setup-mpc-common';
 import { Account } from 'web3x/account';
@@ -57,8 +58,9 @@ export class TerminalInterface {
 
     if (completedAt) {
       const completedStr = `${startTime.utc().format('MMM Do YYYY HH:mm:ss')} UTC`;
-      const duration = moment.duration(completedAt.diff(startTime));
-      this.term.white(`The ceremony was completed at ${completedStr} taking a total of ${duration.humanize()}.\n\n`);
+      const duration = completedAt.diff(startTime);
+      const durationText = humanizeDuration(duration, { largest: 2, round: true });
+      this.term.white(`The ceremony was completed at ${completedStr} taking ${durationText}.\n\n`);
     } else if (startTime.isAfter()) {
       const startedStr = `${startTime.utc().format('MMM Do YYYY HH:mm:ss')} UTC`;
       this.term.white(`The ceremony will begin at ${startedStr} in T-${startTime.diff(moment(), 's')}s.\n\n`);
