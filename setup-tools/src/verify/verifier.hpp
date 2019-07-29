@@ -4,12 +4,17 @@
  **/
 #pragma once
 
+#include <thread>
+#include <future>
+#include <numeric>
+#include <algorithm>
 #include <glob.h>
 #include <libff/common/profiling.hpp>
 #include <libff/common/utils.hpp>
 #include <libff/algebra/curves/public_params.hpp>
 #include <libff/algebra/curves/curve_utils.hpp>
 #include <libff/common/profiling.hpp>
+#include <libff/algebra/scalar_multiplication/multiexp.hpp>
 
 namespace verifier
 {
@@ -40,30 +45,70 @@ struct VerificationKey
     GroupT rhs;
 };
 
+template <typename FieldT, typename G1>
+VerificationKey<G1> same_ratio_preprocess_thread(std::vector<G1> const &g1_points, std::vector<FieldT> const &scalars, size_t start_from, size_t num)
+{
+    VerificationKey<G1> key;
+
+    key.lhs = libff::multi_exp<G1, FieldT, libff::multi_exp_method_bos_coster>(
+        g1_points.cbegin() + start_from,
+        g1_points.cbegin() + start_from + num - 1,
+        scalars.cbegin() + start_from,
+        scalars.cbegin() + start_from + num - 1,
+        1);
+
+    key.rhs = libff::multi_exp<G1, FieldT, libff::multi_exp_method_bos_coster>(
+        g1_points.cbegin() + start_from + 1,
+        g1_points.cbegin() + start_from + num,
+        scalars.cbegin() + start_from,
+        scalars.cbegin() + start_from + num - 1,
+        1);
+
+    return key;
+}
+
 // We want to validate that a vector of points corresponds to the terms [x, x^2, ..., x^n]
 // of an indeterminate x and a random variable z
 // Update the verification key so that...
 // key.lhs = x.z + x^2.z^2 + ... + x^(n-1).z^(n-1)
 // key.rhs = x^2.z + ... + x^n.z^(n-1)
-template <typename FieldT, typename GroupT>
-void same_ratio_preprocess(GroupT *g1_points, VerificationKey<GroupT> &key, size_t polynomial_degree)
+template <typename FieldT, typename G1>
+VerificationKey<G1> same_ratio_preprocess(std::vector<G1> const &g1_points)
 {
     FieldT challenge = FieldT::random_element();
-    FieldT scalar_multiplier = challenge;
-    GroupT rhs = GroupT::zero();
-    GroupT lhs = scalar_multiplier * g1_points[0];
 
-    for (size_t i = 1; i < polynomial_degree - 1; ++i)
+    std::vector<FieldT> scalars(g1_points.size());
+    scalars[0] = challenge;
+    for (size_t i = 1; i < scalars.size(); ++i)
     {
-        rhs = rhs + (scalar_multiplier * g1_points[i]);
-        scalar_multiplier = scalar_multiplier * challenge;
-        lhs = lhs + (scalar_multiplier * g1_points[i]);
-        // accumulator = accumulator + (scalar_multiplier * g1_points[i]);
+        scalars[i] = scalars[i - 1] * challenge;
     }
-    rhs = rhs + scalar_multiplier * g1_points[polynomial_degree - 1];
-    // scalar_multiplier = scalar_multiplier.squared();
-    key.rhs = rhs; // accumulator + (scalar_multiplier * g1_points[polynomial_degree - 1]);
-    key.lhs = lhs; // accumulator + (challenge * g1_points[0]);
+
+    size_t num_threads = std::thread::hardware_concurrency();
+    num_threads = num_threads ? num_threads : 4;
+    size_t thread_range = g1_points.size() / num_threads;
+    size_t leftovers = g1_points.size() % thread_range;
+    std::vector<std::thread> threads;
+    std::vector<std::future<VerificationKey<G1>>> results;
+
+    for (uint i = 0; i < num_threads; i++)
+    {
+        size_t start_from = (i * thread_range);
+        if (i == num_threads - 1)
+        {
+            thread_range += leftovers;
+        }
+        results.push_back(std::async(std::launch::async, same_ratio_preprocess_thread<FieldT, G1>, std::ref(g1_points), std::ref(scalars), start_from, thread_range));
+    }
+
+    VerificationKey<G1> key(results[0].get());
+    for (uint i = 1; i < results.size(); i++)
+    {
+        auto r = results[i].get();
+        key.lhs = key.lhs + r.lhs;
+        key.rhs = key.rhs + r.rhs;
+    }
+    return key;
 }
 
 // Validate that g1_key.lhs * g2_key.lhs == g1_key.rhs * g2_key.rhs
@@ -96,19 +141,18 @@ bool same_ratio(VerificationKey<G1<ppT>> &g1_key, VerificationKey<G2<ppT>> &g2_k
 // Because every term is multiplied by an independant random variable, we can treat each term as distinct.
 // Once we have A and B, we can validate that A*x = B via a pairing check.
 // This validates that our original vector represents the powering sequence that we desire
-template <typename ppT, typename Group1T, typename Group2T>
-bool validate_polynomial_evaluation(Group1T *evaluation, Group2T comparator, size_t polynomial_degree)
+template <typename ppT, typename G1, typename G2>
+bool validate_polynomial_evaluation(std::vector<G1> const &evaluation, G2 const &comparator)
 {
-    VerificationKey<Group1T> key;
-    VerificationKey<Group2T> delta;
+    VerificationKey<G2> delta;
 
     delta.lhs = comparator;
-    delta.rhs = Group2T::one();
+    delta.rhs = G2::one();
 
-    same_ratio_preprocess<Fq<ppT>, Group1T>(evaluation, key, polynomial_degree);
+    VerificationKey<G1> key = same_ratio_preprocess<Fq<ppT>>(evaluation);
 
     // is this the compiler equivalent of "it's fine! nobody panic! we'll just edit it out in post..."
-    if constexpr (sizeof(Group2T) > sizeof(Group1T))
+    if constexpr (sizeof(G2) > sizeof(G1))
     {
         // (same_ratio requires 1st argument to be G1, 2nd to be G2)
         // (the template abstraction breaks down when computing the pairing,
@@ -122,16 +166,16 @@ bool validate_polynomial_evaluation(Group1T *evaluation, Group2T comparator, siz
 }
 
 // Validate that a provided transcript conforms to the powering sequences required for our structured reference string
-template <typename ppT>
-bool validate_transcript(G1<ppT> *g1_x, G2<ppT> *g2_x, size_t polynomial_degree)
+template <typename ppT, typename G1, typename G2>
+bool validate_transcript(std::vector<G1> const &g1_x, std::vector<G2> const &g2_x, G1 &g1_0, G2 &g2_0)
 {
     bool result = true;
 
     // validate that the ratio between successive g1_x elements is defined by g2_x[0]
-    result &= validate_polynomial_evaluation<ppT, G1<ppT>, G2<ppT>>(g1_x, g2_x[0], polynomial_degree);
+    result &= validate_polynomial_evaluation<ppT>(g1_x, g2_0);
 
     // validate that the ratio between successive g2_x elements is defined by g1_x[0]
-    result &= validate_polynomial_evaluation<ppT, G2<ppT>, G1<ppT>>(g2_x, g1_x[0], polynomial_degree);
+    result &= validate_polynomial_evaluation<ppT>(g2_x, g1_0);
 
     return result;
 }

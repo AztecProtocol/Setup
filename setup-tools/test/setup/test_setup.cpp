@@ -69,7 +69,7 @@ TEST(setup, same_ratio)
     g2_key.rhs = libff::alt_bn128_G2::one();
     verifier::VerificationKey<libff::alt_bn128_G1> g1_key;
 
-    verifier::same_ratio_preprocess<libff::alt_bn128_Fr, libff::alt_bn128_G1>(&points[0], g1_key, N);
+    g1_key = verifier::same_ratio_preprocess<libff::alt_bn128_Fr, libff::alt_bn128_G1>(points);
 
     bool result = verifier::same_ratio<libff::alt_bn128_pp>(g1_key, g2_key);
 
@@ -91,7 +91,7 @@ TEST(setup, validate_polynomial_evaluation)
     }
     libff::alt_bn128_G2 comparator = y * libff::alt_bn128_G2::one();
 
-    bool result = verifier::validate_polynomial_evaluation<libff::alt_bn128_pp, libff::alt_bn128_G1, libff::alt_bn128_G2>(&points[0], comparator, N);
+    bool result = verifier::validate_polynomial_evaluation<libff::alt_bn128_pp, libff::alt_bn128_G1, libff::alt_bn128_G2>(points, comparator);
 
     EXPECT_EQ(result, true);
 }
@@ -122,6 +122,6 @@ TEST(setup, validate_transcript)
         g1_x.emplace_back(accumulator * libff::alt_bn128_G1::one());
         accumulator = accumulator * y;
     }
-    bool result = verifier::validate_transcript<libff::alt_bn128_pp>(&g1_x[0], &g2_x[0], N);
+    bool result = verifier::validate_transcript<libff::alt_bn128_pp>(g1_x, g2_x, g1_x[0], g2_x[0]);
     EXPECT_EQ(result, true);
 }

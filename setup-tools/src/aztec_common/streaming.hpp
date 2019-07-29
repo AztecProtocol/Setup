@@ -62,7 +62,7 @@ inline bool isLittleEndian()
 
 inline int32_t read_int32_t(char const *buffer)
 {
-    return isLittleEndian() ? __builtin_bswap32(*(int32_t*)buffer) : *(int32_t *)buffer;
+    return isLittleEndian() ? __builtin_bswap32(*(int32_t *)buffer) : *(int32_t *)buffer;
 }
 
 inline void write_int32_t(char const *buffer, int32_t length)
@@ -80,12 +80,13 @@ inline size_t get_file_size(std::string const &filename)
     return st.st_size;
 }
 
-inline std::vector<char> read_file_into_buffer(std::string const &filename)
+inline std::vector<char> read_file_into_buffer(std::string const &filename, size_t offset = 0, size_t size = 0)
 {
-    size_t file_size = get_file_size(filename);
+    size_t file_size = size ? size : get_file_size(filename);
     std::vector<char> buffer(file_size);
     std::ifstream file;
     file.open(filename, std::ifstream::binary);
+    file.seekg(offset);
     file.read(&buffer[0], buffer.size());
     file.close();
     return buffer;

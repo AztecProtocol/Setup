@@ -140,12 +140,18 @@ void compute_existing_transcript(std::string const &dir, size_t num, Fr &multipl
 template <typename Fr, typename Fqe, typename Fq, typename G1, typename G2>
 void compute_initial_transcripts(const std::string &dir, size_t polynomial_degree, size_t start_from, Fr &multiplicand, size_t &progress)
 {
+    const size_t total_transcripts = polynomial_degree / POINTS_PER_TRANSCRIPT + (polynomial_degree % POINTS_PER_TRANSCRIPT ? 1 : 0);
+
+    if (total_transcripts <= start_from)
+    {
+        return;
+    }
+
     std::cerr << "Creating initial transcripts..." << std::endl;
 
     progress = start_from * POINTS_PER_TRANSCRIPT * TOTAL_WEIGHT;
 
     std::vector<streaming::Manifest> manifests;
-    const size_t total_transcripts = polynomial_degree / POINTS_PER_TRANSCRIPT + (polynomial_degree % POINTS_PER_TRANSCRIPT ? 1 : 0);
     manifests.resize(total_transcripts);
 
     // Define transcripts and signal their sizes to calling process.
@@ -247,7 +253,9 @@ void run_setup(std::string const &dir, size_t polynomial_degree)
         {
             size_t start_from = 0;
             std::string filename = getTranscriptOutPath(dir, start_from);
-            while (streaming::is_file_exist(filename)) {
+            while (streaming::is_file_exist(filename))
+            {
+                std::cerr << "Transcript " << filename << " already exists. Skipping." << std::endl;
                 filename = getTranscriptOutPath(dir, ++start_from);
             }
             compute_initial_transcripts<Fr, Fqe, Fq, G1, G2>(dir, polynomial_degree, start_from, multiplicand, progress);
@@ -258,9 +266,15 @@ void run_setup(std::string const &dir, size_t polynomial_degree)
             std::string filename = getTranscriptInPath(dir, num);
             while (streaming::is_file_exist(filename))
             {
-                if (!streaming::is_file_exist(getTranscriptOutPath(dir, num))) {
+                std::string const filename_out = getTranscriptOutPath(dir, num);
+                if (!streaming::is_file_exist(filename_out))
+                {
                     progress = num * POINTS_PER_TRANSCRIPT * TOTAL_WEIGHT;
                     compute_existing_transcript<Fr, Fqe, Fq, G1, G2>(dir, num, multiplicand, progress);
+                }
+                else
+                {
+                    std::cerr << "Transcript " << filename_out << " already exists. Skipping." << std::endl;
                 }
                 filename = getTranscriptInPath(dir, ++num);
             }

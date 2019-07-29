@@ -1,3 +1,5 @@
+find_package (Threads)
+
 add_executable(
     verify
     main.cpp
