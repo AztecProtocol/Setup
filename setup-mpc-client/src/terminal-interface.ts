@@ -220,6 +220,19 @@ export class TerminalInterface {
         }
       }
     }
+
+    this.term
+      .white(` (`)
+      .blue('\u25b6\u25b6')
+      .white(
+        ` ${Math.max(
+          0,
+          moment(p.startedAt!)
+            .add(this.state!.invalidateAfter, 's')
+            .diff(moment(), 's')
+        )}s)`
+      );
+
     const lastInfo = p.lastUpdate || p.startedAt;
     if (
       (p.runningState === 'WAITING' || p.runningState === 'RUNNING') &&
@@ -233,17 +246,6 @@ export class TerminalInterface {
         .red('offline')
         .white(')');
     }
-    this.term
-      .white(` (`)
-      .blue('\u25b6\u25b6')
-      .white(
-        ` ${Math.max(
-          0,
-          moment(p.startedAt!)
-            .add(this.state!.invalidateAfter, 's')
-            .diff(moment(), 's')
-        )}s)`
-      );
   }
 
   public async updateState(state: MpcState) {

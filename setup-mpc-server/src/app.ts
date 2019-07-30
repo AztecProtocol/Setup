@@ -2,10 +2,10 @@ import { createWriteStream } from 'fs';
 import Koa from 'koa';
 import koaBody from 'koa-body';
 import Router from 'koa-router';
-import moment = require('moment');
 import { hashFiles } from 'setup-mpc-common';
 import { Address } from 'web3x/address';
 import { bufferToHex, recover } from 'web3x/utils';
+import { defaultSettings } from './default-settings';
 import { Server } from './server';
 
 const cors = require('@koa/cors');
@@ -25,12 +25,11 @@ export function app(server: Server) {
       return;
     }
     const settings = {
-      startTime: moment().add(5, 's'),
-      polynomials: 250000,
-      invalidateAfter: 180,
+      ...defaultSettings,
       ...ctx.request.body,
     };
-    server.resetState(settings.startTime, settings.polynomials, settings.invalidateAfter);
+    const { startTime, numG1Points, numG2Points, invalidateAfter } = settings;
+    server.resetState(startTime, numG1Points, numG2Points, invalidateAfter);
     ctx.body = 'OK\n';
   });
 
@@ -74,7 +73,7 @@ export function app(server: Server) {
       ctx.status = 401;
       return;
     }
-    await server.uploadData(address, ctx.params.num, transcriptPath, signature);
+    await server.uploadData(address, +ctx.params.num, transcriptPath, signature);
     ctx.status = 200;
   });
 

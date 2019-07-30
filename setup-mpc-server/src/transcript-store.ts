@@ -6,6 +6,7 @@ export interface TranscriptStore {
   saveTranscript(address: Address, num: number, path: string): Promise<void>;
   saveSignature(address: Address, num: number, signature: string): Promise<void>;
   loadTranscript(address: Address, num: number): Readable;
+  getTranscriptPath(address: Address, num: number): string;
 }
 
 export class DiskTranscriptStore implements TranscriptStore {
@@ -14,7 +15,7 @@ export class DiskTranscriptStore implements TranscriptStore {
   }
 
   public async saveTranscript(address: Address, num: number, path: string) {
-    renameSync(path, `${this.storePath}/transcript_${address.toString().toLowerCase()}_${num}.dat`);
+    renameSync(path, this.getTranscriptPath(address, num));
   }
 
   public async saveSignature(address: Address, num: number, signature: string) {
@@ -22,6 +23,10 @@ export class DiskTranscriptStore implements TranscriptStore {
   }
 
   public loadTranscript(address: Address, num: number) {
-    return createReadStream(`${this.storePath}/transcript_${address.toString().toLowerCase()}_${num}.dat`);
+    return createReadStream(this.getTranscriptPath(address, num));
+  }
+
+  public getTranscriptPath(address: Address, num: number) {
+    return `${this.storePath}/transcript_${address.toString().toLowerCase()}_${num}.dat`;
   }
 }

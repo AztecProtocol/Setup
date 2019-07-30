@@ -34,7 +34,8 @@ export interface Participant {
 }
 
 export interface MpcState {
-  polynomials: number;
+  numG1Points: number;
+  numG2Points: number;
   invalidateAfter: number;
   startTime: Moment;
   completedAt?: Moment;

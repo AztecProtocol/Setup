@@ -1,5 +1,5 @@
 import { ChildProcessWithoutNullStreams, spawn } from 'child_process';
-import { createWriteStream, unlink } from 'fs';
+import { createWriteStream, existsSync, statSync, unlink } from 'fs';
 import moment = require('moment');
 import progress from 'progress-stream';
 import readline from 'readline';
@@ -27,10 +27,10 @@ export class Compute {
 
     if (this.myState.runningState === 'WAITING') {
       this.myState.runningState = 'RUNNING';
-      await this.updateParticipant();
     }
 
     await this.populateQueues();
+    await this.updateParticipant();
 
     await Promise.all([this.downloader(), this.compute(), this.uploader()]).catch(err => {
       console.error(err);
@@ -52,6 +52,8 @@ export class Compute {
   }
 
   private async populateQueues() {
+    this.myState.computeProgress = 0;
+
     const previousParticipant = this.state.participants
       .slice()
       .reverse()
@@ -69,24 +71,27 @@ export class Compute {
           downloaded: 0,
           complete: false,
         }));
-        await this.updateParticipant();
+        this.myState.transcripts.forEach(transcript => this.downloadQueue.put(transcript));
+      } else {
+        this.myState.transcripts.forEach(transcript => {
+          const filename = `../setup_db/transcript${transcript.num}.dat`;
+          if (existsSync(filename)) {
+            const stat = statSync(filename);
+            if (stat.size === transcript.size && transcript.downloaded === transcript.size) {
+              return;
+            }
+          }
+          transcript.downloaded = 0;
+          transcript.uploaded = 0;
+          this.downloadQueue.put(transcript);
+        });
       }
-
-      // Download incomplete transcripts.
-      this.myState.transcripts.filter(t => !t.complete).forEach(transcript => this.downloadQueue.put(transcript));
 
       this.downloadQueue.end();
     } else {
       console.error('We are the first participant.');
       this.downloadQueue.end();
-
-      const { transcripts } = this.myState;
-
-      // Start from first incomplete transcript.
-      const firstIncomplete = transcripts.find(t => !t.complete);
-      const startFromNum = firstIncomplete ? firstIncomplete.num : 0;
-
-      this.computeQueue.put(`create ${this.state.polynomials} ${startFromNum}`);
+      this.computeQueue.put(`create ${this.state.numG1Points} ${this.state.numG2Points}`);
       this.computeQueue.end();
     }
   }
@@ -108,6 +113,12 @@ export class Compute {
 
   private async downloadTranscript(transcript: Transcript): Promise<string> {
     const filename = `../setup_db/transcript${transcript.num}.dat`;
+    if (existsSync(filename)) {
+      const stat = statSync(filename);
+      if (stat.size === transcript.size && transcript.downloaded === transcript.size) {
+        return filename;
+      }
+    }
     const readStream = await this.server.downloadData(transcript.fromAddress!, transcript.num);
     const progStream = progress({ length: transcript.size, time: 1000 });
     const writeStream = createWriteStream(filename);
@@ -176,9 +187,6 @@ export class Compute {
     const cmd = params.shift()!;
     switch (cmd) {
       case 'creating': {
-        if (this.myState.transcripts.length > 0) {
-          break;
-        }
         for (const transcriptDef of params) {
           const [num, size] = transcriptDef.split(':');
           this.myState.transcripts[+num] = {

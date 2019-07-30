@@ -175,7 +175,9 @@ bool validate_transcript(std::vector<G1> const &g1_x, std::vector<G2> const &g2_
     result &= validate_polynomial_evaluation<ppT>(g1_x, g2_0);
 
     // validate that the ratio between successive g2_x elements is defined by g1_x[0]
-    result &= validate_polynomial_evaluation<ppT>(g2_x, g1_0);
+    if (g2_x.size() > 1) {
+        result &= validate_polynomial_evaluation<ppT>(g2_x, g1_0);
+    }
 
     return result;
 }

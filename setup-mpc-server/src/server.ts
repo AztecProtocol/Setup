@@ -32,8 +32,8 @@ export class Server implements MpcServer {
     return this.state;
   }
 
-  public resetState(startTime: Moment, polynomials: number, invalidateAfter: number) {
-    this.setState({ polynomials, startTime, invalidateAfter, participants: [] });
+  public resetState(startTime: Moment, numG1Points: number, numG2Points: number, invalidateAfter: number) {
+    this.setState({ numG1Points, numG2Points, startTime, invalidateAfter, participants: [] });
   }
 
   public addParticipant(address: Address) {
@@ -134,7 +134,7 @@ export class Server implements MpcServer {
           throw new Error(`Unknown transcript number: ${transcriptNumber}`);
         }
 
-        if (await this.verifyTranscript(participant, transcriptPath)) {
+        if (await this.verifyTranscript(participant, transcriptNumber, transcriptPath)) {
           console.error(`Verification succeeded: ${transcriptPath}...`);
 
           await this.store.saveTranscript(address, transcriptNumber, transcriptPath);
@@ -166,21 +166,13 @@ export class Server implements MpcServer {
     }
   }
 
-  private async verifyTranscript(participant: Participant, transcriptPath: string) {
-    console.error(`Verifiying ${transcriptPath}...`);
-    return new Promise<boolean>(resolve => {
-      const vi = setInterval(() => {
-        participant.verifyProgress = Math.min(100, participant.verifyProgress + 3.13);
-        if (participant.verifyProgress >= 100) {
-          clearInterval(vi);
-          resolve(true);
-        }
-      }, 1000);
-    });
-    /*
+  private async verifyTranscript(participant: Participant, transcriptNumber: number, transcriptPath: string) {
+    const transcript0Path =
+      transcriptNumber === 0 ? transcriptPath : this.store.getTranscriptPath(participant.address, 0);
+    console.error(`Verifiying transcript ${transcriptNumber} at ${transcriptPath} and ${transcript0Path}...`);
     return new Promise<boolean>(resolve => {
       const { VERIFY_PATH = '../setup-tools/verify' } = process.env;
-      const verify = spawn(VERIFY_PATH, [transcriptPath, this.state.polynomials.toString()]);
+      const verify = spawn(VERIFY_PATH, [transcriptPath, transcript0Path]);
 
       verify.stdout.on('data', data => {
         console.error(data.toString());
@@ -193,13 +185,13 @@ export class Server implements MpcServer {
       verify.on('close', code => {
         console.error(`child process exited with code ${code}`);
         if (code === 0) {
+          participant.verifyProgress = ((transcriptNumber + 1) / participant.transcripts.length) * 100;
           resolve(true);
         } else {
           resolve(false);
         }
       });
     });
-    */
   }
 
   private getRunningParticipant(address: Address) {
@@ -230,8 +222,8 @@ export class DemoServer extends Server {
     );
   }
 
-  public resetState(startTime: Moment, polynomials: number, invalidateAfter: number) {
-    super.resetState(startTime, polynomials, invalidateAfter);
+  public resetState(startTime: Moment, numG1Points: number, numG2Points: number, invalidateAfter: number) {
+    super.resetState(startTime, numG1Points, numG2Points, invalidateAfter);
     this.wallet.currentAddresses().forEach(address => super.addParticipant(address));
   }
 
