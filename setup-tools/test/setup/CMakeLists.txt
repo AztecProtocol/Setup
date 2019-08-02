@@ -10,6 +10,7 @@ add_executable(
     test_aztec_common.cpp
     test_setup.cpp
     test_compute_range_polynomial.cpp
+    ../../src/verify/verifier.cpp
 )
 target_link_libraries(
     setup_tests
@@ -17,6 +18,7 @@ target_link_libraries(
         ff
         GTest::gtest
         GTest::main
+        aztec_common
 )
 target_include_directories(
     setup_tests

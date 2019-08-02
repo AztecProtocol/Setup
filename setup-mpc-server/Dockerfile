@@ -1,9 +1,3 @@
-#FROM node:10
-#WORKDIR /usr/src/app
-#COPY package.json .
-#RUN yarn install && yarn cache clean
-#CMD ["yarn", "start"]
-#COPY . .
 #FROM 278380418400.dkr.ecr.eu-west-2.amazonaws.com/setup-tools:latest
 FROM aztec/setup-tools:latest
 FROM ubuntu:latest
@@ -16,6 +10,7 @@ RUN apt update && \
   apt install -y nodejs yarn make g++ && \
   apt clean
 COPY --from=0 /usr/src/app/build/verify /usr/src/setup-tools/verify
+COPY --from=0 /usr/src/app/build/verify_set /usr/src/setup-tools/verify_set
 WORKDIR /usr/src/setup-mpc-common
 COPY setup-mpc-common .
 RUN yarn install && yarn build && yarn cache clean && yarn link

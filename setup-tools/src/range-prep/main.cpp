@@ -1,20 +1,9 @@
-#include <libff/algebra/curves/public_params.hpp>
-#include <libff/algebra/fields/fp.hpp>
-#include <libff/algebra/scalar_multiplication/multiexp.hpp>
-#include <libff/algebra/curves/curve_utils.hpp>
-#include <libff/algebra/scalar_multiplication/wnaf.hpp>
-#include <libff/algebra/curves/alt_bn128/alt_bn128_pp.hpp>
 #include <aztec_common/timer.hpp>
-#include <aztec_common/streaming.hpp>
+#include <aztec_common/streaming_transcript.hpp>
 #include <fstream>
 
 void transform(size_t polynomial_degree)
 {
-  using Fr = libff::Fr<libff::alt_bn128_pp>;
-  using Fq = libff::Fq<libff::alt_bn128_pp>;
-  using G1 = libff::G1<libff::alt_bn128_pp>;
-  using G2 = libff::G2<libff::alt_bn128_pp>;
-
   std::cout << "Loading data..." << std::endl;
 
   std::vector<Fr> generator_polynomial;
@@ -23,7 +12,7 @@ void transform(size_t polynomial_degree)
   streaming::Manifest manifest;
 
   streaming::read_field_elements_from_file(generator_polynomial, "../setup_db/generator.dat", polynomial_degree + 1);
-  streaming::read_transcript<Fq>(g1_x, g2_x, manifest, "../setup_db/transcript.dat");
+  streaming::read_transcript(g1_x, g2_x, manifest, "../setup_db/transcript.dat");
   g1_x.insert(g1_x.begin(), G1::one());
 
   std::cout << "Transforming..." << std::endl;

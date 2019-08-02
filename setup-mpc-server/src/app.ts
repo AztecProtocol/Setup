@@ -25,7 +25,7 @@ export function app(server: Server) {
       return;
     }
     const settings = {
-      ...defaultSettings,
+      ...defaultSettings(),
       ...ctx.request.body,
     };
     const { startTime, numG1Points, numG2Points, invalidateAfter } = settings;

@@ -1,11 +1,10 @@
 /**
  * Setup
  * Copyright Spilsbury Holdings 2019
- * 
  **/
 #pragma once
-#include <cassert>
 
+#include <cassert>
 
 // compiler should optimize this out in release builds, without triggering
 // an unused variable warning
@@ -15,7 +14,7 @@
    }
 
 #ifdef NDEBUG
-#  define ASSERT(expression) DONT_EVALUATE((expression))
+#define ASSERT(expression) DONT_EVALUATE((expression))
 #else
-#  define ASSERT(expression) assert((expression))
+#define ASSERT(expression) assert((expression))
 #endif // NDEBUG

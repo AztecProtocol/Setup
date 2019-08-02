@@ -24,7 +24,7 @@ int main(int argc, char **argv)
 
     try
     {
-        run_setup<libff::alt_bn128_pp>(dir, num_g1_points, num_g2_points);
+        run_setup(dir, num_g1_points, num_g2_points);
     }
     catch (std::exception const &err)
     {

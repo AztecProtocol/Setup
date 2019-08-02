@@ -1,27 +1,22 @@
-find_package (Threads)
-
 add_executable(
-    verify
+    verify_set
     main.cpp
-    verifier.hpp
-    verifier.cpp
 )
 
 target_link_libraries(
-    verify
+    verify_set
     PRIVATE
-        ff
-        ${CMAKE_THREAD_LIBS_INIT}
         ${GMP_LIBRARIES}
         aztec_common
+        ff
 )
 
 target_include_directories(
-    verify
+    verify_set
     PRIVATE
         ${DEPENDS_DIR}/libff
         ${DEPENDS_DIR}/blake2b/ref
         ${private_include_dir}
 )
 
-set_target_properties(verify PROPERTIES RUNTIME_OUTPUT_DIRECTORY ../..)
+set_target_properties(verify_set PROPERTIES RUNTIME_OUTPUT_DIRECTORY ../..)

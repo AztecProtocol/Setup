@@ -2,22 +2,18 @@
  * Setup
  * Copyright Spilsbury Holdings 2019
  **/
-#include <libff/algebra/curves/alt_bn128/alt_bn128_pp.hpp>
-#include <stdio.h>
-#include <iostream>
-#include <memory>
-#include <aztec_common/streaming.hpp>
 #include "verifier.hpp"
 
 int main(int argc, char **argv)
 {
-    if (argc < 3)
+    if (argc < 2)
     {
-        std::cout << "usage: " << argv[0] << " <transcript path> <transcript 0 path>" << std::endl;
+        std::cout << "usage: " << argv[0] << " <transcript path> [<transcript 0 path> <previous transcript path>]" << std::endl;
         return 1;
     }
     std::string const transcript_path(argv[1]);
-    std::string const transcript0_path(argv[2]);
+    std::string const transcript0_path(argc == 2 ? argv[1] : argv[2]);
+    std::string const transcript_previous_path(argc > 3 ? argv[3] : "");
 
     libff::alt_bn128_pp::init_public_params();
 
@@ -31,28 +27,83 @@ int main(int argc, char **argv)
         std::cout << "Transcript 0 not found: " << transcript0_path << std::endl;
         return 1;
     }
-
-    using Fq = libff::Fq<libff::alt_bn128_pp>;
-    using G1 = libff::G1<libff::alt_bn128_pp>;
-    using G2 = libff::G2<libff::alt_bn128_pp>;
+    if (!transcript_previous_path.empty() && !streaming::is_file_exist(transcript_previous_path))
+    {
+        std::cout << "Previous transcript not found: " << transcript_previous_path << std::endl;
+        return 1;
+    }
 
     try
     {
         streaming::Manifest manifest;
+        streaming::Manifest previous_manifest;
         std::vector<G1> g1_x;
         std::vector<G2> g2_x;
-        G1 g1_0;
-        G2 g2_0;
+        std::vector<G1> g1_0_0;
+        std::vector<G2> g2_0_0;
+        std::vector<G1> g1_x_previous;
+        std::vector<G2> g2_y;
 
-        streaming::read_transcript_0_point<Fq>(g1_0, g2_0, transcript0_path);
-        streaming::read_transcript<Fq>(g1_x, g2_x, manifest, transcript_path);
+        // Read first points from transcript 0.
+        streaming::read_transcript_g1_points(g1_0_0, transcript0_path, 0, 1);
+        streaming::read_transcript_g2_points(g2_0_0, transcript0_path, 0, 1);
+
+        if (!g1_0_0.size() || !g2_0_0.size())
+        {
+            throw std::runtime_error("Missing either G1 or G2 zero point.");
+        }
+
+        streaming::read_transcript_manifest(manifest, transcript_path);
+
+        if (manifest.transcript_number == 0)
+        {
+            // If we are transcript 0 we need to add the generator point to the beginning of the series.
+            // This allows validating a single point as there will be at least 2 in the series.
+            g1_x.push_back(G1::one());
+            g2_x.push_back(G2::one());
+        }
+
+        if (transcript_previous_path.empty())
+        {
+            // First participant, first transcript. Discard our g2^y point.
+            if (manifest.transcript_number != 0)
+            {
+                throw std::runtime_error("Must provide a previous transcript if not transcript 0.");
+            }
+            streaming::read_transcript(g1_x, g2_x, manifest, transcript_path);
+            g2_x.pop_back();
+        }
+        else
+        {
+            streaming::read_transcript_manifest(previous_manifest, transcript_previous_path);
+            validate_manifest(previous_manifest, manifest);
+
+            // If this transcript and previous transcript are 0, we are going to check this transcript was built
+            // on top of the previous participants using the g2^y and previous g1_x points.
+            if (manifest.transcript_number == 0 && previous_manifest.transcript_number == 0)
+            {
+                streaming::read_transcript_g1_points(g1_x_previous, transcript_previous_path, 0, 1);
+                streaming::read_transcript(g1_x, g2_x, manifest, transcript_path);
+                // Extract g2_y point from this transcript.
+                g2_y.push_back(g2_x.back());
+                g2_x.pop_back();
+            }
+            else
+            {
+                // Read the last points from the previous transcript to validate the sequence.
+                // Second to last g2 point if the previous transcript is 0, due to g2^y being tacked on.
+                streaming::read_transcript_g1_points(g1_x, transcript_previous_path, -1, 1);
+                size_t from_g2_end = previous_manifest.transcript_number == 0 ? -2 : -1;
+                streaming::read_transcript_g2_points(g2_x, transcript_previous_path, from_g2_end, 1);
+                streaming::read_transcript(g1_x, g2_x, manifest, transcript_path);
+            }
+        }
 
         std::cout << "Verifying..." << std::endl;
-        bool result = verifier::validate_transcript<libff::alt_bn128_pp>(g1_x, g2_x, g1_0, g2_0);
+        validate_transcript(g1_0_0[0], g2_0_0[0], g1_x, g2_x, g1_x_previous, g2_y);
 
-        std::cout << (result ? "Success." : "Failed.") << std::endl;
-
-        return result ? 0 : 1;
+        std::cout << "Transcript valid." << std::endl;
+        return 0;
     }
     catch (std::exception const &err)
     {

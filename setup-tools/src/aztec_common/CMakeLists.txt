@@ -6,10 +6,16 @@ add_library(
     ${include_dir}/aztec_common.hpp
     batch_normalize.hpp
     checksum.hpp
-    compression.tcc
     compression.hpp
-    streaming.tcc
+    libff_types.hpp
+    streaming_g1.hpp
+    streaming_g1.cpp
+    streaming_g2.hpp
+    streaming_g2.cpp
+    streaming_transcript.hpp
+    streaming_transcript.cpp
     streaming.hpp
+    streaming.cpp
 )
 
 set_target_properties(aztec_common PROPERTIES LINKER_LANGUAGE CXX)
@@ -25,6 +31,7 @@ target_include_directories(
     aztec_common
     PUBLIC
         ${DEPENDS_DIR}/blake2/ref
+        ${DEPENDS_DIR}/libff
 )
 
 install(

@@ -143,20 +143,25 @@ export class Server implements MpcServer {
           p.transcripts[transcriptNumber].complete = true;
           p.lastUpdate = moment();
 
-          // TODO: We need to assert that all transcripts together make a full sequence to the polynomial count.
-          // Otherwise a participant could upload a transcript that on it's own verifies, but isn't part of a complete set.
-          // Probably don't use the transcript array at all. It's basically client controlled.
           if (p.transcripts.every(t => t.complete)) {
-            p.state = 'COMPLETE';
-            p.runningState = 'COMPLETE';
-            p.completedAt = moment();
+            // Every transcript in clients transcript list is verified. We still need to verify the set
+            // as a whole. This just checks the total number of G1 and G2 points is as expected.
+            if (await this.verifyTranscriptSet(p)) {
+              p.state = 'COMPLETE';
+              p.runningState = 'COMPLETE';
+              p.completedAt = moment();
+            } else {
+              console.error(`Verification of set failed for ${p.address}...`);
+              p.state = 'INVALIDATED';
+              p.runningState = 'COMPLETE';
+              p.error = 'verify failed';
+            }
           }
         } else {
           console.error(`Verification failed: ${transcriptPath}...`);
           p.state = 'INVALIDATED';
           p.runningState = 'COMPLETE';
           p.error = 'verify failed';
-          p.lastUpdate = moment();
         }
       } catch (err) {
         console.error(err);
@@ -167,12 +172,21 @@ export class Server implements MpcServer {
   }
 
   private async verifyTranscript(participant: Participant, transcriptNumber: number, transcriptPath: string) {
-    const transcript0Path =
-      transcriptNumber === 0 ? transcriptPath : this.store.getTranscriptPath(participant.address, 0);
-    console.error(`Verifiying transcript ${transcriptNumber} at ${transcriptPath} and ${transcript0Path}...`);
+    const args = [transcriptPath];
+    args.push(transcriptNumber === 0 ? transcriptPath : this.store.getTranscriptPath(participant.address, 0));
+    if (transcriptNumber === 0) {
+      const lastCompleteParticipant = this.getLastCompleteParticipant();
+      if (lastCompleteParticipant) {
+        args.push(this.store.getTranscriptPath(lastCompleteParticipant.address, 0));
+      }
+    } else {
+      args.push(this.store.getTranscriptPath(participant.address, transcriptNumber - 1));
+    }
+
+    console.error(`Verifiying transcript ${transcriptNumber}...`);
     return new Promise<boolean>(resolve => {
       const { VERIFY_PATH = '../setup-tools/verify' } = process.env;
-      const verify = spawn(VERIFY_PATH, [transcriptPath, transcript0Path]);
+      const verify = spawn(VERIFY_PATH, args);
 
       verify.stdout.on('data', data => {
         console.error(data.toString());
@@ -183,7 +197,6 @@ export class Server implements MpcServer {
       });
 
       verify.on('close', code => {
-        console.error(`child process exited with code ${code}`);
         if (code === 0) {
           participant.verifyProgress = ((transcriptNumber + 1) / participant.transcripts.length) * 100;
           resolve(true);
@@ -192,6 +205,36 @@ export class Server implements MpcServer {
         }
       });
     });
+  }
+
+  private async verifyTranscriptSet(participant: Participant) {
+    const { numG1Points, numG2Points } = this.state;
+    const args = [
+      numG1Points.toString(),
+      numG2Points.toString(),
+      ...this.store.getTranscriptPaths(participant.address),
+    ];
+
+    return new Promise<boolean>(resolve => {
+      const { VERIFY_PATH = '../setup-tools/verify_set' } = process.env;
+      const verify = spawn(VERIFY_PATH, args);
+
+      verify.stdout.on('data', data => {
+        console.error(data.toString());
+      });
+
+      verify.stderr.on('data', data => {
+        console.error(data.toString());
+      });
+
+      verify.on('close', code => {
+        resolve(code === 0 ? true : false);
+      });
+    });
+  }
+
+  private getLastCompleteParticipant() {
+    return this.state.participants.find(p => p.state === 'COMPLETE');
   }
 
   private getRunningParticipant(address: Address) {

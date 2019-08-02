@@ -12,22 +12,14 @@
 #include <chrono>
 #include <unistd.h>
 
-#include <libff/common/profiling.hpp>
-#include <libff/common/utils.hpp>
-#include <libff/algebra/curves/public_params.hpp>
-#include <libff/algebra/curves/curve_utils.hpp>
-#include <libff/algebra/scalar_multiplication/wnaf.hpp>
-
-#include <aztec_common/assert.hpp>
-#include <aztec_common/checksum.hpp>
-#include <aztec_common/streaming.hpp>
+#include <aztec_common/streaming_transcript.hpp>
 
 #include "utils.hpp"
 
-constexpr size_t POINTS_PER_TRANSCRIPT = 100000;
 constexpr size_t G1_WEIGHT = 2;
 constexpr size_t G2_WEIGHT = 9;
 constexpr size_t TOTAL_WEIGHT = G1_WEIGHT + G2_WEIGHT;
+constexpr size_t WNAF_WINDOW_SIZE = 5;
 
 auto getTranscriptInPath(std::string const &dir, size_t num)
 {
@@ -40,14 +32,12 @@ auto getTranscriptOutPath(std::string const &dir, size_t num)
 };
 
 // A compute thread. A job consists of multiple threads.
-template <typename FieldT, typename GroupT, size_t N>
-void compute_thread(FieldT &y, std::vector<GroupT> &g_x, size_t start_from, size_t start, size_t interval, std::atomic<size_t> &progress)
+template <typename GroupT, size_t N>
+void compute_thread(Fr const &y, std::vector<GroupT> &g_x, size_t transcript_start, size_t thread_start, size_t thread_range, std::atomic<size_t> &progress)
 {
-    constexpr size_t WNAF_WINDOW_SIZE = 5;
+    Fr accumulator = y ^ (unsigned long)(transcript_start + thread_start + 1);
 
-    FieldT accumulator = y ^ (unsigned long)(start_from + start + 1);
-
-    for (size_t i = start; i < start + interval; ++i)
+    for (size_t i = thread_start; i < thread_start + thread_range; ++i)
     {
         libff::bigint<N> x_bigint = accumulator.as_bigint();
         g_x[i] = libff::fixed_window_wnaf_exp<GroupT, N>(WNAF_WINDOW_SIZE, g_x[i], x_bigint);
@@ -57,8 +47,8 @@ void compute_thread(FieldT &y, std::vector<GroupT> &g_x, size_t start_from, size
 }
 
 // A compute job. Processing a single transcript file results in a two jobs computed in serial over G1 and G2.
-template <typename Fr, typename Fq, typename GroupT>
-void compute_job(std::vector<GroupT> &g_x, size_t start_from, size_t progress_total, Fr &multiplicand, size_t &progress, int weight)
+template <typename GroupT>
+void compute_job(std::vector<GroupT> &g_x, size_t start_from, size_t progress_total, Fr const &multiplicand, size_t &progress, int weight)
 {
     std::atomic<size_t> job_progress(0);
 
@@ -67,18 +57,18 @@ void compute_job(std::vector<GroupT> &g_x, size_t start_from, size_t progress_to
     size_t num_threads = std::thread::hardware_concurrency();
     num_threads = num_threads ? num_threads : 4;
 
-    size_t range_per_thread = g_x.size() / num_threads;
-    size_t leftovers = g_x.size() - (range_per_thread * num_threads);
+    size_t thread_range = g_x.size() / num_threads;
+    size_t leftovers = g_x.size() - (thread_range * num_threads);
     std::vector<std::thread> threads;
 
     for (uint i = 0; i < num_threads; i++)
     {
-        size_t thread_range_start = (i * range_per_thread);
+        size_t thread_start = (i * thread_range);
         if (i == num_threads - 1)
         {
-            range_per_thread += leftovers;
+            thread_range += leftovers;
         }
-        threads.push_back(std::thread(compute_thread<Fr, GroupT, num_limbs>, std::ref(multiplicand), std::ref(g_x), start_from, thread_range_start, range_per_thread, std::ref(job_progress)));
+        threads.push_back(std::thread(compute_thread<GroupT, num_limbs>, std::ref(multiplicand), std::ref(g_x), start_from, thread_start, thread_range, std::ref(job_progress)));
     }
 
     while (job_progress < g_x.size())
@@ -98,16 +88,24 @@ void compute_job(std::vector<GroupT> &g_x, size_t start_from, size_t progress_to
 }
 
 // Runs two jobs over G1 and G2 data and writes results to a given transcript file.
-template <typename Fr, typename Fqe, typename Fq, typename G1, typename G2>
-void compute_transcript(std::string const &dir, std::vector<G1> &g1_x, std::vector<G2> &g2_x, streaming::Manifest const &manifest, Fr &multiplicand, size_t &progress)
+void compute_transcript(std::string const &dir, std::vector<G1> &g1_x, std::vector<G2> &g2_x, streaming::Manifest &manifest, Fr const &multiplicand, size_t &progress)
 {
     size_t const progress_total = manifest.total_g1_points * G1_WEIGHT + manifest.total_g2_points * G2_WEIGHT;
 
     std::cerr << "Computing g1 multiple-exponentiations..." << std::endl;
-    compute_job<Fr, Fq>(g1_x, manifest.start_from, progress_total, multiplicand, progress, G1_WEIGHT);
+    compute_job(g1_x, manifest.start_from, progress_total, multiplicand, progress, G1_WEIGHT);
 
     std::cerr << "Computing g2 multiple-exponentiations..." << std::endl;
-    compute_job<Fr, Fq>(g2_x, manifest.start_from, progress_total, multiplicand, progress, G2_WEIGHT);
+    compute_job(g2_x, manifest.start_from, progress_total, multiplicand, progress, G2_WEIGHT);
+
+    if (manifest.transcript_number == 0)
+    {
+        // We need g2^y for verifying this participants transcript was built on top of the last.
+        // Remember to pop this off the end when reading...
+        manifest.num_g2_points += 1;
+        G2 g2_y = libff::fixed_window_wnaf_exp<G2, sizeof(Fq) / GMP_NUMB_BYTES>(WNAF_WINDOW_SIZE, G2::one(), multiplicand.as_bigint());
+        g2_x.push_back(g2_y);
+    }
 
     std::cerr << "Converting points into affine form..." << std::endl;
     utils::batch_normalize<Fq, G1>(0, g1_x.size(), &g1_x[0]);
@@ -115,7 +113,7 @@ void compute_transcript(std::string const &dir, std::vector<G1> &g1_x, std::vect
 
     std::cerr << "Writing transcript..." << std::endl;
     std::string const filename = getTranscriptOutPath(dir, manifest.transcript_number);
-    streaming::write_transcript<Fq, Fqe>(g1_x, g2_x, manifest, filename);
+    streaming::write_transcript(g1_x, g2_x, manifest, filename);
 
     // Signals calling process this transcript file is complete.
     std::cout << "wrote " << manifest.transcript_number << std::endl;
@@ -129,7 +127,6 @@ size_t calculate_current_progress(streaming::Manifest const &manifest, size_t tr
 }
 
 // Given an existing transcript file, read it and start computation.
-template <typename Fr, typename Fqe, typename Fq, typename G1, typename G2>
 void compute_existing_transcript(std::string const &dir, size_t num, Fr &multiplicand, size_t &progress)
 {
     streaming::Manifest manifest;
@@ -138,17 +135,23 @@ void compute_existing_transcript(std::string const &dir, size_t num, Fr &multipl
 
     std::cerr << "Reading transcript..." << std::endl;
     std::string const filename = getTranscriptInPath(dir, num);
-    streaming::read_transcript<Fq, G1, G2>(g1_x, g2_x, manifest, filename);
+    streaming::read_transcript(g1_x, g2_x, manifest, filename);
+
+    if (num == 0)
+    {
+        // Discard the additional g2^y point in transcript 0. This is only used for verification.
+        g2_x.pop_back();
+        manifest.num_g2_points -= 1;
+    }
 
     progress = calculate_current_progress(manifest, num);
 
     std::cerr << "Will compute " << manifest.num_g1_points << " G1 points and " << manifest.num_g2_points << " G2 points on top of transcript " << manifest.transcript_number << std::endl;
 
-    compute_transcript<Fr, Fqe, Fq, G1, G2>(dir, g1_x, g2_x, manifest, multiplicand, progress);
+    compute_transcript(dir, g1_x, g2_x, manifest, multiplicand, progress);
 }
 
 // Computes initial transcripts.
-template <typename Fr, typename Fqe, typename Fq, typename G1, typename G2>
 void compute_initial_transcripts(const std::string &dir, size_t total_g1_points, size_t total_g2_points, Fr &multiplicand, size_t &progress)
 {
     const size_t max_points = std::max(total_g1_points, total_g2_points);
@@ -180,7 +183,7 @@ void compute_initial_transcripts(const std::string &dir, size_t total_g1_points,
     std::cout << "creating";
     for (size_t i = 0; i < total_transcripts; ++i)
     {
-        std::cout << " " << i << ":" << streaming::get_transcript_size<Fq, G1, G2>(manifests[i].num_g1_points, manifests[i].num_g2_points);
+        std::cout << " " << i << ":" << streaming::get_transcript_size(manifests[i]);
     }
     std::cout << std::endl;
 
@@ -191,7 +194,7 @@ void compute_initial_transcripts(const std::string &dir, size_t total_g1_points,
 
         std::cerr << "Will compute " << it->num_g1_points << " G1 points and " << it->num_g2_points << " G2 points starting from " << it->start_from << " in transcript " << it->transcript_number << std::endl;
 
-        compute_transcript<Fr, Fqe, Fq, G1, G2>(dir, g1_x, g2_x, *it, multiplicand, progress);
+        compute_transcript(dir, g1_x, g2_x, *it, multiplicand, progress);
     }
 }
 
@@ -220,15 +223,8 @@ private:
     T t_;
 };
 
-template <typename ppT>
 void run_setup(std::string const &dir, size_t num_g1_points, size_t num_g2_points)
 {
-    using Fr = libff::Fr<ppT>;
-    using Fq = libff::Fq<ppT>;
-    using Fqe = libff::Fqe<ppT>;
-    using G1 = libff::G1<ppT>;
-    using G2 = libff::G2<ppT>;
-
     size_t progress = 0;
 
     // Our toxic waste. Will be zeroed before going out of scope.
@@ -249,13 +245,13 @@ void run_setup(std::string const &dir, size_t num_g1_points, size_t num_g2_point
             {
                 size_t num_g1_points, num_g2_points;
                 iss >> num_g1_points >> num_g2_points;
-                compute_initial_transcripts<Fr, Fqe, Fq, G1, G2>(dir, num_g1_points, num_g2_points, multiplicand, progress);
+                compute_initial_transcripts(dir, num_g1_points, num_g2_points, multiplicand, progress);
             }
             else if (cmd == "process")
             {
                 size_t num;
                 iss >> num;
-                compute_existing_transcript<Fr, Fqe, Fq, G1, G2>(dir, num, multiplicand, progress);
+                compute_existing_transcript(dir, num, multiplicand, progress);
             }
         }
     }
@@ -264,7 +260,7 @@ void run_setup(std::string const &dir, size_t num_g1_points, size_t num_g2_point
         // Being manually run.
         if (num_g1_points > 0)
         {
-            compute_initial_transcripts<Fr, Fqe, Fq, G1, G2>(dir, num_g1_points, num_g2_points, multiplicand, progress);
+            compute_initial_transcripts(dir, num_g1_points, num_g2_points, multiplicand, progress);
         }
         else
         {
@@ -272,11 +268,12 @@ void run_setup(std::string const &dir, size_t num_g1_points, size_t num_g2_point
             std::string filename = getTranscriptInPath(dir, num);
             while (streaming::is_file_exist(filename))
             {
-                compute_existing_transcript<Fr, Fqe, Fq, G1, G2>(dir, num, multiplicand, progress);
+                compute_existing_transcript(dir, num, multiplicand, progress);
                 filename = getTranscriptInPath(dir, ++num);
             }
 
-            if (num == 0) {
+            if (num == 0)
+            {
                 std::cerr << "No input files found." << std::endl;
             }
         }
