@@ -11,12 +11,12 @@ jobs:
       - setup_remote_docker
       - run:
           name: "Install aws cli"
-          command: sudo pip install awscli --upgrade
+          command: sudo pip install awscli --upgrade -q
       - run:
           name: "Install mbt"
           command : |
-            curl -L -o /usr/local/bin/mbt https://bintray.com/buddyspike/bin/download_file?file_path=mbt_linux_x86_64/0.22.0/0.22.0/mbt_linux_x86_64
-            chmod +x /usr/local/bin/mbt
+            sudo curl -L -o /usr/local/bin/mbt https://bintray.com/buddyspike/bin/download_file?file_path=mbt_linux_x86_64/0.22.0/0.22.0/mbt_linux_x86_64
+            sudo chmod +x /usr/local/bin/mbt
       - run:
           name: "ECR login"
           command: $(aws ecr get-login --no-include-email)
