@@ -2,7 +2,7 @@ version: 2.1
 jobs:
   build-and-test:
     docker:
-      - image: circleci/python:3.7.1
+      - image: circleci/python:3.6.7-jessie
     steps:
       - checkout
       - run:
