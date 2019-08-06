@@ -1,0 +1,7 @@
+name: setup-tools
+build:
+  default:
+    cmd: ./build.sh
+commands:
+  deploy:
+    cmd: ./deploy.sh

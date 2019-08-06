@@ -1,0 +1,7 @@
+name: setup-mpc-common
+build:
+  default:
+    cmd: ./build.sh
+commands:
+  deploy:
+    cmd: ./deploy.sh

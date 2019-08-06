@@ -1,9 +1,7 @@
 version: '3'
 services:
   setup-mpc-client:
-    build:
-      context: ..
-      dockerfile: setup-mpc-client/Dockerfile
+    build: .
     image: aztec/setup-mpc-client
     tty: true
     environment:
@@ -15,9 +13,7 @@ services:
       - ../setup-mpc-common:/usr/src/setup-mpc-client/node_modules/setup-mpc-common
 
   setup-mpc-client1:
-    build:
-      context: ..
-      dockerfile: setup-mpc-client/Dockerfile
+    build: .
     image: aztec/setup-mpc-client
     tty: true
     environment:

@@ -1,5 +1,5 @@
 import { readdirSync, readFileSync } from 'fs';
-import redis from 'redis';
+import redis, { RedisClient } from 'redis';
 import bluebird from 'bluebird';
 import http from 'http';
 import Koa from 'koa';
@@ -9,10 +9,19 @@ import { Readable } from 'stream';
 
 bluebird.promisifyAll(redis);
 
+declare module 'redis' {
+  interface RedisClient {
+    scriptAsync: any;
+    evalshaAsync: any;
+    getAsync: any;
+    mgetAsync: any;
+  }
+}
+
 const { PORT = 80, REDIS_URL = 'redis://localhost:6379' } = process.env;
 const SCRIPT_DIR = './redis-scripts';
 
-async function loadScripts(redisClient) {
+async function loadScripts(redisClient: RedisClient) {
   console.log('Loading scripts...');
   const files = readdirSync(SCRIPT_DIR);
   const shas = await Promise.all(
@@ -22,7 +31,7 @@ async function loadScripts(redisClient) {
   return files.reduce((a, file, i) => ({ ...a, [file]: shas[i] }), {});
 }
 
-function app(redisClient, scripts) {
+function app(redisClient: RedisClient, scripts: { [k: string]: string }) {
   const router = new Router();
 
   router.get('/', async ctx => {
@@ -46,7 +55,8 @@ function app(redisClient, scripts) {
 
   router.get('/result', async ctx => {
     const to = Number(await redisClient.getAsync('to'));
-    let { from = 0, num = to - from } = ctx.query;
+    let from: number = +ctx.query.from || 0;
+    let num = ctx.query.num || to - from;
 
     ctx.body = new Readable({
       async read() {
@@ -57,7 +67,7 @@ function app(redisClient, scripts) {
 
         const batch = Math.min(num, 100);
         const keys = Array(batch)
-          .fill()
+          .fill(0)
           .map((_, idx) => `complete:${from + idx}`);
         const results = await redisClient.mgetAsync(...keys);
         const nullIndex = results.indexOf(null);
@@ -72,7 +82,7 @@ function app(redisClient, scripts) {
 
         const chunk = results
           .slice(0, toSend)
-          .map(r => `${r}\n`)
+          .map((r: string) => `${r}\n`)
           .join('');
 
         this.push(chunk);
@@ -106,4 +116,4 @@ async function main() {
   process.once('SIGTERM', shutdown);
 }
 
-main().catch(console.err);
+main().catch(console.error);

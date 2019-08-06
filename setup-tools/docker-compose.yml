@@ -1,11 +1,21 @@
 version: '3'
 services:
-  setup-tools:
-    build: .
-    image: aztec/setup-tools
+  build-env:
+    build:
+      context: .
+      dockerfile: Dockerfile.build
+    image: aztec/setup-tools-build
     entrypoint: /bin/bash
     tty: true
     environment:
       MAKEFLAGS: '-j8'
     volumes:
-      - .:/usr/src/app
+      - .:/usr/src/setup-tools
+
+  setup-tools:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: aztec/setup-tools
+    depends_on:
+      - build-env
