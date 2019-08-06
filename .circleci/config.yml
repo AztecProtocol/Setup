@@ -29,7 +29,7 @@ jobs:
               # First commit in a branch
               mbt build branch $CIRCLE_BRANCH
             else
-              mbt build diff --from ${LAST_SUCCESSFUL_COMMIT} --to ${CIRCLE_SHA1} --content
+              mbt build diff --from ${LAST_SUCCESSFUL_COMMIT} --to ${CIRCLE_SHA1}
             fi
 
 workflows:
