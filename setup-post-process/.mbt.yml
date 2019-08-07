@@ -1,0 +1,9 @@
+name: setup-post-process
+# build:
+#   default:
+#     cmd: docker-compose
+#     args:
+#       - build
+#       - setup-post-process
+dependencies:
+  - setup-tools

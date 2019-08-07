@@ -1,0 +1,33 @@
+{
+  "name": "setup-mpc-client",
+  "version": "1.0.0",
+  "main": "dest/exports.js",
+  "license": "MIT",
+  "scripts": {
+    "start": "node ./dest 2> ./err.log",
+    "start:dev": "tsc-watch -p tsconfig.prod.json --onSuccess 'yarn start' 2> ./err.log",
+    "build": "tsc -p tsconfig.prod.json",
+    "postinstall": "yarn link setup-mpc-common"
+  },
+  "devDependencies": {
+    "@types/humanize-duration": "^3.18.0",
+    "@types/isomorphic-fetch": "^0.0.35",
+    "@types/node": "^12.6.2",
+    "@types/progress-stream": "^2.0.0",
+    "@types/terminal-kit": "^1.28.0",
+    "tsc-watch": "^2.2.1",
+    "tslint": "^5.18.0",
+    "tslint-config-prettier": "^1.18.0",
+    "typescript": "^3.5.3"
+  },
+  "dependencies": {
+    "chalk": "^2.4.2",
+    "form-data": "^2.5.0",
+    "humanize-duration": "^3.20.1",
+    "isomorphic-fetch": "^2.2.1",
+    "moment": "^2.24.0",
+    "progress-stream": "^2.0.0",
+    "terminal-kit": "^1.28.7",
+    "web3x": "^4.0.3"
+  }
+}

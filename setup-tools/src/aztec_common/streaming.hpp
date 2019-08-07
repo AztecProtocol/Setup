@@ -1,88 +1,69 @@
 /**
  * Setup
  * Copyright Spilsbury Holdings 2019
- * 
  **/
 #pragma once
-
-#include <gmp.h>
-#include <memory.h>
-#include <fstream>
 #include <vector>
-
-#include <libff/algebra/fields/bigint.hpp>
-#include <libff/algebra/curves/public_params.hpp>
-
-#include "assert.hpp"
+#include "libff_types.hpp"
 #include "checksum.hpp"
-
-constexpr int GMP_NUMB_BYTES = GMP_NUMB_BITS / 8;
 
 namespace streaming
 {
-    template <typename FieldT>
-    void write_element_to_buffer(FieldT& element, char* buffer);
+constexpr bool USE_COMPRESSION = false;
 
-    template <typename FieldT>
-    void write_field_elements_to_file(std::vector<FieldT>& coefficients, const char* filename);
-    
-    template <size_t N>
-    void write_bigint_to_buffer(libff::bigint<N>& value, char* buffer);
+void write_field_elements_to_file(std::vector<Fr> &coefficients, const char *filename);
 
-    template <typename FieldT>
-    void write_fq_element_to_buffer(FieldT& element, char* buffer);
+void read_field_elements_from_file(std::vector<Fr> &coefficients, const char *filename, size_t degree);
 
-    template <typename GroupT>
-    void write_g1_element_to_buffer(GroupT& element, char* buffer);
+size_t get_file_size(std::string const &filename);
 
-    template <typename GroupT>
-    void write_g2_element_to_buffer(GroupT& element, char* buffer);
+std::vector<char> read_file_into_buffer(std::string const &filename, size_t offset = 0, size_t size = 0);
 
-    template <typename FieldT, typename GroupT>
-    void write_g1_elements_to_buffer(GroupT* elements, char *buffer, size_t degree);
+void write_buffer_to_file(std::string const &filename, std::vector<char> const &buffer);
 
-    template <typename FieldT, typename GroupT>
-    void write_g2_elements_to_buffer(GroupT* elements, char *buffer, size_t degree);
+bool is_file_exist(std::string const &fileName);
 
-    template <typename FieldT>
-    void read_field_elements_from_file(std::vector<FieldT>& coefficients, const char* filename, size_t degree);
+void validate_checksum(std::vector<char> const &buffer);
 
-    template <typename FieldT, typename GroupT>
-    void read_g1_elements_from_buffer(GroupT* elements, char* buffer, size_t buffer_size);
+void add_checksum_to_buffer(char *buffer, size_t message_size);
 
-    template <typename FieldT, typename GroupT>
-    void read_g2_elements_from_buffer(GroupT* elements, char* buffer, size_t buffer_size);
-
-    inline void read_file_into_buffer(char const *filename, char *buffer, size_t message_size)
+template <size_t N>
+void __bswap_bigint(libff::bigint<N> &val)
+{
+    for (size_t i = 0; i < N; ++i)
     {
-        std::ifstream file;
-        file.open(filename, std::ifstream::binary);
-        file.read(buffer, message_size + checksum::BLAKE2B_CHECKSUM_LENGTH);
-        file.close();
+        val.data[i] = __bswap_64(val.data[i]);
     }
+}
 
-    inline void write_buffer_to_file(char const *filename, char *buffer, size_t message_size)
-    {
-        std::ofstream file;
-        file.open(filename);
-        file.write(buffer, message_size + checksum::BLAKE2B_CHECKSUM_LENGTH);
-        file.close();
-    }
+inline bool isLittleEndian()
+{
+    int num = 42;
+    return (*(char *)&num == 42);
+}
 
-    inline void add_checksum_to_buffer(char* buffer, size_t message_size)
+template <size_t N>
+void write_bigint_to_buffer(libff::bigint<N> &value, char *buffer)
+{
+    mp_limb_t temp;
+    for (size_t i = 0; i < N; ++i)
     {
-        checksum::create_checksum(buffer, message_size, buffer + message_size);
-    }
-
-    inline void validate_checksum(char* buffer, size_t message_size)
-    {
-        char checksum[checksum::BLAKE2B_CHECKSUM_LENGTH] = { 0 };
-        checksum::create_checksum(buffer, message_size, &checksum[0]);
-        char* comparison = buffer + message_size;
-        for (size_t i = 0; i < checksum::BLAKE2B_CHECKSUM_LENGTH; ++i)
+        if (isLittleEndian())
         {
-            ASSERT(checksum[i] == comparison[i]);
+            temp = __builtin_bswap64(value.data[i]);
         }
+        memcpy(buffer + (i * GMP_NUMB_BYTES), &temp, GMP_NUMB_BYTES);
     }
-};
-#include "streaming.tcc"
+}
+
+inline int32_t read_int32_t(char const *buffer)
+{
+    return isLittleEndian() ? __builtin_bswap32(*(int32_t *)buffer) : *(int32_t *)buffer;
+}
+
+inline void write_int32_t(char const *buffer, int32_t length)
+{
+    *(int32_t *)buffer = isLittleEndian() ? __builtin_bswap32(length) : length;
+}
+
+}; // namespace streaming

@@ -1,0 +1,55 @@
+version: '3'
+services:
+  setup-mpc-client:
+    build: .
+    image: aztec/setup-mpc-client
+    tty: true
+    environment:
+      SERVER_HOST: 'setup-mpc-server'
+      ACCOUNT_INDEX: '0'
+      POLYNOMIAL_DEGREE: '100000000'
+    volumes:
+      - .:/usr/src/setup-mpc-client
+      - ../setup-mpc-common:/usr/src/setup-mpc-client/node_modules/setup-mpc-common
+
+  setup-mpc-client1:
+    build: .
+    image: aztec/setup-mpc-client
+    tty: true
+    environment:
+      SERVER_HOST: 'setup-mpc-server'
+      ACCOUNT_INDEX: '1'
+      POLYNOMIAL_DEGREE: '100000000'
+    volumes:
+      - .:/usr/src/setup-mpc-client
+      - ../setup-mpc-common:/usr/src/setup-mpc-client/node_modules/setup-mpc-common
+
+  setup-mpc-server:
+    build:
+      context: ..
+      dockerfile: setup-mpc-server/Dockerfile
+    image: aztec/setup-mpc-server
+    environment:
+      YOU_INDICIES: '0,1'
+      POLYNOMIAL_DEGREE: '100000000'
+    expose:
+      - 80
+    ports:
+      - "8081:80"
+    volumes:
+      - ../setup-mpc-server:/usr/src/setup-mpc-server
+      - ../setup-mpc-common:/usr/src/setup-mpc-server/node_modules/setup-mpc-common
+
+  setup-mpc-web:
+    build:
+      context: ..
+      dockerfile: setup-mpc-web/Dockerfile
+    image: aztec/setup-mpc-web
+    environment:
+      PORT: '80'
+    expose:
+      - 80
+    ports:
+      - "8080:80"
+    volumes:
+      - ../setup-mpc-web:/usr/src/setup-mpc-web

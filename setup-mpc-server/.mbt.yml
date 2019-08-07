@@ -1,0 +1,10 @@
+name: setup-mpc-server
+build:
+  default:
+    cmd: ./build.sh
+commands:
+  deploy:
+    cmd: ./deploy.sh
+dependencies:
+  - setup-mpc-common
+  - setup-tools

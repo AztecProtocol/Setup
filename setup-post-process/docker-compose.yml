@@ -1,6 +1,6 @@
 version: '3'
 services:
-  runner:
+  setup-post-process:
     build: .
     image: aztec/setup-post-process
     environment:

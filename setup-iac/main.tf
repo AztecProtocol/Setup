@@ -59,6 +59,13 @@ resource "aws_security_group" "setup" {
   }
 
   ingress {
+    protocol    = "tcp"
+    from_port   = 22
+    to_port     = 22
+    cidr_blocks = ["82.163.119.138/32", "217.169.11.246/32"]
+  }
+
+  ingress {
     protocol  = "-1"
     from_port = 0
     to_port   = 0
@@ -351,17 +358,65 @@ resource "aws_iam_policy_attachment" "ecs_instance" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role"
 }
 
+resource "aws_key_pair" "deployer" {
+  key_name = "deployer-key"
+  public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDagCvr/+CA1jmFaJf+e9+Kw6iwfhvaKOpfbGEl5zLgB+rum5L4Kga6Jow1gLQeMnAHfqc2IgpsU4t04c8PYApAt8AWNDL+KxMiFytfjKfJ2DZJA73CYkFnkfnMtU+ki+JG9dAHd6m7ShtCSzE5n6EDO2yWCVWQfqE3dcnpwrymSWkJYrbxzeOixiNZ4f1nD9ddvFvTWGB4l+et5SWgeIaYgJYDqTI2teRt9ytJiDGrCWXs9olHsCZOL6TEJPUQmNekwBkjMAZ4TmbBMjwbUlIxOpW2UxzlONcNn7IlRcGQg0Gdbkpo/zOlCNXsvacvnphDk5vKKaQj+aQiG916LU5P charlie@aztecprotocol.com"
+}
+
+/*
+resource "aws_instance" "setup_task" {
+  ami = "ami-013b322dbc79e9a6a"
+  instance_type = "m5.metal"
+  subnet_id = "${aws_subnet.setup.id}"
+  vpc_security_group_ids = ["${aws_security_group.setup.id}"]
+  iam_instance_profile = "${aws_iam_instance_profile.ecs.name}"
+  associate_public_ip_address = true
+  key_name = "${aws_key_pair.deployer.key_name}"
+
+  user_data = <<USER_DATA
+#!/bin/bash
+echo ECS_CLUSTER=${aws_ecs_cluster.setup.name} >> /etc/ecs/ecs.config
+USER_DATA
+
+  tags = {
+    Name = "setup-task"
+  }
+}
+*/
+
+/*
+resource "aws_instance" "setup_task_2" {
+  ami                         = "ami-013b322dbc79e9a6a"
+  instance_type               = "c5.large"
+  subnet_id                   = "${aws_subnet.setup.id}"
+  vpc_security_group_ids      = ["${aws_security_group.setup.id}"]
+  iam_instance_profile        = "${aws_iam_instance_profile.ecs.name}"
+  associate_public_ip_address = true
+  key_name                    = "${aws_key_pair.deployer.key_name}"
+
+  user_data = <<USER_DATA
+#!/bin/bash
+echo ECS_CLUSTER=${aws_ecs_cluster.setup.name} >> /etc/ecs/ecs.config
+USER_DATA
+
+  tags = {
+    Name = "setup-task"
+  }
+}
+*/
+
+/*
 resource "aws_spot_fleet_request" "main" {
   iam_fleet_role = "${aws_iam_role.ec2_spot_fleet_role.arn}"
-  spot_price = "0.03"
+  spot_price = "20.00"
   allocation_strategy = "diversified"
   target_capacity = "1"
   terminate_instances_with_expiration = false
 
   launch_specification {
     ami = "ami-013b322dbc79e9a6a"
-    instance_type = "m5.xlarge"
-    spot_price = "0.20"
+    instance_type = "r5.metal"
+    spot_price = "20.00"
     subnet_id = "${aws_subnet.setup.id}"
     vpc_security_group_ids = ["${aws_security_group.setup.id}"]
     iam_instance_profile = "${aws_iam_instance_profile.ecs.name}"
@@ -375,14 +430,18 @@ USER_DATA
   lifecycle {
     ignore_changes = ["valid_until"]
   }
+
+  tags = {
+    Name = "setup-task"
+  }
 }
+*/
 
 resource "aws_ecs_task_definition" "setup_task" {
-  family                   = "setup-task"
+  family = "setup-task"
   requires_compatibilities = ["EC2"]
-  memory                   = "15576"
-  network_mode             = "awsvpc"
-  execution_role_arn       = "${aws_iam_role.ecs_task_execution_role.arn}"
+  network_mode = "awsvpc"
+  execution_role_arn = "${aws_iam_role.ecs_task_execution_role.arn}"
 
   container_definitions = <<DEFINITIONS
 [
@@ -390,6 +449,7 @@ resource "aws_ecs_task_definition" "setup_task" {
     "name": "setup-task",
     "image": "278380418400.dkr.ecr.eu-west-2.amazonaws.com/setup-post-process:latest",
     "essential": true,
+    "memoryReservation": 256,
     "environment": [
       {
         "name": "JOB_SERVER_HOST",
@@ -414,13 +474,13 @@ data "aws_ecs_task_definition" "setup_task" {
 }
 
 resource "aws_ecs_service" "setup_task" {
-  name = "setup-task"
-  cluster = "${aws_ecs_cluster.setup.id}"
-  launch_type = "EC2"
+  name          = "setup-task"
+  cluster       = "${aws_ecs_cluster.setup.id}"
+  launch_type   = "EC2"
   desired_count = "1"
 
   network_configuration {
-    subnets = ["${aws_subnet.setup.id}"]
+    subnets         = ["${aws_subnet.setup.id}"]
     security_groups = ["${aws_security_group.setup.id}"]
   }
 
@@ -430,6 +490,6 @@ resource "aws_ecs_service" "setup_task" {
 
 # Logging setup-task to CloudWatch
 resource "aws_cloudwatch_log_group" "setup_task_logs" {
-  name = "/fargate/service/setup-task"
+  name              = "/fargate/service/setup-task"
   retention_in_days = "14"
 }

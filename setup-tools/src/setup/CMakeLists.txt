@@ -6,7 +6,7 @@ find_package (Threads)
 
 add_executable(
     setup
-    setup.tcc
+    setup.cpp
     setup.hpp
     utils.hpp
     main.cpp

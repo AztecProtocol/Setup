@@ -1,18 +1,9 @@
 {
-  "name": "trusted-setup",
+  "name": "job-server",
   "version": "1.0.0",
   "main": "index.js",
   "license": "MIT",
   "dependencies": {
-    "@babel/cli": "^7.2.3",
-    "@babel/core": "^7.4.0",
-    "@babel/node": "^7.2.2",
-    "@babel/plugin-proposal-class-properties": "^7.4.0",
-    "@babel/plugin-proposal-object-rest-spread": "^7.4.0",
-    "@babel/plugin-transform-runtime": "^7.4.0",
-    "@babel/preset-env": "^7.4.2",
-    "@babel/register": "^7.4.0",
-    "@babel/runtime": "^7.4.2",
     "bluebird": "^3.5.5",
     "fs": "^0.0.1-security",
     "koa": "^2.7.0",
@@ -23,10 +14,18 @@
     "redis": "^2.8.0"
   },
   "scripts": {
-    "start": "babel-node src/index.js",
-    "start:dev": "babel-watch src/index.js"
+    "build": "tsc",
+    "start": "node ./dest",
+    "start:dev": "ts-watch src/index.ts"
   },
   "devDependencies": {
-    "babel-watch": "^7.0.0"
+    "@types/bluebird": "^3.5.27",
+    "@types/koa": "^2.0.49",
+    "@types/koa-bodyparser": "^4.3.0",
+    "@types/koa-router": "^7.0.42",
+    "@types/node": "^12.6.9",
+    "@types/redis": "^2.8.13",
+    "ts-watch": "^1.0.8",
+    "typescript": "^3.5.3"
   }
 }

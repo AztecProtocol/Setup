@@ -37,6 +37,6 @@ void compute_generator_polynomial(size_t polynomial_degree)
     std::vector<FieldT> result = subproduct_tree[log2(polynomial_degree)][0];
     printf("result size = %d\n", (int)result.size());
     printf("computed polynomial coefficients, writing to disk...\n");
-    streaming::write_field_elements_to_file(result, "../post_processing_db/generator.dat");
+    streaming::write_field_elements_to_file(result, "../setup_db/generator.dat");
 }
 } // namespace generator
