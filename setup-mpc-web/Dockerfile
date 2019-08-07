@@ -1,5 +1,5 @@
 FROM 278380418400.dkr.ecr.eu-west-2.amazonaws.com/setup-mpc-common:latest
-FROM 278380418400.dkr.ecr.eu-west-2.amazonaws.com/setup-mpc-client:latest
+FROM aztecprotocol/setup-mpc-client:latest
 
 FROM node:10
 WORKDIR /usr/src/setup-mpc-common

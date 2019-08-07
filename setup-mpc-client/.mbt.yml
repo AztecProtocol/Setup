@@ -3,7 +3,7 @@ build:
   default:
     cmd: ./build.sh
 commands:
-  deploy:
+  deploy-public:
     cmd: ./deploy.sh
 dependencies:
   - setup-mpc-common
