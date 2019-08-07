@@ -12,14 +12,14 @@ jobs:
       - run:
           name: "Build"
           command : |
-            LAST_SUCCESSFUL_BUILD_URL="https://circleci.com/api/v1.1/project/github/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/tree/master?filter=completed&limit=1"
+            LAST_SUCCESSFUL_BUILD_URL="https://circleci.com/api/v1.1/project/github/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/tree/master?filter=successful&limit=1"
             LAST_SUCCESSFUL_COMMIT=`curl -Ss -u "$CIRCLE_TOKEN:" $LAST_SUCCESSFUL_BUILD_URL | jq -r '.[0]["vcs_revision"]'`
             mbt build diff --from ${LAST_SUCCESSFUL_COMMIT} --to ${CIRCLE_SHA1}
       - run:
           name: "Deploy if master"
           command : |
             if [ "${CIRCLE_BRANCH}" != "master" ]; then exit 0; fi
-            LAST_SUCCESSFUL_BUILD_URL="https://circleci.com/api/v1.1/project/github/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/tree/master?filter=completed&limit=1"
+            LAST_SUCCESSFUL_BUILD_URL="https://circleci.com/api/v1.1/project/github/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/tree/master?filter=successful&limit=1"
             LAST_SUCCESSFUL_COMMIT=`curl -Ss -u "$CIRCLE_TOKEN:" $LAST_SUCCESSFUL_BUILD_URL | jq -r '.[0]["vcs_revision"]'`
             docker login -u aztecprotocolci -p "${DOCKERHUB_PASSWORD}"
             mbt run-in diff --from ${LAST_SUCCESSFUL_COMMIT} --to ${CIRCLE_SHA1} -m deploy-public
