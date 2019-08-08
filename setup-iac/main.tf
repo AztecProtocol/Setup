@@ -72,9 +72,59 @@ resource "aws_security_group" "setup" {
     self      = true
   }
 
+  ingress {
+    protocol        = "-1"
+    from_port       = 0
+    to_port         = 0
+    security_groups = ["${aws_security_group.setup_public.id}"]
+  }
+
+  egress {
+    protocol    = "-1"
+    from_port   = 0
+    to_port     = 0
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
   tags = {
     Name = "setup"
   }
+}
+
+resource "aws_security_group" "setup_public" {
+  name   = "setup-public"
+  vpc_id = "${aws_vpc.setup.id}"
+
+  tags = {
+    Name = "setup-public"
+  }
+}
+
+resource "aws_security_group_rule" "setup_public_allow_http" {
+  type              = "ingress"
+  from_port         = 80
+  to_port           = 80
+  protocol          = "tcp"
+  cidr_blocks       = ["0.0.0.0/0"]
+  security_group_id = "${aws_security_group.setup_public.id}"
+}
+
+resource "aws_security_group_rule" "setup_public_allow_setup_private" {
+  type                     = "ingress"
+  from_port                = 0
+  to_port                  = 0
+  protocol                 = "-1"
+  source_security_group_id = "${aws_security_group.setup.id}"
+  security_group_id        = "${aws_security_group.setup_public.id}"
+}
+
+resource "aws_security_group_rule" "setup_public_allow_all_outgoing" {
+  type              = "egress"
+  from_port         = 0
+  to_port           = 0
+  protocol          = "-1"
+  cidr_blocks       = ["0.0.0.0/0"]
+  security_group_id = "${aws_security_group.setup_public.id}"
 }
 
 # Private link endpoint interfaces to get access to AWS services.
