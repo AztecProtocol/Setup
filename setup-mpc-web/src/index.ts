@@ -33,8 +33,8 @@ async function main() {
   term.setOption('fontSize', 12);
   term.open(document.getElementById('terminal') as HTMLElement);
 
-  const { SERVER_HOST = 'localhost:8081' } = process.env;
-  const server = new HttpClient(SERVER_HOST);
+  const API_URL = process.env.API_URL || 'http://localhost:8081/api';
+  const server = new HttpClient(API_URL);
   const app = new App(server, undefined, term as any, term.rows, term.cols);
 
   term.on('resize', ({ cols, rows }) => app.resize(cols, rows));

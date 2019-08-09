@@ -1,7 +1,7 @@
 terraform {
   backend "s3" {
     bucket = "aztec-terraform"
-    key    = "setup/setup-mpc-server"
+    key    = "setup/setup-mpc-web"
     region = "eu-west-2"
   }
 }
@@ -20,8 +20,8 @@ provider "aws" {
   region  = "eu-west-2"
 }
 
-resource "aws_service_discovery_service" "setup_mpc_server" {
-  name = "setup-mpc-server"
+resource "aws_service_discovery_service" "setup_mpc_web" {
+  name = "setup-mpc-web"
 
   health_check_custom_config {
     failure_threshold = 1
@@ -39,8 +39,8 @@ resource "aws_service_discovery_service" "setup_mpc_server" {
   }
 }
 
-resource "aws_ecs_task_definition" "setup_mpc_server" {
-  family                   = "setup-mpc-server"
+resource "aws_ecs_task_definition" "setup_mpc_web" {
+  family                   = "setup-mpc-web"
   requires_compatibilities = ["FARGATE"]
   network_mode             = "awsvpc"
   cpu                      = "256"
@@ -50,8 +50,8 @@ resource "aws_ecs_task_definition" "setup_mpc_server" {
   container_definitions = <<DEFINITIONS
 [
   {
-    "name": "setup-mpc-server",
-    "image": "278380418400.dkr.ecr.eu-west-2.amazonaws.com/setup-mpc-server:latest",
+    "name": "setup-mpc-web",
+    "image": "278380418400.dkr.ecr.eu-west-2.amazonaws.com/setup-mpc-web:latest",
     "essential": true,
     "portMappings": [
       {
@@ -67,7 +67,7 @@ resource "aws_ecs_task_definition" "setup_mpc_server" {
     "logConfiguration": {
       "logDriver": "awslogs",
       "options": {
-        "awslogs-group": "/fargate/service/setup-mpc-server",
+        "awslogs-group": "/fargate/service/setup-mpc-web",
         "awslogs-region": "eu-west-2",
         "awslogs-stream-prefix": "ecs"
       }
@@ -77,8 +77,8 @@ resource "aws_ecs_task_definition" "setup_mpc_server" {
 DEFINITIONS
 }
 
-resource "aws_ecs_service" "setup_mpc_server" {
-  name = "setup-mpc-server"
+resource "aws_ecs_service" "setup_mpc_web" {
+  name = "setup-mpc-web"
   cluster = "${data.terraform_remote_state.setup_iac.outputs.ecs_cluster_id}"
   launch_type = "FARGATE"
   desired_count = "1"
@@ -89,49 +89,49 @@ resource "aws_ecs_service" "setup_mpc_server" {
   }
 
   load_balancer {
-    target_group_arn = "${aws_alb_target_group.setup_mpc_server.arn}"
-    container_name = "setup-mpc-server"
+    target_group_arn = "${aws_alb_target_group.setup_mpc_web.arn}"
+    container_name = "setup-mpc-web"
     container_port = 80
   }
 
   service_registries {
-    registry_arn = "${aws_service_discovery_service.setup_mpc_server.arn}"
+    registry_arn = "${aws_service_discovery_service.setup_mpc_web.arn}"
   }
 
-  task_definition = "${aws_ecs_task_definition.setup_mpc_server.family}"
+  task_definition = "${aws_ecs_task_definition.setup_mpc_web.family}"
 
   lifecycle {
     ignore_changes = ["task_definition"]
   }
 }
 
-resource "aws_cloudwatch_log_group" "setup_mpc_server_logs" {
-  name = "/fargate/service/setup-mpc-server"
+resource "aws_cloudwatch_log_group" "setup_mpc_web_logs" {
+  name = "/fargate/service/setup-mpc-web"
   retention_in_days = "14"
 }
 
-resource "aws_alb_target_group" "setup_mpc_server" {
-  name = "setup-mpc-server"
+resource "aws_alb_target_group" "setup_mpc_web" {
+  name = "setup-mpc-web"
   port = "80"
   protocol = "HTTP"
   target_type = "ip"
   vpc_id = "${data.terraform_remote_state.setup_iac.outputs.vpc_id}"
   tags = {
-    name = "setup-mpc-server"
+    name = "setup-mpc-web"
   }
 }
 
-resource "aws_lb_listener_rule" "api" {
+resource "aws_lb_listener_rule" "setup_mpc_web" {
   listener_arn = "${data.terraform_remote_state.setup_iac.outputs.alb_listener_arn}"
   priority = 100
 
   action {
     type = "forward"
-    target_group_arn = "${aws_alb_target_group.setup_mpc_server.arn}"
+    target_group_arn = "${aws_alb_target_group.setup_mpc_web.arn}"
   }
 
   condition {
     field = "path-pattern"
-    values = ["/api/*"]
+    values = ["*"]
   }
 }

@@ -1,4 +1,5 @@
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const { EnvironmentPlugin } = require('webpack');
 
 module.exports = {
   mode: 'production',
@@ -32,5 +33,8 @@ module.exports = {
     child_process: 'empty',
     readline: 'empty',
   },
-  plugins: [new HtmlWebpackPlugin({ template: './src/index.html' })],
+  plugins: [
+    new HtmlWebpackPlugin({ template: './src/index.html' }),
+    new EnvironmentPlugin({ API_URL: 'http://setup.aztecprotocol.com/api' }),
+  ],
 };

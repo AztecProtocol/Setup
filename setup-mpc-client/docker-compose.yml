@@ -5,7 +5,7 @@ services:
     image: aztec/setup-mpc-client
     tty: true
     environment:
-      SERVER_HOST: 'setup-mpc-server'
+      API_URL: 'http://setup-mpc-server/api'
       ACCOUNT_INDEX: '0'
       POLYNOMIAL_DEGREE: '100000000'
     volumes:
@@ -17,7 +17,7 @@ services:
     image: aztec/setup-mpc-client
     tty: true
     environment:
-      SERVER_HOST: 'setup-mpc-server'
+      API_URL: 'http://setup-mpc-server/api'
       ACCOUNT_INDEX: '1'
       POLYNOMIAL_DEGREE: '100000000'
     volumes:

@@ -1,4 +1,3 @@
-// import FormData from 'form-data';
 import { createReadStream, existsSync, statSync } from 'fs';
 import fetch from 'isomorphic-fetch';
 import moment = require('moment');
@@ -11,10 +10,10 @@ import { hashFiles } from './hash-files';
 import { MpcServer, MpcState, Participant } from './mpc-server';
 
 export class HttpClient implements MpcServer {
-  constructor(private host: string, private account?: Account) {}
+  constructor(private apiUrl: string, private account?: Account) {}
 
   public async getState(): Promise<MpcState> {
-    const response = await fetch(`http://${this.host}/state`);
+    const response = await fetch(`${this.apiUrl}/state`);
     if (response.status !== 200) {
       throw new Error(`Bad status code from server: ${response.status}`);
     }
@@ -51,7 +50,7 @@ export class HttpClient implements MpcServer {
       error,
     });
     const { signature } = this.account.sign(body);
-    const response = await fetch(`http://${this.host}/participant/${address.toString().toLowerCase()}`, {
+    const response = await fetch(`${this.apiUrl}/participant/${address.toString().toLowerCase()}`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
@@ -65,7 +64,7 @@ export class HttpClient implements MpcServer {
   }
 
   public async downloadData(address: Address, transcriptNumber: number) {
-    const response = await fetch(`http://${this.host}/data/${address.toString().toLowerCase()}/${transcriptNumber}`);
+    const response = await fetch(`${this.apiUrl}/data/${address.toString().toLowerCase()}/${transcriptNumber}`);
     if (response.status !== 200) {
       throw new Error(`Download failed, bad status code: ${response.status}`);
     }
@@ -106,7 +105,7 @@ export class HttpClient implements MpcServer {
         }
         transcriptStream.pipe(progStream);
 
-        await fetch(`http://${this.host}/data/${address.toString().toLowerCase()}/${transcriptNumber}`, {
+        await fetch(`${this.apiUrl}/data/${address.toString().toLowerCase()}/${transcriptNumber}`, {
           method: 'PUT',
           body: progStream as any,
           headers: {

@@ -1,5 +1,5 @@
 const HtmlWebpackPlugin = require('html-webpack-plugin');
-const webpack = require('webpack');
+const { HotModuleReplacementPlugin } = require('webpack');
 
 module.exports = {
   mode: 'development',
@@ -32,5 +32,5 @@ module.exports = {
   devServer: {
     hot: true,
   },
-  plugins: [new HtmlWebpackPlugin({ template: './src/index.html' }), new webpack.HotModuleReplacementPlugin()],
+  plugins: [new HtmlWebpackPlugin({ template: './src/index.html' }), new HotModuleReplacementPlugin()],
 };

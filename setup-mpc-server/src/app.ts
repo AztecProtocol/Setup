@@ -11,7 +11,7 @@ import { Server } from './server';
 const cors = require('@koa/cors');
 
 export function app(server: Server) {
-  const router = new Router();
+  const router = new Router({ prefix: '/api' });
   const adminAddress = Address.fromString('0x3a9b2101bff555793b85493b5171451fa00124c8');
 
   router.get('/', async (ctx: Koa.Context) => {
