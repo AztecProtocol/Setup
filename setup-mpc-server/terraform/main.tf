@@ -77,28 +77,32 @@ resource "aws_ecs_task_definition" "setup_mpc_server" {
 DEFINITIONS
 }
 
+data "aws_ecs_task_definition" "setup_mpc_server" {
+  task_definition = "${aws_ecs_task_definition.setup_mpc_server.family}"
+}
+
 resource "aws_ecs_service" "setup_mpc_server" {
-  name = "setup-mpc-server"
-  cluster = "${data.terraform_remote_state.setup_iac.outputs.ecs_cluster_id}"
-  launch_type = "FARGATE"
+  name          = "setup-mpc-server"
+  cluster       = "${data.terraform_remote_state.setup_iac.outputs.ecs_cluster_id}"
+  launch_type   = "FARGATE"
   desired_count = "1"
 
   network_configuration {
-    subnets = ["${data.terraform_remote_state.setup_iac.outputs.subnet_az1_id}"]
+    subnets         = ["${data.terraform_remote_state.setup_iac.outputs.subnet_az1_id}"]
     security_groups = ["${data.terraform_remote_state.setup_iac.outputs.security_group_public_id}"]
   }
 
   load_balancer {
     target_group_arn = "${aws_alb_target_group.setup_mpc_server.arn}"
-    container_name = "setup-mpc-server"
-    container_port = 80
+    container_name   = "setup-mpc-server"
+    container_port   = 80
   }
 
   service_registries {
     registry_arn = "${aws_service_discovery_service.setup_mpc_server.arn}"
   }
 
-  task_definition = "${aws_ecs_task_definition.setup_mpc_server.family}"
+  task_definition = "${aws_ecs_task_definition.setup_mpc_server.family}:${max("${aws_ecs_task_definition.setup_mpc_server.revision}", "${data.aws_ecs_task_definition.setup_mpc_server.revision}")}"
 
   lifecycle {
     ignore_changes = ["task_definition"]
@@ -106,16 +110,22 @@ resource "aws_ecs_service" "setup_mpc_server" {
 }
 
 resource "aws_cloudwatch_log_group" "setup_mpc_server_logs" {
-  name = "/fargate/service/setup-mpc-server"
+  name              = "/fargate/service/setup-mpc-server"
   retention_in_days = "14"
 }
 
 resource "aws_alb_target_group" "setup_mpc_server" {
-  name = "setup-mpc-server"
-  port = "80"
-  protocol = "HTTP"
+  name        = "setup-mpc-server"
+  port        = "80"
+  protocol    = "HTTP"
   target_type = "ip"
-  vpc_id = "${data.terraform_remote_state.setup_iac.outputs.vpc_id}"
+  vpc_id      = "${data.terraform_remote_state.setup_iac.outputs.vpc_id}"
+
+  health_check {
+    path    = "/api"
+    matcher = "200"
+  }
+
   tags = {
     name = "setup-mpc-server"
   }
@@ -123,15 +133,15 @@ resource "aws_alb_target_group" "setup_mpc_server" {
 
 resource "aws_lb_listener_rule" "api" {
   listener_arn = "${data.terraform_remote_state.setup_iac.outputs.alb_listener_arn}"
-  priority = 100
+  priority     = 100
 
   action {
-    type = "forward"
+    type             = "forward"
     target_group_arn = "${aws_alb_target_group.setup_mpc_server.arn}"
   }
 
   condition {
-    field = "path-pattern"
+    field  = "path-pattern"
     values = ["/api/*"]
   }
 }

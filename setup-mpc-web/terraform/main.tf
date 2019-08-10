@@ -62,6 +62,10 @@ resource "aws_ecs_task_definition" "setup_mpc_web" {
       {
         "name": "NODE_ENV",
         "value": "production"
+      },
+      {
+        "name": "PORT",
+        "value": "80"
       }
     ],
     "logConfiguration": {
@@ -75,6 +79,10 @@ resource "aws_ecs_task_definition" "setup_mpc_web" {
   }
 ]
 DEFINITIONS
+}
+
+data "aws_ecs_task_definition" "setup_mpc_web" {
+  task_definition = "${aws_ecs_task_definition.setup_mpc_web.family}"
 }
 
 resource "aws_ecs_service" "setup_mpc_web" {
@@ -98,7 +106,8 @@ resource "aws_ecs_service" "setup_mpc_web" {
     registry_arn = "${aws_service_discovery_service.setup_mpc_web.arn}"
   }
 
-  task_definition = "${aws_ecs_task_definition.setup_mpc_web.family}"
+  # Track the latest ACTIVE revision
+  task_definition = "${aws_ecs_task_definition.setup_mpc_web.family}:${max("${aws_ecs_task_definition.setup_mpc_web.revision}", "${data.aws_ecs_task_definition.setup_mpc_web.revision}")}"
 
   lifecycle {
     ignore_changes = ["task_definition"]

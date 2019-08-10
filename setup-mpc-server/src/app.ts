@@ -1,6 +1,7 @@
 import { createWriteStream } from 'fs';
 import Koa from 'koa';
 import koaBody from 'koa-body';
+import compress from 'koa-compress';
 import Router from 'koa-router';
 import { hashFiles } from 'setup-mpc-common';
 import { Address } from 'web3x/address';
@@ -78,6 +79,7 @@ export function app(server: Server) {
   });
 
   const app = new Koa();
+  app.use(compress());
   app.use(cors());
   app.use(router.routes());
   app.use(router.allowedMethods());
