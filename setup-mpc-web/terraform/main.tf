@@ -78,20 +78,20 @@ DEFINITIONS
 }
 
 resource "aws_ecs_service" "setup_mpc_web" {
-  name = "setup-mpc-web"
-  cluster = "${data.terraform_remote_state.setup_iac.outputs.ecs_cluster_id}"
-  launch_type = "FARGATE"
+  name          = "setup-mpc-web"
+  cluster       = "${data.terraform_remote_state.setup_iac.outputs.ecs_cluster_id}"
+  launch_type   = "FARGATE"
   desired_count = "1"
 
   network_configuration {
-    subnets = ["${data.terraform_remote_state.setup_iac.outputs.subnet_az1_id}"]
+    subnets         = ["${data.terraform_remote_state.setup_iac.outputs.subnet_az1_id}"]
     security_groups = ["${data.terraform_remote_state.setup_iac.outputs.security_group_public_id}"]
   }
 
   load_balancer {
     target_group_arn = "${aws_alb_target_group.setup_mpc_web.arn}"
-    container_name = "setup-mpc-web"
-    container_port = 80
+    container_name   = "setup-mpc-web"
+    container_port   = 80
   }
 
   service_registries {
@@ -106,16 +106,16 @@ resource "aws_ecs_service" "setup_mpc_web" {
 }
 
 resource "aws_cloudwatch_log_group" "setup_mpc_web_logs" {
-  name = "/fargate/service/setup-mpc-web"
+  name              = "/fargate/service/setup-mpc-web"
   retention_in_days = "14"
 }
 
 resource "aws_alb_target_group" "setup_mpc_web" {
-  name = "setup-mpc-web"
-  port = "80"
-  protocol = "HTTP"
+  name        = "setup-mpc-web"
+  port        = "80"
+  protocol    = "HTTP"
   target_type = "ip"
-  vpc_id = "${data.terraform_remote_state.setup_iac.outputs.vpc_id}"
+  vpc_id      = "${data.terraform_remote_state.setup_iac.outputs.vpc_id}"
   tags = {
     name = "setup-mpc-web"
   }
@@ -123,15 +123,15 @@ resource "aws_alb_target_group" "setup_mpc_web" {
 
 resource "aws_lb_listener_rule" "setup_mpc_web" {
   listener_arn = "${data.terraform_remote_state.setup_iac.outputs.alb_listener_arn}"
-  priority = 100
+  priority     = 1000
 
   action {
-    type = "forward"
+    type             = "forward"
     target_group_arn = "${aws_alb_target_group.setup_mpc_web.arn}"
   }
 
   condition {
-    field = "path-pattern"
+    field  = "path-pattern"
     values = ["*"]
   }
 }
