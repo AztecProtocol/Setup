@@ -313,7 +313,7 @@ declare module 'cesium/Cesium' {
         canAnimate: boolean;
         shouldAnimate: boolean;
         onTick: Event<[Clock]>;
-        constructor(options: {
+        constructor(options?: {
             startTime?: JulianDate;
             stopTime?: JulianDate;
             currentTime?: JulianDate;
@@ -1757,7 +1757,7 @@ declare module 'cesium/Cesium' {
 
     class ColorMaterialProperty extends MaterialProperty {
         color: Color;
-        constructor(color?: Color);
+        constructor(color?: Color | CallbackProperty);
     }
 
     class CompositeEntityCollection {
@@ -2046,7 +2046,7 @@ declare module 'cesium/Cesium' {
         cylinder: CylinderGraphics;
         readonly definitionChanged: Event;
         description: Property | string;
-        ellipse: EllipseGraphics;
+        ellipse: Partial<EllipseGraphics>;
         ellipsoid: EllipsoidGraphics;
         entityCollection: EntityCollection;
         id: string;
@@ -2124,7 +2124,7 @@ declare module 'cesium/Cesium' {
         readonly values: Entity[];
         static collectionChangedEventCallback(collection: EntityCollection, added: Entity[], removed: Entity[], changed: Entity[]): void;
         constructor(owner: DataSource | CompositeEntityCollection);
-        add(entity: Entity): Entity;
+        add(entity: Partial<Entity>): Entity;
         computeAvailability(): TimeInterval;
         contains(entity: Entity): boolean;
         getById(id: string): Entity;

@@ -71,6 +71,14 @@ body,
   text-align: right;
 }
 
+#overlay-time {
+  color: var(--white);
+}
+
+#overlay-city {
+  color: var(--white);
+}
+
 #overlay-address {
   color: var(--green);
 }
