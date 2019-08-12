@@ -35,6 +35,6 @@ module.exports = {
   },
   plugins: [
     new HtmlWebpackPlugin({ template: './src/index.html' }),
-    new EnvironmentPlugin({ API_URL: 'http://setup.aztecprotocol.com/api' }),
+    new EnvironmentPlugin({ API_URL: 'https://setup.aztecprotocol.com/api' }),
   ],
 };

@@ -118,6 +118,15 @@ resource "aws_security_group_rule" "setup_public_allow_http" {
   security_group_id = "${aws_security_group.setup_public.id}"
 }
 
+resource "aws_security_group_rule" "setup_public_allow_https" {
+  type              = "ingress"
+  from_port         = 443
+  to_port           = 443
+  protocol          = "tcp"
+  cidr_blocks       = ["0.0.0.0/0"]
+  security_group_id = "${aws_security_group.setup_public.id}"
+}
+
 resource "aws_security_group_rule" "setup_public_allow_setup_private" {
   type                     = "ingress"
   from_port                = 0
@@ -286,6 +295,24 @@ resource "aws_alb_listener" "alb_listener" {
   protocol          = "HTTP"
 
   default_action {
+    type = "redirect"
+
+    redirect {
+      port        = "443"
+      protocol    = "HTTPS"
+      status_code = "HTTP_301"
+    }
+  }
+}
+
+resource "aws_alb_listener" "https_listener" {
+  load_balancer_arn = "${aws_alb.setup.arn}"
+  port              = "443"
+  protocol          = "HTTPS"
+  ssl_policy        = "ELBSecurityPolicy-2016-08"
+  certificate_arn   = "${aws_acm_certificate_validation.cert.certificate_arn}"
+
+  default_action {
     type = "fixed-response"
 
     fixed_response {
@@ -306,4 +333,30 @@ resource "aws_route53_record" "setup" {
     zone_id                = "${aws_alb.setup.zone_id}"
     evaluate_target_health = true
   }
+}
+
+# Certificate management.
+resource "aws_acm_certificate" "cert" {
+  domain_name               = "aztecprotocol.com"
+  subject_alternative_names = ["*.aztecprotocol.com"]
+  validation_method         = "DNS"
+  tags = {
+    Name = "aztecprotocol.com"
+  }
+}
+
+resource "aws_route53_record" "cert_validation" {
+  name    = "${aws_acm_certificate.cert.domain_validation_options.0.resource_record_name}"
+  type    = "${aws_acm_certificate.cert.domain_validation_options.0.resource_record_type}"
+  zone_id = "Z1XXO7GDQEVT6B"
+  records = ["${aws_acm_certificate.cert.domain_validation_options.0.resource_record_value}"]
+  ttl     = 60
+}
+
+resource "aws_acm_certificate_validation" "cert" {
+  certificate_arn = "${aws_acm_certificate.cert.arn}"
+
+  validation_record_fqdns = [
+    "${aws_route53_record.cert_validation.fqdn}",
+  ]
 }
