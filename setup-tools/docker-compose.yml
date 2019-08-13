@@ -15,7 +15,7 @@ services:
   setup-tools:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.deploy
     image: aztec/setup-tools
     depends_on:
       - build-env
