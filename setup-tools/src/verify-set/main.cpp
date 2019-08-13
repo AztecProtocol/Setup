@@ -8,7 +8,7 @@ int main(int argc, char **argv)
 {
     if (argc < 4)
     {
-        std::cout << "usage: " << argv[0] << "<num g1 points> <num g2 points> <transcript 0 path> ... <transcript n path>" << std::endl;
+        std::cout << "usage: " << argv[0] << " <num g1 points> <num g2 points> <transcript 0 path> ... <transcript n path>" << std::endl;
         return 1;
     }
 
