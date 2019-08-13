@@ -2,7 +2,7 @@ import { S3 } from 'aws-sdk';
 import { createReadStream, mkdirSync } from 'fs';
 import { Readable } from 'stream';
 import { Address } from 'web3x/address';
-import { existsAsync, readdirAsync, renameAsync } from './fs-async';
+import { existsAsync, mkdirAsync, readdirAsync, renameAsync, unlinkAsync } from './fs-async';
 
 export interface TranscriptStore {
   saveTranscript(address: Address, num: number, path: string): Promise<void>;
@@ -14,6 +14,7 @@ export interface TranscriptStore {
   getTranscriptPath(address: Address, num: number): string;
   getTranscriptPaths(address: Address): Promise<string[]>;
   getUnverified(): Promise<{ address: Address; num: number }[]>;
+  erase(address: Address, num: number): Promise<void>;
 }
 
 export class DiskTranscriptStore implements TranscriptStore {
@@ -34,6 +35,7 @@ export class DiskTranscriptStore implements TranscriptStore {
   }
 
   public async makeLive(address: Address, num: number) {
+    await mkdirAsync(`${this.storePath}/${address.toString().toLowerCase()}`, { recursive: true });
     await renameAsync(this.getUnverifiedTranscriptPath(address, num), this.getTranscriptPath(address, num));
     await renameAsync(this.getUnverifiedSignaturePath(address, num), this.getSignaturePath(address, num));
   }
@@ -43,11 +45,11 @@ export class DiskTranscriptStore implements TranscriptStore {
   }
 
   public getTranscriptPath(address: Address, num: number) {
-    return `${this.storePath}/transcript_${address.toString().toLowerCase()}_${num}.dat`;
+    return `${this.storePath}/${address.toString().toLowerCase()}/transcript${num}.dat`;
   }
 
   public getSignaturePath(address: Address, num: number) {
-    return `${this.storePath}/transcript_${address.toString().toLowerCase()}_${num}.sig`;
+    return `${this.storePath}/${address.toString().toLowerCase()}/transcript${num}.sig`;
   }
 
   public getUnverifiedTranscriptPath(address: Address, num: number) {
@@ -79,6 +81,15 @@ export class DiskTranscriptStore implements TranscriptStore {
           num: +num,
         };
       });
+  }
+
+  public async erase(address: Address, num: number) {
+    try {
+      await unlinkAsync(this.getUnverifiedTranscriptPath(address, num));
+      await unlinkAsync(this.getUnverifiedSignaturePath(address, num));
+    } catch (err) {
+      // Swallow
+    }
   }
 }
 

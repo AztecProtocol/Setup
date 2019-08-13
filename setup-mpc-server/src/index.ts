@@ -2,9 +2,10 @@ import http from 'http';
 import { app } from './app';
 import { defaultSettings } from './default-settings';
 import { DemoServer } from './demo-server';
+import { mkdirAsync } from './fs-async';
 import { DiskTranscriptStore } from './transcript-store';
 
-const { PORT = 80, YOU_INDICIES = '', STORE_PATH = '../store' } = process.env;
+const { PORT = 80, YOU_INDICIES = '', STORE_PATH = './store', TMP_PATH = '/tmp' } = process.env;
 
 async function main() {
   const transcriptStore = new DiskTranscriptStore(STORE_PATH);
@@ -14,7 +15,8 @@ async function main() {
   await demoServer.resetState(startTime, numG1Points, numG2Points, invalidateAfter);
   demoServer.start();
 
-  const httpServer = http.createServer(app(demoServer, '/api').callback());
+  await mkdirAsync(TMP_PATH, { recursive: true });
+  const httpServer = http.createServer(app(demoServer, '/api', TMP_PATH).callback());
   httpServer.listen(PORT);
   console.log(`Server listening on port ${PORT}.`);
 

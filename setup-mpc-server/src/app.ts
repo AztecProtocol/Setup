@@ -15,7 +15,12 @@ const cors = require('@koa/cors');
 // 1GB
 const MAX_UPLOAD_SIZE = 1024 * 1024 * 1024;
 
-export function app(server: MpcServer, prefix?: string, maxUploadSize: number = MAX_UPLOAD_SIZE) {
+export function app(
+  server: MpcServer,
+  prefix?: string,
+  tmpDir: string = '/tmp',
+  maxUploadSize: number = MAX_UPLOAD_SIZE
+) {
   const router = new Router({ prefix });
   const adminAddress = Address.fromString('0x3a9b2101bff555793b85493b5171451fa00124c8');
 
@@ -64,6 +69,9 @@ export function app(server: MpcServer, prefix?: string, maxUploadSize: number = 
   router.put('/data/:address/:num', async (ctx: Koa.Context) => {
     const signature = ctx.get('X-Signature');
 
+    // 500, unless we explicitly set it to 200 or somethings else.
+    ctx.status = 500;
+
     if (!signature) {
       ctx.body = {
         error: 'No X-Signature header.',
@@ -81,7 +89,8 @@ export function app(server: MpcServer, prefix?: string, maxUploadSize: number = 
     }
 
     const nonce = randomBuffer(8).toString('hex');
-    const transcriptPath = `/tmp/transcript_${ctx.params.address}_${ctx.params.num}_${nonce}.dat`;
+    const transcriptPath = `${tmpDir}/transcript_${ctx.params.address}_${ctx.params.num}_${nonce}.dat`;
+    const signaturePath = `${tmpDir}/transcript_${ctx.params.address}_${ctx.params.num}_${nonce}.sig`;
 
     try {
       await new Promise((resolve, reject) => {
@@ -103,16 +112,16 @@ export function app(server: MpcServer, prefix?: string, maxUploadSize: number = 
         throw new Error('Body signature does not match X-Signature.');
       }
 
-      const signaturePath = `/tmp/transcript_${ctx.params.address}_${ctx.params.num}_${nonce}.sig`;
       await writeFileAsync(signaturePath, signature);
 
       await server.uploadData(address, +ctx.params.num, transcriptPath, signaturePath);
 
       ctx.status = 200;
     } catch (err) {
+      console.error(err);
       ctx.body = { error: err.message };
-      ctx.status = ctx.status || 500;
       await unlinkAsync(transcriptPath);
+      await unlinkAsync(signaturePath);
       return;
     }
   });

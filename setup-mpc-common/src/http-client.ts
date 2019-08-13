@@ -81,7 +81,7 @@ export class HttpClient implements MpcServer {
     transcriptNumber: number,
     transcriptPath: string,
     signaturePath?: string,
-    progressCb?: (progress: Progress) => void
+    progressCb?: (transferred: number) => void
   ) {
     return new Promise<void>(async (resolve, reject) => {
       try {
@@ -106,11 +106,11 @@ export class HttpClient implements MpcServer {
         const stats = statSync(transcriptPath);
         const progStream = progress({ length: stats.size, time: 1000 });
         if (progressCb) {
-          progStream.on('progress', progressCb);
+          progStream.on('progress', progress => progressCb(progress.transferred));
         }
         transcriptStream.pipe(progStream);
 
-        await fetch(`${this.apiUrl}/data/${address.toString().toLowerCase()}/${transcriptNumber}`, {
+        const response = await fetch(`${this.apiUrl}/data/${address.toString().toLowerCase()}/${transcriptNumber}`, {
           method: 'PUT',
           body: progStream as any,
           headers: {
@@ -120,8 +120,15 @@ export class HttpClient implements MpcServer {
           },
         });
 
+        if (response.status !== 200) {
+          throw new Error(`Uplaod failed, bad status code: ${response.status}`);
+        }
+
         resolve();
       } catch (err) {
+        if (progressCb) {
+          progressCb(0);
+        }
         reject(err);
       }
     });

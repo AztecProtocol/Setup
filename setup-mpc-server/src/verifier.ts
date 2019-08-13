@@ -54,7 +54,7 @@ export class Verifier {
       } catch (err) {
         console.error(err);
       } finally {
-        unlink(transcriptPath, () => {});
+        await this.store.erase(address, num);
       }
     }
   }

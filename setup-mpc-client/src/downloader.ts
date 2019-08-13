@@ -6,6 +6,7 @@ import { MemoryFifo, MpcServer, Transcript } from 'setup-mpc-common';
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 export class Downloader extends EventEmitter {
+  private cancelled = false;
   private queue: MemoryFifo<Transcript> = new MemoryFifo();
 
   constructor(private server: MpcServer) {
@@ -33,6 +34,7 @@ export class Downloader extends EventEmitter {
   }
 
   public cancel() {
+    this.cancelled = true;
     this.queue.cancel();
   }
 
@@ -47,7 +49,7 @@ export class Downloader extends EventEmitter {
   }
 
   private async downloadTranscriptWithRetry(transcript: Transcript) {
-    while (true) {
+    while (!this.cancelled) {
       try {
         console.error(`Downloading transcript ${transcript.num}`);
         await this.downloadTranscript(transcript);

@@ -8,6 +8,7 @@ const unlinkAsync = promisify(unlink);
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 export class Uploader extends EventEmitter {
+  private cancelled = false;
   private queue: MemoryFifo<number> = new MemoryFifo();
 
   constructor(private server: MpcServer, private address: Address) {
@@ -31,6 +32,7 @@ export class Uploader extends EventEmitter {
   }
 
   public cancel() {
+    this.cancelled = true;
     this.queue.cancel();
   }
 
@@ -40,11 +42,11 @@ export class Uploader extends EventEmitter {
 
   private async uploadTranscriptWithRetry(num: number) {
     const filename = `../setup_db/transcript${num}_out.dat`;
-    while (true) {
+    while (!this.cancelled) {
       try {
         console.error(`Uploading: `, filename);
-        await this.server.uploadData(this.address, num, filename, undefined, progress => {
-          this.emit('progress', num, progress.transferred);
+        await this.server.uploadData(this.address, num, filename, undefined, transferred => {
+          this.emit('progress', num, transferred);
         });
         await unlinkAsync(filename);
         this.emit('uploaded', num);

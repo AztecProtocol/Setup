@@ -29,6 +29,8 @@ services:
     image: aztec/setup-mpc-server
     environment:
       YOU_INDICIES: '0,1'
+      STORE_PATH: './store'
+      TMP_PATH: './store/tmp'
     expose:
       - 80
     ports:
