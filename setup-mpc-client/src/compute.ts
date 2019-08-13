@@ -1,22 +1,28 @@
 import { ChildProcessWithoutNullStreams, spawn } from 'child_process';
-import { createWriteStream, existsSync, statSync, unlink } from 'fs';
+import { existsSync, statSync, } from 'fs';
 import moment = require('moment');
-import progress from 'progress-stream';
 import readline from 'readline';
 import { MemoryFifo, MpcServer, MpcState, Participant, Transcript } from 'setup-mpc-common';
+import { Downloader } from './downloader';
+import { Uploader } from './uploader';
+
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 export class Compute {
   private setupProc?: ChildProcessWithoutNullStreams;
-  private downloadQueue: MemoryFifo<Transcript> = new MemoryFifo();
   private computeQueue: MemoryFifo<string> = new MemoryFifo();
-  private uploadQueue: MemoryFifo<number> = new MemoryFifo();
+  private downloader: Downloader;
+  private uploader: Uploader;
 
   constructor(
     private state: MpcState,
     private myState: Participant,
     private server: MpcServer,
     private computeOffline: boolean
-  ) {}
+  ) {
+    this.downloader = new Downloader(server);
+    this.uploader = new Uploader(server, myState.address);
+  }
 
   public async start() {
     if (this.computeOffline) {
@@ -30,9 +36,11 @@ export class Compute {
     }
 
     await this.populateQueues();
+
+    // Push any state changes to server.
     await this.updateParticipant();
 
-    await Promise.all([this.downloader(), this.compute(), this.uploader()]).catch(err => {
+    await Promise.all([this.runDownloader(), this.compute(), this.runUploader()]).catch(err => {
       console.error(err);
       this.cancel();
       throw err;
@@ -44,8 +52,9 @@ export class Compute {
   }
 
   public cancel() {
+    this.downloader.cancel();
+    this.uploader.cancel();
     this.computeQueue.cancel();
-    this.uploadQueue.cancel();
     if (this.setupProc) {
       this.setupProc.kill('SIGINT');
     }
@@ -71,68 +80,51 @@ export class Compute {
           downloaded: 0,
           complete: false,
         }));
-        this.myState.transcripts.forEach(transcript => this.downloadQueue.put(transcript));
+        this.myState.transcripts.forEach(transcript => this.downloader.put(transcript));
       } else {
         this.myState.transcripts.forEach(transcript => {
-          const filename = `../setup_db/transcript${transcript.num}.dat`;
-          if (existsSync(filename)) {
-            const stat = statSync(filename);
-            if (stat.size === transcript.size && transcript.downloaded === transcript.size) {
-              return;
-            }
+          if (!this.downloader.isDownloaded(transcript)) {
+            // If not fully downloaded, reset download and upload progress as we are starting over.
+            transcript.downloaded = 0;
+            transcript.uploaded = 0;
           }
-          transcript.downloaded = 0;
-          transcript.uploaded = 0;
-          this.downloadQueue.put(transcript);
+
+          // Add to downloaded queue regardless of if already downloaded. Will shortcut later in the downloader.
+          this.downloader.put(transcript);
         });
       }
 
-      this.downloadQueue.end();
+      this.downloader.end();
     } else {
       console.error('We are the first participant.');
-      this.downloadQueue.end();
+      this.downloader.end();
       this.computeQueue.put(`create ${this.state.numG1Points} ${this.state.numG2Points}`);
       this.computeQueue.end();
     }
   }
 
-  private async downloader() {
-    console.error('Downloader starting...');
-    while (true) {
-      const transcript = await this.downloadQueue.get();
-      if (!transcript) {
-        break;
-      }
-      console.error(`Downloading transcript ${transcript.num}`);
-      await this.downloadTranscript(transcript);
+  private async runDownloader() {
+    this.downloader.on('downloaded', (transcript: Transcript) => {
       this.computeQueue.put(`process ${transcript.num}`);
-    }
-    this.computeQueue.end();
-    console.error('Downloader complete.');
-  }
+    })
 
-  private async downloadTranscript(transcript: Transcript): Promise<string> {
-    const filename = `../setup_db/transcript${transcript.num}.dat`;
-    if (existsSync(filename)) {
-      const stat = statSync(filename);
-      if (stat.size === transcript.size && transcript.downloaded === transcript.size) {
-        return filename;
-      }
-    }
-    const readStream = await this.server.downloadData(transcript.fromAddress!, transcript.num);
-    const progStream = progress({ length: transcript.size, time: 1000 });
-    const writeStream = createWriteStream(filename);
-
-    progStream.on('progress', progress => {
-      transcript.downloaded = progress.transferred;
+    this.downloader.on('progress', (transcript: Transcript, transferred: number) => {
+      transcript.downloaded = transferred;
       this.updateParticipant().catch(console.error);
     });
 
-    return new Promise((resolve, reject) => {
-      writeStream.on('close', () => resolve(filename));
-      readStream.on('error', (err: Error) => reject(err));
-      readStream.pipe(progStream).pipe(writeStream);
+    await this.downloader.run();
+
+    this.computeQueue.end();
+  }
+
+  private async runUploader() {
+    this.uploader.on('progress', (num: number, transferred: number) => {
+      this.myState.transcripts[num].uploaded = transferred;
+      this.updateParticipant().catch(console.error);
     });
+
+    await this.uploader.run();
   }
 
   private async compute() {
@@ -154,7 +146,7 @@ export class Compute {
 
       setup.on('close', code => {
         this.setupProc = undefined;
-        this.uploadQueue.end();
+        this.uploader.end();
         if (code === 0) {
           console.error(`Compute complete.`);
           resolve();
@@ -201,7 +193,7 @@ export class Compute {
         break;
       }
       case 'wrote': {
-        this.uploadQueue.put(+params[0]);
+        this.uploader.put(+params[0]);
         break;
       }
       case 'progress': {
@@ -211,23 +203,6 @@ export class Compute {
       }
     }
   };
-
-  private async uploader() {
-    console.error('Uploader starting...');
-    while (true) {
-      const num = await this.uploadQueue.get();
-      if (num === null) {
-        break;
-      }
-      const filename = `../setup_db/transcript${num}_out.dat`;
-      console.error(`Uploading: `, filename);
-      await this.server.uploadData(this.myState.address, num, filename, undefined, progress => {
-        this.myState.transcripts[num].uploaded = progress.transferred;
-        this.updateParticipant();
-      });
-      unlink(filename, () => {});
-    }
-  }
 
   private async updateParticipant() {
     this.myState.lastUpdate = moment();

@@ -1,6 +1,7 @@
 import { createReadStream, existsSync, statSync } from 'fs';
 import fetch from 'isomorphic-fetch';
 import moment = require('moment');
+import { Moment } from 'moment';
 import progress, { Progress } from 'progress-stream';
 import { Readable } from 'stream';
 import { Account } from 'web3x/account';
@@ -11,6 +12,10 @@ import { MpcServer, MpcState, Participant } from './mpc-server';
 
 export class HttpClient implements MpcServer {
   constructor(private apiUrl: string, private account?: Account) {}
+
+  public async resetState(startTime: Moment, numG1Points: number, numG2Points: number, invalidateAfter: number) {
+    throw new Error('Not implemented.');
+  }
 
   public async getState(): Promise<MpcState> {
     const response = await fetch(`${this.apiUrl}/state`);
@@ -110,6 +115,8 @@ export class HttpClient implements MpcServer {
           body: progStream as any,
           headers: {
             'X-Signature': signature,
+            'Content-Type': 'application/octet-stream',
+            'Content-Length': `${stats.size}`,
           },
         });
 

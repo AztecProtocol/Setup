@@ -1,18 +1,21 @@
-import { createWriteStream } from 'fs';
+import { createWriteStream, unlink } from 'fs';
 import Koa from 'koa';
 import koaBody from 'koa-body';
 import compress from 'koa-compress';
 import Router from 'koa-router';
-import { hashFiles } from 'setup-mpc-common';
+import { hashFiles, MpcServer } from 'setup-mpc-common';
+import meter from 'stream-meter';
 import { Address } from 'web3x/address';
-import { bufferToHex, recover } from 'web3x/utils';
+import { bufferToHex, randomBuffer, recover } from 'web3x/utils';
 import { defaultSettings } from './default-settings';
-import { Server } from './server';
 
 const cors = require('@koa/cors');
 
-export function app(server: Server) {
-  const router = new Router({ prefix: '/api' });
+// 1GB
+const MAX_UPLOAD_SIZE = 1024 * 1024 * 1024;
+
+export function app(server: MpcServer, prefix?: string, maxUploadSize: number = MAX_UPLOAD_SIZE) {
+  const router = new Router({ prefix });
   const adminAddress = Address.fromString('0x3a9b2101bff555793b85493b5171451fa00124c8');
 
   router.get('/', async (ctx: Koa.Context) => {
@@ -30,7 +33,7 @@ export function app(server: Server) {
       ...ctx.request.body,
     };
     const { startTime, numG1Points, numG2Points, invalidateAfter } = settings;
-    server.resetState(startTime, numG1Points, numG2Points, invalidateAfter);
+    await server.resetState(startTime, numG1Points, numG2Points, invalidateAfter);
     ctx.body = 'OK\n';
   });
 
@@ -58,24 +61,56 @@ export function app(server: Server) {
   });
 
   router.put('/data/:address/:num', async (ctx: Koa.Context) => {
-    const transcriptPath = `/tmp/transcript_${ctx.params.address}_${ctx.params.num}.dat`;
-    await new Promise((resolve, reject) => {
-      const writeStream = createWriteStream(transcriptPath);
-      writeStream.on('close', resolve);
-      ctx.req.on('error', (err: Error) => reject(err));
-      ctx.req.pipe(writeStream);
-    });
-
-    console.error(`Transcript uploaded to: ${transcriptPath}`);
-    const hash = await hashFiles([transcriptPath]);
     const signature = ctx.get('X-Signature');
-    const address = Address.fromString(ctx.params.address);
-    if (!address.equals(recover(bufferToHex(hash), signature))) {
+
+    if (!signature) {
+      ctx.body = {
+        error: 'No X-Signature header.',
+      };
       ctx.status = 401;
       return;
     }
-    await server.uploadData(address, +ctx.params.num, transcriptPath, signature);
-    ctx.status = 200;
+
+    if (+ctx.params.num >= 30) {
+      ctx.body = {
+        error: 'Transcript number out of range (max 0-29).',
+      };
+      ctx.status = 401;
+      return;
+    }
+
+    const nonce = randomBuffer(8).toString('hex');
+    const transcriptPath = `/tmp/transcript_${ctx.params.address}_${ctx.params.num}_${nonce}.dat`;
+
+    try {
+      await new Promise((resolve, reject) => {
+        const writeStream = createWriteStream(transcriptPath);
+        const meterStream = meter(maxUploadSize);
+        meterStream.on('error', (err: Error) => {
+          ctx.status = 429;
+          reject(err);
+        });
+        writeStream.on('close', resolve);
+        ctx.req.on('error', (err: Error) => reject(err));
+        ctx.req.pipe(meterStream).pipe(writeStream);
+      });
+
+      const address = Address.fromString(ctx.params.address);
+      const hash = await hashFiles([transcriptPath]);
+      if (!address.equals(recover(bufferToHex(hash), signature))) {
+        ctx.status = 401;
+        throw new Error('Body signature does not match X-Signature.');
+      }
+
+      await server.uploadData(address, +ctx.params.num, transcriptPath, signature);
+
+      ctx.status = 200;
+    } catch (err) {
+      ctx.body = { error: err.message };
+      ctx.status = ctx.status || 500;
+      unlink(transcriptPath, () => {});
+      return;
+    }
   });
 
   const app = new Koa();

@@ -1,3 +1,4 @@
+import { S3 } from 'aws-sdk';
 import { createReadStream, existsSync, mkdirSync, renameSync, writeFileSync } from 'fs';
 import { Readable } from 'stream';
 import { Address } from 'web3x/address';
@@ -39,5 +40,13 @@ export class DiskTranscriptStore implements TranscriptStore {
       ++num;
     }
     return paths;
+  }
+}
+
+export class S3TranscriptStore extends DiskTranscriptStore {
+  private s3 = new S3();
+
+  constructor(storePath: string) {
+    super(storePath);
   }
 }
