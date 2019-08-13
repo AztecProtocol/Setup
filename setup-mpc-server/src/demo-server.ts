@@ -23,40 +23,13 @@ export class DemoServer extends Server {
     }
   }
 
-  protected advanceState() {
-    if (moment().isBefore(this.state.startTime)) {
-      return;
-    }
+  protected async advanceState() {
+    await super.advanceState();
 
-    const { completedAt, invalidateAfter, participants } = this.state;
+    const { participants } = await this.getState();
 
-    if (!completedAt && participants.every(p => p.state === 'COMPLETE' || p.state === 'INVALIDATED')) {
-      this.state.completedAt = moment();
-    }
-
-    const i = participants.findIndex(p => p.state !== 'COMPLETE' && p.state !== 'INVALIDATED');
+    const i = participants.findIndex(p => p.state === 'WAITING' || p.state === 'RUNNING');
     const p = participants[i];
-
-    if (!p) {
-      return;
-    }
-
-    if (p.state === 'WAITING') {
-      p.startedAt = moment();
-      p.state = 'RUNNING';
-      return;
-    }
-
-    if (
-      moment()
-        .subtract(invalidateAfter, 's')
-        .isAfter(p.startedAt!)
-    ) {
-      p.state = 'INVALIDATED';
-      p.error = 'timed out';
-      this.advanceState();
-      return;
-    }
 
     if (this.youIndicies.includes(i)) {
       // Only simulate other users.
@@ -78,29 +51,18 @@ export class DemoServer extends Server {
         return;
       }
 
-      /*
       if (i === 2) {
-        if (p.runningState === 'VERIFYING') {
+        if (p.verifyProgress > 0) {
           p.state = 'INVALIDATED';
           p.runningState = 'COMPLETE';
           p.error = 'verify failed';
-          this.advanceState();
+          await this.advanceState();
           return;
         }
       }
-      */
 
       // Exceptional case: Simulate a user that never participates.
       if (i === 3) {
-        if (
-          moment()
-            .subtract(invalidateAfter, 's')
-            .isAfter(p.startedAt!)
-        ) {
-          p.state = 'INVALIDATED';
-          p.error = 'timed out';
-          this.advanceState();
-        }
         return;
       }
     }

@@ -7,7 +7,6 @@ services:
     environment:
       API_URL: 'http://setup-mpc-server/api'
       ACCOUNT_INDEX: '0'
-      POLYNOMIAL_DEGREE: '100000000'
     volumes:
       - .:/usr/src/setup-mpc-client
       - ../setup-mpc-common:/usr/src/setup-mpc-client/node_modules/setup-mpc-common
@@ -19,7 +18,6 @@ services:
     environment:
       API_URL: 'http://setup-mpc-server/api'
       ACCOUNT_INDEX: '1'
-      POLYNOMIAL_DEGREE: '100000000'
     volumes:
       - .:/usr/src/setup-mpc-client
       - ../setup-mpc-common:/usr/src/setup-mpc-client/node_modules/setup-mpc-common
@@ -31,11 +29,10 @@ services:
     image: aztec/setup-mpc-server
     environment:
       YOU_INDICIES: '0,1'
-      POLYNOMIAL_DEGREE: '100000000'
     expose:
       - 80
     ports:
-      - "8081:80"
+      - "80:80"
     volumes:
       - ../setup-mpc-server:/usr/src/setup-mpc-server
       - ../setup-mpc-common:/usr/src/setup-mpc-server/node_modules/setup-mpc-common

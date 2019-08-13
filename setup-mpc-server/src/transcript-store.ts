@@ -26,11 +26,11 @@ export class DiskTranscriptStore implements TranscriptStore {
   }
 
   public async saveTranscript(address: Address, num: number, path: string) {
-    await renameAsync(path, this.getTranscriptPath(address, num));
+    await renameAsync(path, this.getUnverifiedTranscriptPath(address, num));
   }
 
   public async saveSignature(address: Address, num: number, path: string) {
-    await renameAsync(path, this.getSignaturePath(address, num));
+    await renameAsync(path, this.getUnverifiedSignaturePath(address, num));
   }
 
   public async makeLive(address: Address, num: number) {
