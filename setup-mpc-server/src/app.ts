@@ -1,4 +1,4 @@
-import { createWriteStream, unlink } from 'fs';
+import { createWriteStream } from 'fs';
 import Koa from 'koa';
 import koaBody from 'koa-body';
 import compress from 'koa-compress';
@@ -8,6 +8,7 @@ import meter from 'stream-meter';
 import { Address } from 'web3x/address';
 import { bufferToHex, randomBuffer, recover } from 'web3x/utils';
 import { defaultSettings } from './default-settings';
+import { unlinkAsync, writeFileAsync } from './fs-async';
 
 const cors = require('@koa/cors');
 
@@ -102,13 +103,16 @@ export function app(server: MpcServer, prefix?: string, maxUploadSize: number = 
         throw new Error('Body signature does not match X-Signature.');
       }
 
-      await server.uploadData(address, +ctx.params.num, transcriptPath, signature);
+      const signaturePath = `/tmp/transcript_${ctx.params.address}_${ctx.params.num}_${nonce}.sig`;
+      await writeFileAsync(signaturePath, signature);
+
+      await server.uploadData(address, +ctx.params.num, transcriptPath, signaturePath);
 
       ctx.status = 200;
     } catch (err) {
       ctx.body = { error: err.message };
       ctx.status = ctx.status || 500;
-      unlink(transcriptPath, () => {});
+      await unlinkAsync(transcriptPath);
       return;
     }
   });

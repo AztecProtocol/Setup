@@ -1,12 +1,9 @@
 import { ChildProcessWithoutNullStreams, spawn } from 'child_process';
-import { existsSync, statSync, } from 'fs';
 import moment = require('moment');
 import readline from 'readline';
 import { MemoryFifo, MpcServer, MpcState, Participant, Transcript } from 'setup-mpc-common';
 import { Downloader } from './downloader';
 import { Uploader } from './uploader';
-
-const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 export class Compute {
   private setupProc?: ChildProcessWithoutNullStreams;
@@ -106,7 +103,7 @@ export class Compute {
   private async runDownloader() {
     this.downloader.on('downloaded', (transcript: Transcript) => {
       this.computeQueue.put(`process ${transcript.num}`);
-    })
+    });
 
     this.downloader.on('progress', (transcript: Transcript, transferred: number) => {
       transcript.downloaded = transferred;

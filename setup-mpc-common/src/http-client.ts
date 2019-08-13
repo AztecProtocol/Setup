@@ -80,7 +80,7 @@ export class HttpClient implements MpcServer {
     address: Address,
     transcriptNumber: number,
     transcriptPath: string,
-    signature?: string,
+    signaturePath?: string,
     progressCb?: (progress: Progress) => void
   ) {
     return new Promise<void>(async (resolve, reject) => {

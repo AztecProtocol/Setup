@@ -51,7 +51,7 @@ export interface MpcServer {
     address: Address,
     transcriptNumber: number,
     transcriptPath: string,
-    signature?: string,
+    signaturePath?: string,
     progressCb?: (progress: Progress) => void
   ): Promise<void>;
 }
