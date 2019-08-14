@@ -1,11 +1,12 @@
 import { ChildProcessWithoutNullStreams, spawn } from 'child_process';
+import { EventEmitter } from 'events';
 import moment = require('moment');
 import readline from 'readline';
-import { MemoryFifo, MpcServer, MpcState, Participant, Transcript } from 'setup-mpc-common';
+import { cloneParticipant, MemoryFifo, MpcServer, MpcState, Participant, Transcript } from 'setup-mpc-common';
 import { Downloader } from './downloader';
 import { Uploader } from './uploader';
 
-export class Compute {
+export class Compute extends EventEmitter {
   private setupProc?: ChildProcessWithoutNullStreams;
   private computeQueue: MemoryFifo<string> = new MemoryFifo();
   private downloader: Downloader;
@@ -17,6 +18,7 @@ export class Compute {
     private server: MpcServer,
     private computeOffline: boolean
   ) {
+    super();
     this.downloader = new Downloader(server);
     this.uploader = new Uploader(server, myState.address);
   }
@@ -49,12 +51,17 @@ export class Compute {
   }
 
   public cancel() {
+    this.removeAllListeners();
     this.downloader.cancel();
     this.uploader.cancel();
     this.computeQueue.cancel();
     if (this.setupProc) {
       this.setupProc.kill('SIGINT');
     }
+  }
+
+  public getParticipant() {
+    return cloneParticipant(this.myState);
   }
 
   private async populateQueues() {
@@ -107,7 +114,7 @@ export class Compute {
 
     this.downloader.on('progress', (transcript: Transcript, transferred: number) => {
       transcript.downloaded = transferred;
-      this.updateParticipant().catch(console.error);
+      this.updateParticipant();
     });
 
     await this.downloader.run();
@@ -118,7 +125,7 @@ export class Compute {
   private async runUploader() {
     this.uploader.on('progress', (num: number, transferred: number) => {
       this.myState.transcripts[num].uploaded = transferred;
-      this.updateParticipant().catch(console.error);
+      this.updateParticipant();
     });
 
     await this.uploader.run();
@@ -202,7 +209,12 @@ export class Compute {
   };
 
   private async updateParticipant() {
-    this.myState.lastUpdate = moment();
-    await this.server.updateParticipant(this.myState);
+    try {
+      this.myState.lastUpdate = moment();
+      this.emit('update', this.myState);
+      await this.server.updateParticipant(this.myState);
+    } catch (err) {
+      console.error(`Failed to update server: ${err.message}`);
+    }
   }
 }

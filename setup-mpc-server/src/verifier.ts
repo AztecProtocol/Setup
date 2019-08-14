@@ -1,5 +1,4 @@
 import { ChildProcess, spawn } from 'child_process';
-import { unlink } from 'fs';
 import { MemoryFifo } from 'setup-mpc-common';
 import { Address } from 'web3x/address';
 import { TranscriptStore } from './transcript-store';
@@ -23,10 +22,11 @@ export class Verifier {
   ) {}
 
   public async run() {
+    console.log('Verifier started...');
     while (true) {
       const item = await this.queue.get();
       if (!item) {
-        return;
+        break;
       }
       const { address, num } = item;
       const transcriptPath = this.store.getUnverifiedTranscriptPath(address, num);
@@ -57,6 +57,7 @@ export class Verifier {
         await this.store.erase(address, num);
       }
     }
+    console.log('Verifier complteted.');
   }
 
   public put(item: VerifyItem) {

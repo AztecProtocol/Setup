@@ -19,9 +19,11 @@ export interface TranscriptStore {
 
 export class DiskTranscriptStore implements TranscriptStore {
   private toVerifyPath: string;
+  private verifiedPath: string;
   private datFileRegex = /transcript_(.+?)_(\d+).dat$/;
 
-  constructor(private storePath: string) {
+  constructor(storePath: string) {
+    this.verifiedPath = storePath + '/verified';
     this.toVerifyPath = storePath + '/to_verify';
     mkdirSync(this.toVerifyPath, { recursive: true });
   }
@@ -35,7 +37,7 @@ export class DiskTranscriptStore implements TranscriptStore {
   }
 
   public async makeLive(address: Address, num: number) {
-    await mkdirAsync(`${this.storePath}/${address.toString().toLowerCase()}`, { recursive: true });
+    await mkdirAsync(`${this.verifiedPath}/${address.toString().toLowerCase()}`, { recursive: true });
     await renameAsync(this.getUnverifiedTranscriptPath(address, num), this.getTranscriptPath(address, num));
     await renameAsync(this.getUnverifiedSignaturePath(address, num), this.getSignaturePath(address, num));
   }
@@ -45,11 +47,11 @@ export class DiskTranscriptStore implements TranscriptStore {
   }
 
   public getTranscriptPath(address: Address, num: number) {
-    return `${this.storePath}/${address.toString().toLowerCase()}/transcript${num}.dat`;
+    return `${this.verifiedPath}/${address.toString().toLowerCase()}/transcript${num}.dat`;
   }
 
   public getSignaturePath(address: Address, num: number) {
-    return `${this.storePath}/${address.toString().toLowerCase()}/transcript${num}.sig`;
+    return `${this.verifiedPath}/${address.toString().toLowerCase()}/transcript${num}.sig`;
   }
 
   public getUnverifiedTranscriptPath(address: Address, num: number) {

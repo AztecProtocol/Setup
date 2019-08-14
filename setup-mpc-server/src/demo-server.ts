@@ -1,6 +1,7 @@
-import moment, { Moment } from 'moment';
+import moment from 'moment';
 import { Wallet } from 'web3x/wallet';
 import { Server } from './server';
+import { StateStore } from './state-store';
 import { TranscriptStore } from './transcript-store';
 
 const TEST_BAD_THINGS: number[] = [];
@@ -8,16 +9,20 @@ const TEST_BAD_THINGS: number[] = [];
 export class DemoServer extends Server {
   private wallet: Wallet;
 
-  constructor(numParticipants: number, store: TranscriptStore, private youIndicies: number[] = []) {
-    super(store);
+  constructor(
+    numParticipants: number,
+    store: TranscriptStore,
+    stateStore: StateStore,
+    private youIndicies: number[] = []
+  ) {
+    super(store, stateStore);
     this.wallet = Wallet.fromMnemonic(
       'face cook metal cost prevent term foam drive sure caught pet gentle',
       numParticipants
     );
   }
 
-  public async resetState(startTime: Moment, numG1Points: number, numG2Points: number, invalidateAfter: number) {
-    super.resetState(startTime, numG1Points, numG2Points, invalidateAfter);
+  public async addParticipants() {
     for (const address of this.wallet.currentAddresses()) {
       await super.addParticipant(address);
     }

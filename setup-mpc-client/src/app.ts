@@ -1,4 +1,4 @@
-import { MpcServer, MpcState } from 'setup-mpc-common';
+import { cloneMpcState, cloneParticipant, MpcServer, MpcState, Participant } from 'setup-mpc-common';
 import { Writable } from 'stream';
 import { Account } from 'web3x/account';
 import { Compute } from './compute';
@@ -10,7 +10,6 @@ export class App {
   private i2!: NodeJS.Timeout;
   private terminalInterface!: TerminalInterface;
   private compute?: Compute;
-  private state!: MpcState;
 
   constructor(
     private server: MpcServer,
@@ -41,18 +40,14 @@ export class App {
 
   private updateState = async () => {
     try {
-      this.state = await this.server.getState();
+      const remoteState = await this.server.getState();
 
-      // If the ceremony hasn't started just use the server state. Necessary as the participant list
-      // maybe changing. If the ceremony is running, state controlled by the client should not be
-      // overwritten by the server. keepClientState() munges in the local client data to preserve it.
-      // this.state = !this.state || serverState.startTime.isAfter() ? serverState : this.keepClientState(serverState);
+      const localState = await this.processRemoteState(remoteState);
 
-      await this.terminalInterface.updateState(this.state);
-      await this.processState();
+      await this.terminalInterface.updateState(localState);
 
       // If the ceremony isn't complete, schedule next update.
-      if (!this.state.completedAt) {
+      if (!remoteState.completedAt) {
         this.scheduleUpdate();
       }
     } catch (err) {
@@ -61,72 +56,78 @@ export class App {
     }
   };
 
-  /*
-  private keepClientState(serverState: MpcState) {
-    const myServerState = serverState.participants.find(p => p.address.equals(this.account!.address));
-    const myClientState = this.state.participants.find(p => p.address.equals(this.account!.address));
-    if (!myServerState || !myClientState) {
-      // We're an unknown participant.
-      return serverState;
-    }
-
-    const { runningState, transcripts, computeProgress, lastUpdate } = myClientState;
-    myState.
-    return {
-      ...serverState,
-      participants: serverState.participants.map((p, i) => {
-        return {
-          ...p,
-          runningState,
-          transcripts: serverState.participants[i].transcripts.map((t, i) => {
-            const { num, size, downloaded, uploaded } = transcripts[i];
-            return {
-              ...t,
-              num,
-              size,
-              downloaded,
-              uploaded,
-            };
-          }),
-          computeProgress,
-          lastUpdate,
-        };
-      }),
-    };
-  }
-  */
-
   private scheduleUpdate = () => {
     this.i1 = setTimeout(this.updateState, 1000);
   };
 
-  private async processState() {
+  /*
+    Given a remote state, this function will trigger or destroy the compute pipeline.
+    It will return a new local state, which may differ from the remote state as our local compute state takes priority
+    over the servers view of our state.
+  */
+  private async processRemoteState(remoteState: MpcState) {
     if (!this.account) {
       // We are in spectator mode.
-      return;
+      return remoteState;
     }
 
-    const myState = this.state.participants.find(p => p.address.equals(this.account!.address));
-    if (!myState) {
+    const myIndex = remoteState.participants.findIndex(p => p.address.equals(this.account!.address));
+    if (myIndex < 0) {
       // We're an unknown participant.
-      return;
+      return remoteState;
     }
+    const myRemoteState = remoteState.participants[myIndex];
 
-    if (myState.state === 'RUNNING' && myState.runningState !== 'COMPLETE' && !this.compute) {
-      this.compute = new Compute(this.state, myState, this.server, this.computeOffline);
+    // Either launch or destroy the computation based on remote state.
+    if (
+      myRemoteState.state === 'RUNNING' &&
+      myRemoteState.runningState !== 'COMPLETE' &&
+      myRemoteState.runningState !== 'OFFLINE' &&
+      !this.compute
+    ) {
+      // Compute takes a copy of the participants state. It can modify at will, and emits 'update' events as modified.
+      this.compute = new Compute(remoteState, cloneParticipant(myRemoteState), this.server, this.computeOffline);
+
+      this.compute.on('update', (myState: Participant) => {
+        const myTerminalState = this.terminalInterface.getParticipant(myState.address);
+        // Preserves the remote controlled state currently in the terminal.
+        const newTerminalState = this.preserveRemoteParticipantState(myState, myTerminalState);
+        this.terminalInterface.updateParticipant(newTerminalState);
+      });
+
       this.compute
         .start()
         .catch(err => {
           console.error(`Compute failed: `, err);
         })
-        .finally(() => (this.compute = undefined));
-      return;
-    }
-
-    if (myState.state !== 'RUNNING' && this.compute) {
+        .finally(() => {
+          this.compute!.removeAllListeners();
+          this.compute = undefined;
+        });
+    } else if (myRemoteState.state !== 'RUNNING' && this.compute) {
       this.compute.cancel();
       this.compute = undefined;
-      return;
     }
+
+    if (myRemoteState.state === 'RUNNING' && this.compute) {
+      // Grab our local state from the Compute. Parts of it override our remote state.
+      const newLocalState = cloneMpcState(remoteState);
+      const myState = this.compute.getParticipant();
+      newLocalState.participants[myIndex] = this.preserveRemoteParticipantState(myState, myRemoteState);
+      return newLocalState;
+    } else {
+      return remoteState;
+    }
+  }
+
+  private preserveRemoteParticipantState(local: Participant, remote: Participant): Participant {
+    // Retain mutable fields controlled by server.
+    return {
+      ...cloneParticipant(local),
+      state: remote.state,
+      verifyProgress: remote.verifyProgress,
+      completedAt: remote.completedAt,
+      startedAt: remote.startedAt,
+    };
   }
 }

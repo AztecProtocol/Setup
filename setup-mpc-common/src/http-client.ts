@@ -1,14 +1,14 @@
 import { createReadStream, existsSync, statSync } from 'fs';
 import fetch from 'isomorphic-fetch';
-import moment = require('moment');
 import { Moment } from 'moment';
-import progress, { Progress } from 'progress-stream';
+import progress from 'progress-stream';
 import { Readable } from 'stream';
 import { Account } from 'web3x/account';
 import { Address } from 'web3x/address';
 import { bufferToHex } from 'web3x/utils';
 import { hashFiles } from './hash-files';
 import { MpcServer, MpcState, Participant } from './mpc-server';
+import { mpcStateFromJSON } from './mpc-state';
 
 export class HttpClient implements MpcServer {
   constructor(private apiUrl: string, private account?: Account) {}
@@ -22,24 +22,9 @@ export class HttpClient implements MpcServer {
     if (response.status !== 200) {
       throw new Error(`Bad status code from server: ${response.status}`);
     }
-    const { startTime, completedAt, participants, ...rest } = await response.json();
+    const json = await response.json();
 
-    return {
-      ...rest,
-      startTime: moment(startTime),
-      completedAt: completedAt ? moment(completedAt) : undefined,
-      participants: participants.map(({ startedAt, lastUpdate, completedAt, address, transcripts, ...rest }: any) => ({
-        ...rest,
-        startedAt: startedAt ? moment(startedAt) : undefined,
-        lastUpdate: lastUpdate ? moment(lastUpdate) : undefined,
-        completedAt: completedAt ? moment(completedAt) : undefined,
-        address: Address.fromString(address),
-        transcripts: transcripts.map(({ fromAddress, ...rest }: any) => ({
-          ...rest,
-          fromAddress: fromAddress ? Address.fromString(fromAddress) : undefined,
-        })),
-      })),
-    };
+    return mpcStateFromJSON(json);
   }
 
   public async updateParticipant(participant: Participant) {

@@ -7,7 +7,7 @@ import { hashFiles, MpcServer } from 'setup-mpc-common';
 import meter from 'stream-meter';
 import { Address } from 'web3x/address';
 import { bufferToHex, randomBuffer, recover } from 'web3x/utils';
-import { defaultSettings } from './default-settings';
+import { defaultState } from './default-state';
 import { unlinkAsync, writeFileAsync } from './fs-async';
 
 const cors = require('@koa/cors');
@@ -35,7 +35,7 @@ export function app(
       return;
     }
     const settings = {
-      ...defaultSettings(),
+      ...defaultState(),
       ...ctx.request.body,
     };
     const { startTime, numG1Points, numG2Points, invalidateAfter } = settings;
@@ -67,6 +67,7 @@ export function app(
   });
 
   router.put('/data/:address/:num', async (ctx: Koa.Context) => {
+    const address = Address.fromString(ctx.params.address);
     const signature = ctx.get('X-Signature');
 
     // 500, unless we explicitly set it to 200 or somethings else.
@@ -80,6 +81,16 @@ export function app(
       return;
     }
 
+    const { participants } = await server.getState();
+    const participant = participants.find(p => p.address.equals(address));
+    if (!participant || participant.state !== 'RUNNING') {
+      ctx.body = {
+        error: 'Can only upload to currently running participant.',
+      };
+      ctx.status = 401;
+      return;
+    }
+
     if (+ctx.params.num >= 30) {
       ctx.body = {
         error: 'Transcript number out of range (max 0-29).',
@@ -88,6 +99,9 @@ export function app(
       return;
     }
 
+    // Nonce to prevent collison if attacker attempts to upload at same time as valid user.
+    // TODO: Probably better to check a signed fixed token to assert user is who they say they are prior to ingesting body.
+    // Can lock server to only allow a single upload at a time.
     const nonce = randomBuffer(8).toString('hex');
     const transcriptPath = `${tmpDir}/transcript_${ctx.params.address}_${ctx.params.num}_${nonce}.dat`;
     const signaturePath = `${tmpDir}/transcript_${ctx.params.address}_${ctx.params.num}_${nonce}.sig`;
@@ -105,7 +119,6 @@ export function app(
         ctx.req.pipe(meterStream).pipe(writeStream);
       });
 
-      const address = Address.fromString(ctx.params.address);
       const hash = await hashFiles([transcriptPath]);
       if (!address.equals(recover(bufferToHex(hash), signature))) {
         ctx.status = 401;

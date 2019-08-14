@@ -1,17 +1,16 @@
 import moment, { Moment } from 'moment';
 import { MpcServer, MpcState, Participant } from 'setup-mpc-common';
 import { Address } from 'web3x/address';
-import { MemoryStateStore, StateStore } from './state-store';
+import { StateStore } from './state-store';
 import { TranscriptStore } from './transcript-store';
 import { Verifier } from './verifier';
 
 export class Server implements MpcServer {
   private interval?: NodeJS.Timer;
   private verifier!: Verifier;
-  private stateStore: StateStore = new MemoryStateStore();
   private state!: MpcState;
 
-  constructor(private store: TranscriptStore) {}
+  constructor(private store: TranscriptStore, private stateStore: StateStore) {}
 
   public async start() {
     // Take a copy of the state from the state store.
@@ -24,6 +23,10 @@ export class Server implements MpcServer {
       this.state.numG2Points,
       this.verifierCallback.bind(this)
     );
+    const lastCompleteParticipant = this.getLastCompleteParticipant();
+    const runningParticipant = this.getRunningParticipant();
+    this.verifier.lastCompleteAddress = lastCompleteParticipant && lastCompleteParticipant.address;
+    this.verifier.runningAddress = runningParticipant && runningParticipant.address;
     this.verifier.run();
 
     // Get any files awaiting verification and add to the queue.
@@ -126,7 +129,6 @@ export class Server implements MpcServer {
     }));
     p.runningState = runningState;
     p.computeProgress = computeProgress;
-    p.error = error;
     p.lastUpdate = moment();
   }
 
@@ -142,11 +144,19 @@ export class Server implements MpcServer {
   }
 
   public getAndAssertRunningParticipant(address: Address) {
-    const p = this.getParticipant(address);
-    if (p.state !== 'RUNNING') {
+    const p = this.getRunningParticipant();
+    if (!p || !p.address.equals(address)) {
       throw new Error('Can only update a running participant.');
     }
     return p;
+  }
+
+  private getRunningParticipant() {
+    return this.state.participants.find(p => p.state === 'RUNNING');
+  }
+
+  private getLastCompleteParticipant() {
+    return [...this.state.participants].reverse().find(p => p.state === 'COMPLETE');
   }
 
   private getParticipant(address: Address) {

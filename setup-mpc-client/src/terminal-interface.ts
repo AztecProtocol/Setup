@@ -2,6 +2,7 @@ import humanizeDuration from 'humanize-duration';
 import moment from 'moment';
 import { MpcState, Participant } from 'setup-mpc-common';
 import { Account } from 'web3x/account';
+import { Address } from 'web3x/address';
 import { leftPad } from 'web3x/utils';
 import { TerminalKit } from './terminal-kit';
 
@@ -279,6 +280,20 @@ export class TerminalInterface {
       await this.renderStatus();
       this.renderList();
     }
+  }
+
+  public updateParticipant(participant: Participant) {
+    if (!this.state) {
+      return;
+    }
+    const index = this.state.participants.findIndex(p => p.address.equals(participant.address));
+    if (index >= 0 && this.state.participants[index].state === 'RUNNING') {
+      this.state.participants[index] = participant;
+    }
+  }
+
+  public getParticipant(address: Address) {
+    return this.state!.participants.find(p => p.address.equals(address))!;
   }
 
   public updateProgress() {
