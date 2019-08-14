@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync } from 'fs';
 import { MpcState, mpcStateFromJSON } from 'setup-mpc-common';
 import { defaultState } from './default-state';
-import { writeFileAsync } from './fs-async';
+import { renameAsync, writeFileAsync } from './fs-async';
 
 export interface StateStore {
   setState(state: MpcState): Promise<void>;
@@ -38,7 +38,9 @@ export class DiskStateStore {
 
   public async setState(state: MpcState) {
     this.state = state;
-    await writeFileAsync(this.storeFile, JSON.stringify(this.state));
+    // Atomic file update.
+    await writeFileAsync(`${this.storeFile}.new`, JSON.stringify(this.state));
+    await renameAsync(`${this.storeFile}.new`, this.storeFile);
   }
 
   public async getState(): Promise<MpcState> {

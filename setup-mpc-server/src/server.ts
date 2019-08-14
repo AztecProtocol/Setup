@@ -104,6 +104,7 @@ export class Server implements MpcServer {
     }
 
     if (p.state === 'WAITING') {
+      this.store.eraseVerified(p.address)
       p.startedAt = moment();
       p.state = 'RUNNING';
       this.verifier.runningAddress = p.address;

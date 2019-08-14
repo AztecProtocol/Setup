@@ -57,7 +57,7 @@ export class Verifier {
       } catch (err) {
         console.error(err);
       } finally {
-        await this.store.erase(address, num);
+        await this.store.eraseUnverified(address, num);
       }
     }
     console.log('Verifier completed.');

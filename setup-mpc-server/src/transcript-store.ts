@@ -14,7 +14,8 @@ export interface TranscriptStore {
   getTranscriptPath(address: Address, num: number): string;
   getTranscriptPaths(address: Address): Promise<string[]>;
   getUnverified(): Promise<{ address: Address; num: number }[]>;
-  erase(address: Address, num: number): Promise<void>;
+  eraseVerified(address: Address): Promise<void>;
+  eraseUnverified(address: Address, num: number): Promise<void>;
 }
 
 export class DiskTranscriptStore implements TranscriptStore {
@@ -85,7 +86,18 @@ export class DiskTranscriptStore implements TranscriptStore {
       });
   }
 
-  public async erase(address: Address, num: number) {
+  public async eraseVerified(address: Address) {
+    try {
+      const files = await readdirAsync(`${this.verifiedPath}/${address}`);
+      for (const file of files) {
+        await unlinkAsync(`${this.verifiedPath}/${address}/${file}`);
+      }
+    } catch (err) {
+      // Swallow
+    }
+  }
+
+  public async eraseUnverified(address: Address, num: number) {
     try {
       await unlinkAsync(this.getUnverifiedTranscriptPath(address, num));
       await unlinkAsync(this.getUnverifiedSignaturePath(address, num));

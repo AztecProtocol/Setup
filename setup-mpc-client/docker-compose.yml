@@ -2,7 +2,7 @@ version: '3'
 services:
   setup-mpc-client:
     build: .
-    image: aztec/setup-mpc-client
+    image: aztecprotocol/setup-mpc-client
     tty: true
     environment:
       API_URL: 'http://setup-mpc-server/api'
@@ -13,7 +13,7 @@ services:
 
   setup-mpc-client1:
     build: .
-    image: aztec/setup-mpc-client
+    image: aztecprotocol/setup-mpc-client
     tty: true
     environment:
       API_URL: 'http://setup-mpc-server/api'
@@ -26,7 +26,7 @@ services:
     build:
       context: ..
       dockerfile: setup-mpc-server/Dockerfile
-    image: aztec/setup-mpc-server
+    image: 278380418400.dkr.ecr.eu-west-2.amazonaws.com/setup-mpc-server
     environment:
       YOU_INDICIES: '0,1'
       STORE_PATH: './store'
@@ -43,7 +43,7 @@ services:
     build:
       context: ..
       dockerfile: setup-mpc-web/Dockerfile
-    image: aztec/setup-mpc-web
+    image: 278380418400.dkr.ecr.eu-west-2.amazonaws.com/setup-mpc-web
     environment:
       PORT: '80'
     expose:
