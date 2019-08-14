@@ -40,7 +40,14 @@ export class Server implements MpcServer {
     return this.state;
   }
 
-  public async resetState(startTime: Moment, numG1Points: number, numG2Points: number, pointsPerTranscript: number, invalidateAfter: number, participants: Address[]) {
+  public async resetState(
+    startTime: Moment,
+    numG1Points: number,
+    numG2Points: number,
+    pointsPerTranscript: number,
+    invalidateAfter: number,
+    participants: Address[]
+  ) {
     if (this.verifier) {
       this.verifier.cancel();
     }
@@ -72,8 +79,11 @@ export class Server implements MpcServer {
 
   private scheduleAdvanceState() {
     this.interval = setTimeout(async () => {
-      await this.advanceState();
-      this.scheduleAdvanceState();
+      try {
+        await this.advanceState();
+      } finally {
+        this.scheduleAdvanceState();
+      }
     }, 500);
   }
 
@@ -104,7 +114,7 @@ export class Server implements MpcServer {
     }
 
     if (p.state === 'WAITING') {
-      this.store.eraseVerified(p.address)
+      this.store.eraseVerified(p.address);
       p.startedAt = moment();
       p.state = 'RUNNING';
       this.verifier.runningAddress = p.address;
@@ -119,7 +129,7 @@ export class Server implements MpcServer {
     ) {
       p.state = 'INVALIDATED';
       p.error = 'timed out';
-      this.stateStore.setState(state);
+      await this.stateStore.setState(state);
       await this.advanceState();
       return;
     }
