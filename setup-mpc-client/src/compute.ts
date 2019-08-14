@@ -1,12 +1,10 @@
 import { ChildProcessWithoutNullStreams, spawn } from 'child_process';
-import { EventEmitter } from 'events';
-import moment = require('moment');
 import readline from 'readline';
 import { cloneParticipant, MemoryFifo, MpcServer, MpcState, Participant, Transcript } from 'setup-mpc-common';
 import { Downloader } from './downloader';
 import { Uploader } from './uploader';
 
-export class Compute extends EventEmitter {
+export class Compute {
   private setupProc?: ChildProcessWithoutNullStreams;
   private computeQueue: MemoryFifo<string> = new MemoryFifo();
   private downloader: Downloader;
@@ -15,10 +13,9 @@ export class Compute extends EventEmitter {
   constructor(
     private state: MpcState,
     private myState: Participant,
-    private server: MpcServer,
+    server: MpcServer,
     private computeOffline: boolean
   ) {
-    super();
     this.downloader = new Downloader(server);
     this.uploader = new Uploader(server, myState.address);
   }
@@ -26,7 +23,6 @@ export class Compute extends EventEmitter {
   public async start() {
     if (this.computeOffline) {
       this.myState.runningState = 'OFFLINE';
-      await this.updateParticipant();
       return;
     }
 
@@ -36,9 +32,6 @@ export class Compute extends EventEmitter {
 
     await this.populateQueues();
 
-    // Push any state changes to server.
-    await this.updateParticipant();
-
     await Promise.all([this.runDownloader(), this.compute(), this.runUploader()]).catch(err => {
       console.error(err);
       this.cancel();
@@ -46,12 +39,10 @@ export class Compute extends EventEmitter {
     });
 
     this.myState.runningState = 'COMPLETE';
-    await this.updateParticipant();
     console.error('Compute ran to completion.');
   }
 
   public cancel() {
-    this.removeAllListeners();
     this.downloader.cancel();
     this.uploader.cancel();
     this.computeQueue.cancel();
@@ -102,7 +93,8 @@ export class Compute extends EventEmitter {
     } else {
       console.error('We are the first participant.');
       this.downloader.end();
-      this.computeQueue.put(`create ${this.state.numG1Points} ${this.state.numG2Points}`);
+      const { numG1Points, numG2Points, pointsPerTranscript } = this.state;
+      this.computeQueue.put(`create ${numG1Points} ${numG2Points} ${pointsPerTranscript}`);
       this.computeQueue.end();
     }
   }
@@ -114,7 +106,6 @@ export class Compute extends EventEmitter {
 
     this.downloader.on('progress', (transcript: Transcript, transferred: number) => {
       transcript.downloaded = transferred;
-      this.updateParticipant();
     });
 
     await this.downloader.run();
@@ -125,7 +116,6 @@ export class Compute extends EventEmitter {
   private async runUploader() {
     this.uploader.on('progress', (num: number, transferred: number) => {
       this.myState.transcripts[num].uploaded = transferred;
-      this.updateParticipant();
     });
 
     await this.uploader.run();
@@ -193,7 +183,6 @@ export class Compute extends EventEmitter {
             complete: false,
           };
         }
-        this.updateParticipant();
         break;
       }
       case 'wrote': {
@@ -202,19 +191,8 @@ export class Compute extends EventEmitter {
       }
       case 'progress': {
         this.myState.computeProgress = +params[0];
-        this.updateParticipant();
         break;
       }
     }
   };
-
-  private async updateParticipant() {
-    try {
-      this.myState.lastUpdate = moment();
-      this.emit('update', this.myState);
-      await this.server.updateParticipant(this.myState);
-    } catch (err) {
-      console.error(`Failed to update server: ${err.message}`);
-    }
-  }
 }

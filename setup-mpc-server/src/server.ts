@@ -40,17 +40,18 @@ export class Server implements MpcServer {
     return this.state;
   }
 
-  public async resetState(startTime: Moment, numG1Points: number, numG2Points: number, invalidateAfter: number) {
+  public async resetState(startTime: Moment, numG1Points: number, numG2Points: number, pointsPerTranscript: number, invalidateAfter: number, participants: Address[]) {
     if (this.verifier) {
       this.verifier.cancel();
     }
-    this.state = { numG1Points, numG2Points, startTime, invalidateAfter, participants: [] };
+    this.state = { numG1Points, numG2Points, startTime, invalidateAfter, pointsPerTranscript, participants: [] };
+    participants.forEach(address => this.addNextParticipant(address));
     await this.stateStore.setState(this.state);
     this.verifier = new Verifier(this.store, numG1Points, numG2Points, this.verifierCallback.bind(this));
     this.verifier.run();
   }
 
-  public async addParticipant(address: Address) {
+  private addNextParticipant(address: Address) {
     const participant: Participant = {
       state: 'WAITING',
       runningState: 'WAITING',
@@ -60,8 +61,12 @@ export class Server implements MpcServer {
       transcripts: [],
       address,
     };
-
     this.state.participants.push(participant);
+    return participant;
+  }
+
+  public async addParticipant(address: Address) {
+    this.addNextParticipant(address);
     await this.stateStore.setState(this.state);
   }
 
@@ -120,7 +125,7 @@ export class Server implements MpcServer {
   }
 
   public async updateParticipant(participantData: Participant) {
-    const { transcripts, address, runningState, computeProgress, error } = participantData;
+    const { transcripts, address, runningState, computeProgress } = participantData;
     const p = this.getAndAssertRunningParticipant(address);
     // Complete flag is always controlled by the server. Don't allow client to overwrite.
     p.transcripts = transcripts.map((t, i) => ({

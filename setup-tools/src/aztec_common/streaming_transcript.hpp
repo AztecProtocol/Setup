@@ -1,7 +1,7 @@
 #pragma once
 #include "streaming.hpp"
 
-constexpr size_t POINTS_PER_TRANSCRIPT = 100000;
+constexpr size_t POINTS_PER_TRANSCRIPT = 10000000;
 
 namespace streaming
 {

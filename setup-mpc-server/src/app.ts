@@ -38,8 +38,15 @@ export function app(
       ...defaultState(),
       ...ctx.request.body,
     };
-    const { startTime, numG1Points, numG2Points, invalidateAfter } = settings;
-    await server.resetState(startTime, numG1Points, numG2Points, invalidateAfter);
+    const { startTime, numG1Points, numG2Points, pointsPerTranscript, invalidateAfter, participants } = settings;
+    await server.resetState(
+      startTime,
+      numG1Points,
+      numG2Points,
+      pointsPerTranscript,
+      invalidateAfter,
+      participants.map(Address.fromString)
+    );
     ctx.body = 'OK\n';
   });
 
@@ -54,10 +61,14 @@ export function app(
       ctx.status = 401;
       return;
     }
-    await server.updateParticipant({
-      ...ctx.request.body,
-      address,
-    });
+    try {
+      await server.updateParticipant({
+        ...ctx.request.body,
+        address,
+      });
+    } catch (err) {
+      // This is a "not running" error. Just swallow it as the client need not be concerned with this.
+    }
     ctx.status = 200;
   });
 

@@ -13,7 +13,14 @@ import { mpcStateFromJSON } from './mpc-state';
 export class HttpClient implements MpcServer {
   constructor(private apiUrl: string, private account?: Account) {}
 
-  public async resetState(startTime: Moment, numG1Points: number, numG2Points: number, invalidateAfter: number) {
+  public async resetState(
+    startTime: Moment,
+    numG1Points: number,
+    numG2Points: number,
+    pointsPerTranscript: number,
+    invalidateAfter: number,
+    participants: Address[]
+  ) {
     throw new Error('Not implemented.');
   }
 

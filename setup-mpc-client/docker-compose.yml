@@ -6,7 +6,7 @@ services:
     tty: true
     environment:
       API_URL: 'http://setup-mpc-server/api'
-      ACCOUNT_INDEX: '0'
+      PRIVATE_KEY: '0xf90214f59d15c663d4d13b06b115838ee8a397af1dbf6535479a818d6e32a26a'
     volumes:
       - .:/usr/src/setup-mpc-client
       - ../setup-mpc-common:/usr/src/setup-mpc-client/node_modules/setup-mpc-common
@@ -17,7 +17,7 @@ services:
     tty: true
     environment:
       API_URL: 'http://setup-mpc-server/api'
-      ACCOUNT_INDEX: '1'
+      PRIVATE_KEY: '0xf64420705123ff35ad7c8129018603ba617967543ba08702d1786c54818daeb3'
     volumes:
       - .:/usr/src/setup-mpc-client
       - ../setup-mpc-common:/usr/src/setup-mpc-client/node_modules/setup-mpc-common

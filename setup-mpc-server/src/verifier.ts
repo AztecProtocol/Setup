@@ -13,6 +13,7 @@ export class Verifier {
   public lastCompleteAddress?: Address;
   public runningAddress?: Address;
   private proc?: ChildProcess;
+  private cancelled = false;
 
   constructor(
     private store: TranscriptStore,
@@ -49,7 +50,9 @@ export class Verifier {
 
           await this.cb(address, num, true);
         } else {
-          await this.cb(address, num, false);
+          if (!this.cancelled) {
+            await this.cb(address, num, false);
+          }
         }
       } catch (err) {
         console.error(err);
@@ -57,7 +60,7 @@ export class Verifier {
         await this.store.erase(address, num);
       }
     }
-    console.log('Verifier complteted.');
+    console.log('Verifier completed.');
   }
 
   public put(item: VerifyItem) {
@@ -65,6 +68,7 @@ export class Verifier {
   }
 
   public cancel() {
+    this.cancelled = true;
     this.queue.cancel();
     if (this.proc) {
       this.proc.kill();

@@ -36,6 +36,7 @@ export interface Participant {
 export interface MpcState {
   numG1Points: number;
   numG2Points: number;
+  pointsPerTranscript: number;
   invalidateAfter: number;
   startTime: Moment;
   completedAt?: Moment;
@@ -43,7 +44,14 @@ export interface MpcState {
 }
 
 export interface MpcServer {
-  resetState(startTime: Moment, numG1Points: number, numG2Points: number, invalidateAfter: number): Promise<void>;
+  resetState(
+    startTime: Moment,
+    numG1Points: number,
+    numG2Points: number,
+    pointsPerTranscript: number,
+    invalidateAfter: number,
+    participants: Address[]
+  ): Promise<void>;
   getState(): Promise<MpcState>;
   updateParticipant(participant: Participant): Promise<void>;
   downloadData(address: Address, transcriptNumber: number): Promise<Readable>;
