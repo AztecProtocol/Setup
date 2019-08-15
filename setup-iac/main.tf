@@ -278,6 +278,7 @@ resource "aws_alb" "setup" {
     "${aws_subnet.setup_az2.id}"
   ]
 
+  # TODO:
   # access_logs {
   #   bucket  = "${aws_s3_bucket.lb_logs.bucket}"
   #   prefix  = "test-lb"
@@ -326,7 +327,7 @@ resource "aws_alb_listener" "https_listener" {
 # DNS entry.
 resource "aws_route53_record" "setup" {
   zone_id = "Z1XXO7GDQEVT6B"
-  name    = "setup"
+  name    = "setup-staging"
   type    = "A"
   alias {
     name                   = "${aws_alb.setup.dns_name}"

@@ -79,7 +79,7 @@ export class TerminalInterface {
       const myIndex = participants.findIndex(p => p.address.equals(this.myAccount!.address));
       const selectedIndex = participants.findIndex(p => p.state !== 'COMPLETE' && p.state !== 'INVALIDATED');
       if (myIndex === -1) {
-        this.term.white(`Private does not match an address. You are currently spectating.\n`);
+        this.term.white(`Private key does not match an address. You are currently spectating.\n`);
       } else {
         const myState = participants[myIndex];
         switch (myState.state) {
