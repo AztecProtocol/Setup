@@ -1,5 +1,5 @@
 import moment from 'moment';
-import { cloneMpcState, cloneParticipant, MpcServer, MpcState, Participant } from 'setup-mpc-common';
+import { cloneParticipant, MpcServer, MpcState, Participant } from 'setup-mpc-common';
 import { Writable } from 'stream';
 import { Account } from 'web3x/account';
 import { Compute } from './compute';
