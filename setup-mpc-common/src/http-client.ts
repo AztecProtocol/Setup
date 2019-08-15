@@ -1,40 +1,37 @@
 import { createReadStream, existsSync, statSync } from 'fs';
 import fetch from 'isomorphic-fetch';
-import moment = require('moment');
-import progress, { Progress } from 'progress-stream';
+import { Moment } from 'moment';
+import progress from 'progress-stream';
 import { Readable } from 'stream';
 import { Account } from 'web3x/account';
 import { Address } from 'web3x/address';
 import { bufferToHex } from 'web3x/utils';
 import { hashFiles } from './hash-files';
 import { MpcServer, MpcState, Participant } from './mpc-server';
+import { mpcStateFromJSON } from './mpc-state';
 
 export class HttpClient implements MpcServer {
   constructor(private apiUrl: string, private account?: Account) {}
+
+  public async resetState(
+    startTime: Moment,
+    numG1Points: number,
+    numG2Points: number,
+    pointsPerTranscript: number,
+    invalidateAfter: number,
+    participants: Address[]
+  ) {
+    throw new Error('Not implemented.');
+  }
 
   public async getState(): Promise<MpcState> {
     const response = await fetch(`${this.apiUrl}/state`);
     if (response.status !== 200) {
       throw new Error(`Bad status code from server: ${response.status}`);
     }
-    const { startTime, completedAt, participants, ...rest } = await response.json();
+    const json = await response.json();
 
-    return {
-      ...rest,
-      startTime: moment(startTime),
-      completedAt: completedAt ? moment(completedAt) : undefined,
-      participants: participants.map(({ startedAt, lastUpdate, completedAt, address, transcripts, ...rest }: any) => ({
-        ...rest,
-        startedAt: startedAt ? moment(startedAt) : undefined,
-        lastUpdate: lastUpdate ? moment(lastUpdate) : undefined,
-        completedAt: completedAt ? moment(completedAt) : undefined,
-        address: Address.fromString(address),
-        transcripts: transcripts.map(({ fromAddress, ...rest }: any) => ({
-          ...rest,
-          fromAddress: fromAddress ? Address.fromString(fromAddress) : undefined,
-        })),
-      })),
-    };
+    return mpcStateFromJSON(json);
   }
 
   public async updateParticipant(participant: Participant) {
@@ -75,8 +72,8 @@ export class HttpClient implements MpcServer {
     address: Address,
     transcriptNumber: number,
     transcriptPath: string,
-    signature?: string,
-    progressCb?: (progress: Progress) => void
+    signaturePath?: string,
+    progressCb?: (transferred: number) => void
   ) {
     return new Promise<void>(async (resolve, reject) => {
       try {
@@ -101,20 +98,29 @@ export class HttpClient implements MpcServer {
         const stats = statSync(transcriptPath);
         const progStream = progress({ length: stats.size, time: 1000 });
         if (progressCb) {
-          progStream.on('progress', progressCb);
+          progStream.on('progress', progress => progressCb(progress.transferred));
         }
         transcriptStream.pipe(progStream);
 
-        await fetch(`${this.apiUrl}/data/${address.toString().toLowerCase()}/${transcriptNumber}`, {
+        const response = await fetch(`${this.apiUrl}/data/${address.toString().toLowerCase()}/${transcriptNumber}`, {
           method: 'PUT',
           body: progStream as any,
           headers: {
             'X-Signature': signature,
+            'Content-Type': 'application/octet-stream',
+            'Content-Length': `${stats.size}`,
           },
         });
 
+        if (response.status !== 200) {
+          throw new Error(`Uplaod failed, bad status code: ${response.status}`);
+        }
+
         resolve();
       } catch (err) {
+        if (progressCb) {
+          progressCb(0);
+        }
         reject(err);
       }
     });

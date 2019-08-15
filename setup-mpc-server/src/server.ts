@@ -1,42 +1,64 @@
-import { spawn } from 'child_process';
-import { unlink } from 'fs';
 import moment, { Moment } from 'moment';
-import { MemoryFifo, MpcServer, MpcState, Participant } from 'setup-mpc-common';
+import { MpcServer, MpcState, Participant } from 'setup-mpc-common';
 import { Address } from 'web3x/address';
-import { Wallet } from 'web3x/wallet';
+import { StateStore } from './state-store';
 import { TranscriptStore } from './transcript-store';
-
-const TEST_BAD_THINGS: number[] = [];
-
-interface VerifyItem {
-  participant: Participant;
-  transcriptNumber: number;
-  transcriptPath: string;
-  signature: string;
-}
+import { Verifier } from './verifier';
 
 export class Server implements MpcServer {
   private interval?: NodeJS.Timer;
-  private verifyQueue: MemoryFifo<VerifyItem> = new MemoryFifo();
-  protected state!: MpcState;
+  private verifier!: Verifier;
+  private state!: MpcState;
 
-  constructor(private store: TranscriptStore) {
-    this.verifier().catch(console.error);
-  }
+  constructor(private store: TranscriptStore, private stateStore: StateStore) {}
 
-  public setState(state: MpcState) {
-    this.state = state;
+  public async start() {
+    // Take a copy of the state from the state store.
+    this.state = await this.stateStore.getState();
+
+    // Launch verifier.
+    this.verifier = new Verifier(
+      this.store,
+      this.state.numG1Points,
+      this.state.numG2Points,
+      this.verifierCallback.bind(this)
+    );
+    const lastCompleteParticipant = this.getLastCompleteParticipant();
+    const runningParticipant = this.getRunningParticipant();
+    this.verifier.lastCompleteAddress = lastCompleteParticipant && lastCompleteParticipant.address;
+    this.verifier.runningAddress = runningParticipant && runningParticipant.address;
+    this.verifier.run();
+
+    // Get any files awaiting verification and add to the queue.
+    const unverified = await this.store.getUnverified();
+    unverified.forEach(item => this.verifier.put(item));
+
+    this.scheduleAdvanceState();
   }
 
   public async getState(): Promise<MpcState> {
     return this.state;
   }
 
-  public resetState(startTime: Moment, numG1Points: number, numG2Points: number, invalidateAfter: number) {
-    this.setState({ numG1Points, numG2Points, startTime, invalidateAfter, participants: [] });
+  public async resetState(
+    startTime: Moment,
+    numG1Points: number,
+    numG2Points: number,
+    pointsPerTranscript: number,
+    invalidateAfter: number,
+    participants: Address[]
+  ) {
+    if (this.verifier) {
+      this.verifier.cancel();
+    }
+    this.state = { numG1Points, numG2Points, startTime, invalidateAfter, pointsPerTranscript, participants: [] };
+    participants.forEach(address => this.addNextParticipant(address));
+    await this.stateStore.setState(this.state);
+    this.verifier = new Verifier(this.store, numG1Points, numG2Points, this.verifierCallback.bind(this));
+    this.verifier.run();
   }
 
-  public addParticipant(address: Address) {
+  private addNextParticipant(address: Address) {
     const participant: Participant = {
       state: 'WAITING',
       runningState: 'WAITING',
@@ -46,27 +68,41 @@ export class Server implements MpcServer {
       transcripts: [],
       address,
     };
-
     this.state.participants.push(participant);
+    return participant;
   }
 
-  public start() {
-    this.interval = setInterval(() => this.advanceState(), 500);
+  public async addParticipant(address: Address) {
+    this.addNextParticipant(address);
+    await this.stateStore.setState(this.state);
+  }
+
+  private scheduleAdvanceState() {
+    this.interval = setTimeout(async () => {
+      try {
+        await this.advanceState();
+      } finally {
+        this.scheduleAdvanceState();
+      }
+    }, 500);
   }
 
   public stop() {
     clearInterval(this.interval!);
   }
 
-  protected advanceState() {
-    if (moment().isBefore(this.state.startTime)) {
+  protected async advanceState() {
+    const state = this.state;
+
+    if (moment().isBefore(state.startTime)) {
       return;
     }
 
-    const { completedAt, invalidateAfter, participants } = this.state;
+    const { completedAt, invalidateAfter, participants } = state;
 
     if (!completedAt && participants.every(p => p.state === 'COMPLETE' || p.state === 'INVALIDATED')) {
-      this.state.completedAt = moment();
+      state.completedAt = moment();
+      await this.stateStore.setState(state);
       return;
     }
 
@@ -78,8 +114,11 @@ export class Server implements MpcServer {
     }
 
     if (p.state === 'WAITING') {
+      this.store.eraseVerified(p.address);
       p.startedAt = moment();
       p.state = 'RUNNING';
+      this.verifier.runningAddress = p.address;
+      await this.stateStore.setState(state);
       return;
     }
 
@@ -90,14 +129,15 @@ export class Server implements MpcServer {
     ) {
       p.state = 'INVALIDATED';
       p.error = 'timed out';
-      this.advanceState();
+      await this.stateStore.setState(state);
+      await this.advanceState();
       return;
     }
   }
 
   public async updateParticipant(participantData: Participant) {
-    const { transcripts, address, runningState, computeProgress, error } = participantData;
-    const p = this.getRunningParticipant(address);
+    const { transcripts, address, runningState, computeProgress } = participantData;
+    const p = this.getAndAssertRunningParticipant(address);
     // Complete flag is always controlled by the server. Don't allow client to overwrite.
     p.transcripts = transcripts.map((t, i) => ({
       ...t,
@@ -105,7 +145,6 @@ export class Server implements MpcServer {
     }));
     p.runningState = runningState;
     p.computeProgress = computeProgress;
-    p.error = error;
     p.lastUpdate = moment();
   }
 
@@ -113,136 +152,27 @@ export class Server implements MpcServer {
     return this.store.loadTranscript(address, num);
   }
 
-  public async uploadData(address: Address, transcriptNumber: number, transcriptPath: string, signature: string) {
-    const participant = this.getRunningParticipant(address);
-    this.verifyQueue.put({ participant, transcriptNumber, transcriptPath, signature });
+  public async uploadData(address: Address, transcriptNumber: number, transcriptPath: string, signaturePath: string) {
+    this.getAndAssertRunningParticipant(address);
+    await this.store.saveTranscript(address, transcriptNumber, transcriptPath);
+    await this.store.saveSignature(address, transcriptNumber, signaturePath);
+    this.verifier.put({ address, num: transcriptNumber });
   }
 
-  private async verifier() {
-    while (true) {
-      const item = await this.verifyQueue.get();
-      if (!item) {
-        return;
-      }
-      const { participant, transcriptNumber, transcriptPath, signature } = item;
-      const { address } = participant;
-
-      try {
-        const p = this.getRunningParticipant(address);
-
-        if (!p.transcripts[transcriptNumber]) {
-          throw new Error(`Unknown transcript number: ${transcriptNumber}`);
-        }
-
-        if (await this.verifyTranscript(participant, transcriptNumber, transcriptPath)) {
-          console.error(`Verification succeeded: ${transcriptPath}...`);
-
-          await this.store.saveTranscript(address, transcriptNumber, transcriptPath);
-          await this.store.saveSignature(address, transcriptNumber, signature);
-
-          p.transcripts[transcriptNumber].complete = true;
-          p.lastUpdate = moment();
-
-          if (p.transcripts.every(t => t.complete)) {
-            // Every transcript in clients transcript list is verified. We still need to verify the set
-            // as a whole. This just checks the total number of G1 and G2 points is as expected.
-            if (await this.verifyTranscriptSet(p)) {
-              p.state = 'COMPLETE';
-              p.runningState = 'COMPLETE';
-              p.completedAt = moment();
-            } else {
-              console.error(`Verification of set failed for ${p.address}...`);
-              p.state = 'INVALIDATED';
-              p.runningState = 'COMPLETE';
-              p.error = 'verify failed';
-            }
-          }
-        } else {
-          console.error(`Verification failed: ${transcriptPath}...`);
-          p.state = 'INVALIDATED';
-          p.runningState = 'COMPLETE';
-          p.error = 'verify failed';
-        }
-      } catch (err) {
-        console.error(err);
-      } finally {
-        unlink(transcriptPath, () => {});
-      }
-    }
-  }
-
-  private async verifyTranscript(participant: Participant, transcriptNumber: number, transcriptPath: string) {
-    const args = [transcriptPath];
-    args.push(transcriptNumber === 0 ? transcriptPath : this.store.getTranscriptPath(participant.address, 0));
-    if (transcriptNumber === 0) {
-      const lastCompleteParticipant = this.getLastCompleteParticipant();
-      if (lastCompleteParticipant) {
-        args.push(this.store.getTranscriptPath(lastCompleteParticipant.address, 0));
-      }
-    } else {
-      args.push(this.store.getTranscriptPath(participant.address, transcriptNumber - 1));
-    }
-
-    console.error(`Verifiying transcript ${transcriptNumber}...`);
-    return new Promise<boolean>(resolve => {
-      const { VERIFY_PATH = '../setup-tools/verify' } = process.env;
-      const verify = spawn(VERIFY_PATH, args);
-
-      verify.stdout.on('data', data => {
-        console.error(data.toString());
-      });
-
-      verify.stderr.on('data', data => {
-        console.error(data.toString());
-      });
-
-      verify.on('close', code => {
-        if (code === 0) {
-          participant.verifyProgress = ((transcriptNumber + 1) / participant.transcripts.length) * 100;
-          resolve(true);
-        } else {
-          resolve(false);
-        }
-      });
-    });
-  }
-
-  private async verifyTranscriptSet(participant: Participant) {
-    const { numG1Points, numG2Points } = this.state;
-    const args = [
-      numG1Points.toString(),
-      numG2Points.toString(),
-      ...this.store.getTranscriptPaths(participant.address),
-    ];
-
-    return new Promise<boolean>(resolve => {
-      const { VERIFY_PATH = '../setup-tools/verify_set' } = process.env;
-      const verify = spawn(VERIFY_PATH, args);
-
-      verify.stdout.on('data', data => {
-        console.error(data.toString());
-      });
-
-      verify.stderr.on('data', data => {
-        console.error(data.toString());
-      });
-
-      verify.on('close', code => {
-        resolve(code === 0 ? true : false);
-      });
-    });
-  }
-
-  private getLastCompleteParticipant() {
-    return this.state.participants.find(p => p.state === 'COMPLETE');
-  }
-
-  private getRunningParticipant(address: Address) {
-    const p = this.getParticipant(address);
-    if (p.state !== 'RUNNING') {
+  public getAndAssertRunningParticipant(address: Address) {
+    const p = this.getRunningParticipant();
+    if (!p || !p.address.equals(address)) {
       throw new Error('Can only update a running participant.');
     }
     return p;
+  }
+
+  private getRunningParticipant() {
+    return this.state.participants.find(p => p.state === 'RUNNING');
+  }
+
+  private getLastCompleteParticipant() {
+    return [...this.state.participants].reverse().find(p => p.state === 'COMPLETE');
   }
 
   private getParticipant(address: Address) {
@@ -252,138 +182,55 @@ export class Server implements MpcServer {
     }
     return p;
   }
-}
 
-export class DemoServer extends Server {
-  private wallet: Wallet;
-
-  constructor(numParticipants: number, store: TranscriptStore, private youIndicies: number[] = []) {
-    super(store);
-    this.wallet = Wallet.fromMnemonic(
-      'face cook metal cost prevent term foam drive sure caught pet gentle',
-      numParticipants
-    );
+  private async verifierCallback(address: Address, transcriptNumber: number, verified: boolean) {
+    if (verified) {
+      await this.onVerified(address, transcriptNumber);
+    } else {
+      await this.onRejected(address, transcriptNumber);
+    }
   }
 
-  public resetState(startTime: Moment, numG1Points: number, numG2Points: number, invalidateAfter: number) {
-    super.resetState(startTime, numG1Points, numG2Points, invalidateAfter);
-    this.wallet.currentAddresses().forEach(address => super.addParticipant(address));
-  }
+  private async onVerified(address: Address, transcriptNumber: number) {
+    const p = this.getParticipant(address);
 
-  protected advanceState() {
-    if (moment().isBefore(this.state.startTime)) {
-      return;
-    }
-
-    const { completedAt, invalidateAfter, participants } = this.state;
-
-    if (!completedAt && participants.every(p => p.state === 'COMPLETE' || p.state === 'INVALIDATED')) {
-      this.state.completedAt = moment();
-    }
-
-    const i = participants.findIndex(p => p.state !== 'COMPLETE' && p.state !== 'INVALIDATED');
-    const p = participants[i];
-
-    if (!p) {
-      return;
-    }
-
-    if (p.state === 'WAITING') {
-      p.startedAt = moment();
-      p.state = 'RUNNING';
-      return;
-    }
-
-    if (
-      moment()
-        .subtract(invalidateAfter, 's')
-        .isAfter(p.startedAt!)
-    ) {
-      p.state = 'INVALIDATED';
-      p.error = 'timed out';
-      this.advanceState();
-      return;
-    }
-
-    if (this.youIndicies.includes(i)) {
-      // Only simulate other users.
-      return;
-    }
-
-    if (TEST_BAD_THINGS.includes(i)) {
-      // Exceptional case: Simulate user offline for 10 seconds.
-      if (i === 1) {
-        if (
-          moment()
-            .subtract(20, 's')
-            .isAfter(p.startedAt!)
-        ) {
-          p.completedAt = moment();
-          p.state = 'COMPLETE';
-          this.advanceState();
-        }
-        return;
-      }
-
-      /*
-      if (i === 2) {
-        if (p.runningState === 'VERIFYING') {
-          p.state = 'INVALIDATED';
-          p.runningState = 'COMPLETE';
-          p.error = 'verify failed';
-          this.advanceState();
-          return;
-        }
-      }
-      */
-
-      // Exceptional case: Simulate a user that never participates.
-      if (i === 3) {
-        if (
-          moment()
-            .subtract(invalidateAfter, 's')
-            .isAfter(p.startedAt!)
-        ) {
-          p.state = 'INVALIDATED';
-          p.error = 'timed out';
-          this.advanceState();
-        }
-        return;
-      }
-    }
-
+    p.verifyProgress = ((transcriptNumber + 1) / p.transcripts.length) * 100;
+    p.transcripts[transcriptNumber].complete = true;
     p.lastUpdate = moment();
 
-    if (p.runningState === 'WAITING') {
-      p.runningState = 'RUNNING';
-      p.transcripts = [
-        {
-          num: 0,
-          size: 100,
-          downloaded: 0,
-          uploaded: 0,
-          complete: false,
-        },
-      ];
+    if (p.transcripts.every(t => t.complete)) {
+      // Every transcript in clients transcript list is verified. We still need to verify the set
+      // as a whole. This just checks the total number of G1 and G2 points is as expected.
+      const fullyVerified = await this.verifier.verifyTranscriptSet(p.address);
+
+      if (p.state !== 'RUNNING') {
+        // Abort update if state changed during verification process (timed out).
+        return;
+      }
+
+      if (fullyVerified) {
+        p.state = 'COMPLETE';
+        p.runningState = 'COMPLETE';
+        p.completedAt = moment();
+        this.verifier.lastCompleteAddress = p.address;
+      } else {
+        console.error(`Verification of set failed for ${p.address}...`);
+        p.state = 'INVALIDATED';
+        p.runningState = 'COMPLETE';
+        p.error = 'verify failed';
+      }
     }
 
-    if (p.runningState === 'RUNNING') {
-      p.transcripts[0].downloaded = Math.min(100, p.transcripts[0].downloaded + 2.13);
-      if (p.transcripts[0].downloaded > 20) {
-        p.computeProgress = Math.min(100, p.computeProgress + 2.13);
-      }
-      if (p.computeProgress > 20) {
-        p.transcripts[0].uploaded = Math.min(100, p.transcripts[0].uploaded + 2.13);
-      }
-      if (p.transcripts[0].uploaded > 20) {
-        p.verifyProgress = Math.min(100, p.verifyProgress + 2.13);
-      }
-      if (p.verifyProgress >= 100) {
-        p.state = 'COMPLETE';
-        p.completedAt = moment();
-        p.runningState = 'COMPLETE';
-        this.advanceState();
-      }
-    }
+    await this.stateStore.setState(this.state);
+  }
+
+  private async onRejected(address: Address, transcriptNumber: number) {
+    const p = this.getParticipant(address);
+    console.error(`Verification failed: ${address.toString()} ${transcriptNumber}...`);
+    p.state = 'INVALIDATED';
+    p.runningState = 'COMPLETE';
+    p.error = 'verify failed';
+
+    await this.stateStore.setState(this.state);
   }
 }

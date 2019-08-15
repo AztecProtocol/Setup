@@ -187,19 +187,9 @@ bool validate_manifest(streaming::Manifest const &previous, streaming::Manifest 
     // Transcript must be the next in the sequence, or both 0.
     result &= (current.transcript_number == 0 && previous.transcript_number == 0) || (current.transcript_number == previous.transcript_number + 1);
 
-    size_t start_from = current.transcript_number * POINTS_PER_TRANSCRIPT;
-    size_t num_g1_points = std::min(POINTS_PER_TRANSCRIPT, current.total_g1_points >= start_from ? (size_t)current.total_g1_points - start_from : 0);
-    size_t num_g2_points = std::min(POINTS_PER_TRANSCRIPT, current.total_g2_points >= start_from ? (size_t)current.total_g2_points - start_from : 0);
-
-    if (current.transcript_number == 0)
-    {
-        // g2_y tacked on the end.
-        num_g2_points += 1;
-    }
-
-    result &= current.num_g1_points == num_g1_points;
-    result &= current.num_g2_points == num_g2_points;
-    result &= current.start_from == start_from;
+    result &= current.num_g1_points <= previous.num_g1_points;
+    result &= current.num_g2_points <= previous.num_g2_points;
+    result &= current.start_from >= previous.start_from;
 
     if (!result)
     {

@@ -41,38 +41,6 @@ resource "aws_iam_role_policy_attachment" "ec2_spot_fleet_policy" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEC2SpotFleetRole"
 }
 
-data "aws_iam_policy_document" "instance_assume_role_policy" {
-  statement {
-    actions = ["sts:AssumeRole"]
-
-    principals {
-      type        = "Service"
-      identifiers = ["ec2.amazonaws.com"]
-    }
-  }
-}
-
-resource "aws_iam_role" "setup_ecs_instance" {
-  name               = "setup-ecs-instance"
-  assume_role_policy = "${data.aws_iam_policy_document.instance_assume_role_policy.json}"
-}
-
-resource "aws_iam_instance_profile" "ecs" {
-  name  = "setup-ecs-instance"
-  roles = ["${aws_iam_role.setup_ecs_instance.name}"]
-}
-
-resource "aws_iam_policy_attachment" "ecs_instance" {
-  name       = "setup-ecs-instance"
-  roles      = ["${aws_iam_role.setup_ecs_instance.name}"]
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role"
-}
-
-resource "aws_key_pair" "deployer" {
-  key_name   = "deployer-key"
-  public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDagCvr/+CA1jmFaJf+e9+Kw6iwfhvaKOpfbGEl5zLgB+rum5L4Kga6Jow1gLQeMnAHfqc2IgpsU4t04c8PYApAt8AWNDL+KxMiFytfjKfJ2DZJA73CYkFnkfnMtU+ki+JG9dAHd6m7ShtCSzE5n6EDO2yWCVWQfqE3dcnpwrymSWkJYrbxzeOixiNZ4f1nD9ddvFvTWGB4l+et5SWgeIaYgJYDqTI2teRt9ytJiDGrCWXs9olHsCZOL6TEJPUQmNekwBkjMAZ4TmbBMjwbUlIxOpW2UxzlONcNn7IlRcGQg0Gdbkpo/zOlCNXsvacvnphDk5vKKaQj+aQiG916LU5P charlie@aztecprotocol.com"
-}
-
 /*
 resource "aws_instance" "setup_task" {
   ami = "ami-013b322dbc79e9a6a"
@@ -184,13 +152,13 @@ data "aws_ecs_task_definition" "setup_task" {
 }
 
 resource "aws_ecs_service" "setup_task" {
-  name = "setup-task"
-  cluster = "${data.terraform_remote_state.setup_iac.outputs.ecs_cluster_id}"
-  launch_type = "EC2"
+  name          = "setup-task"
+  cluster       = "${data.terraform_remote_state.setup_iac.outputs.ecs_cluster_id}"
+  launch_type   = "EC2"
   desired_count = "1"
 
   network_configuration {
-    subnets = ["${data.terraform_remote_state.setup_iac.outputs.subnet_az1_id}"]
+    subnets         = ["${data.terraform_remote_state.setup_iac.outputs.subnet_az1_id}"]
     security_groups = ["${data.terraform_remote_state.setup_iac.outputs.security_group_private_id}"]
   }
 
@@ -200,6 +168,6 @@ resource "aws_ecs_service" "setup_task" {
 
 # Logging setup-task to CloudWatch
 resource "aws_cloudwatch_log_group" "setup_task_logs" {
-  name = "/fargate/service/setup-task"
+  name              = "/fargate/service/setup-task"
   retention_in_days = "14"
 }

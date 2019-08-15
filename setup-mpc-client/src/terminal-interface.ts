@@ -2,6 +2,7 @@ import humanizeDuration from 'humanize-duration';
 import moment from 'moment';
 import { MpcState, Participant } from 'setup-mpc-common';
 import { Account } from 'web3x/account';
+import { Address } from 'web3x/address';
 import { leftPad } from 'web3x/utils';
 import { TerminalKit } from './terminal-kit';
 
@@ -78,11 +79,7 @@ export class TerminalInterface {
       const myIndex = participants.findIndex(p => p.address.equals(this.myAccount!.address));
       const selectedIndex = participants.findIndex(p => p.state !== 'COMPLETE' && p.state !== 'INVALIDATED');
       if (myIndex === -1) {
-        this.term.white(
-          `The address ${
-            this.myAccount.address
-          } is not recognised as a participant in the ceremony. You are currently spectating.\n`
-        );
+        this.term.white(`Private does not match an address. You are currently spectating.\n`);
       } else {
         const myState = participants[myIndex];
         switch (myState.state) {
@@ -255,20 +252,29 @@ export class TerminalInterface {
       return;
     }
 
+    if (this.state.participants.length !== state.participants.length) {
+      this.state = state;
+      this.render();
+      return;
+    }
+
     this.state = state;
 
     if (moment().isBefore(state.startTime)) {
       if (this.ceremonyBegun) {
+        // Server has been reset, re-render everything.
         this.ceremonyBegun = false;
-        this.currentlySelectedIndex = 0;
+        this.currentlySelectedIndex = undefined;
         this.render();
         return;
       }
+      // Updates just the countdown.
       await this.renderStatus();
       return;
     }
 
     if (!this.ceremonyBegun) {
+      // Transitioning to running. Update the status.
       this.ceremonyBegun = true;
       await this.renderStatus();
     }
@@ -278,10 +284,27 @@ export class TerminalInterface {
       this.currentlySelectedIndex = newSelectedIndex;
       await this.renderStatus();
       this.renderList();
+    } else {
+      this.updateProgress();
     }
   }
 
-  public updateProgress() {
+  public updateParticipant(participant: Participant) {
+    if (!this.state) {
+      return;
+    }
+    const index = this.state.participants.findIndex(p => p.address.equals(participant.address));
+    if (index >= 0 && this.state.participants[index].state === 'RUNNING') {
+      this.state.participants[index] = participant;
+      this.renderLine(this.state.participants[index], index - this.offset);
+    }
+  }
+
+  public getParticipant(address: Address) {
+    return this.state!.participants.find(p => p.address.equals(address))!;
+  }
+
+  private updateProgress() {
     if (!this.state) {
       return;
     }

@@ -28,7 +28,7 @@ export interface Participant {
   error?: string;
   // Client controlled data.
   runningState: ParticipantRunningState;
-  transcripts: Transcript[];
+  transcripts: Transcript[]; // Except 'complete'.
   computeProgress: number;
   lastUpdate?: Moment;
 }
@@ -36,6 +36,7 @@ export interface Participant {
 export interface MpcState {
   numG1Points: number;
   numG2Points: number;
+  pointsPerTranscript: number;
   invalidateAfter: number;
   startTime: Moment;
   completedAt?: Moment;
@@ -43,6 +44,14 @@ export interface MpcState {
 }
 
 export interface MpcServer {
+  resetState(
+    startTime: Moment,
+    numG1Points: number,
+    numG2Points: number,
+    pointsPerTranscript: number,
+    invalidateAfter: number,
+    participants: Address[]
+  ): Promise<void>;
   getState(): Promise<MpcState>;
   updateParticipant(participant: Participant): Promise<void>;
   downloadData(address: Address, transcriptNumber: number): Promise<Readable>;
@@ -50,7 +59,7 @@ export interface MpcServer {
     address: Address,
     transcriptNumber: number,
     transcriptPath: string,
-    signature?: string,
-    progressCb?: (progress: Progress) => void
+    signaturePath?: string,
+    progressCb?: (transferred: number) => void
   ): Promise<void>;
 }

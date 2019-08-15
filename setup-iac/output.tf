@@ -14,6 +14,10 @@ output "ecs_cluster_id" {
   value = "${aws_ecs_cluster.setup.id}"
 }
 
+output "ecs_cluster_name" {
+  value = "${aws_ecs_cluster.setup.name}"
+}
+
 output "subnet_az1_id" {
   value = "${aws_subnet.setup.id}"
 }
@@ -32,4 +36,12 @@ output "security_group_public_id" {
 
 output "alb_listener_arn" {
   value = "${aws_alb_listener.https_listener.arn}"
+}
+
+output "ecs_instance_profile_name" {
+  value = "${aws_iam_instance_profile.ecs.name}"
+}
+
+output "ecs_instance_key_pair_name" {
+  value = "${aws_key_pair.instance_key_pair.key_name}"
 }

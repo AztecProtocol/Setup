@@ -121,8 +121,8 @@ void compute_transcript(std::string const &dir, std::vector<G1> &g1_x, std::vect
 
 size_t calculate_current_progress(streaming::Manifest const &manifest, size_t transcript_index)
 {
-    size_t g1_points = std::min((size_t)manifest.total_g1_points, transcript_index * POINTS_PER_TRANSCRIPT);
-    size_t g2_points = std::min((size_t)manifest.total_g2_points, transcript_index * POINTS_PER_TRANSCRIPT);
+    size_t g1_points = std::min((size_t)manifest.total_g1_points, (size_t)manifest.start_from);
+    size_t g2_points = std::min((size_t)manifest.total_g2_points, (size_t)manifest.start_from);
     return g1_points * G1_WEIGHT + g2_points * G2_WEIGHT;
 }
 
@@ -152,10 +152,10 @@ void compute_existing_transcript(std::string const &dir, size_t num, Fr &multipl
 }
 
 // Computes initial transcripts.
-void compute_initial_transcripts(const std::string &dir, size_t total_g1_points, size_t total_g2_points, Fr &multiplicand, size_t &progress)
+void compute_initial_transcripts(const std::string &dir, size_t total_g1_points, size_t total_g2_points, size_t points_per_transcript, Fr &multiplicand, size_t &progress)
 {
     const size_t max_points = std::max(total_g1_points, total_g2_points);
-    const size_t total_transcripts = max_points / POINTS_PER_TRANSCRIPT + (max_points % POINTS_PER_TRANSCRIPT ? 1 : 0);
+    const size_t total_transcripts = max_points / points_per_transcript + (max_points % points_per_transcript ? 1 : 0);
 
     std::cerr << "Creating initial transcripts..." << std::endl;
 
@@ -165,9 +165,9 @@ void compute_initial_transcripts(const std::string &dir, size_t total_g1_points,
     // Define transcripts.
     for (size_t i = 0; i < total_transcripts; ++i)
     {
-        size_t start_from = i * POINTS_PER_TRANSCRIPT;
-        size_t num_g1_points = std::min(POINTS_PER_TRANSCRIPT, total_g1_points >= start_from ? (size_t)total_g1_points - start_from : 0);
-        size_t num_g2_points = std::min(POINTS_PER_TRANSCRIPT, total_g2_points >= start_from ? (size_t)total_g2_points - start_from : 0);
+        size_t start_from = i * points_per_transcript;
+        size_t num_g1_points = std::min(points_per_transcript, total_g1_points >= start_from ? (size_t)total_g1_points - start_from : 0);
+        size_t num_g2_points = std::min(points_per_transcript, total_g2_points >= start_from ? (size_t)total_g2_points - start_from : 0);
 
         streaming::Manifest &manifest = manifests[i];
         manifest.transcript_number = i;
@@ -243,9 +243,9 @@ void run_setup(std::string const &dir, size_t num_g1_points, size_t num_g2_point
             iss >> cmd;
             if (cmd == "create")
             {
-                size_t num_g1_points, num_g2_points;
-                iss >> num_g1_points >> num_g2_points;
-                compute_initial_transcripts(dir, num_g1_points, num_g2_points, multiplicand, progress);
+                size_t num_g1_points, num_g2_points, points_per_transcript;
+                iss >> num_g1_points >> num_g2_points >> points_per_transcript;
+                compute_initial_transcripts(dir, num_g1_points, num_g2_points, points_per_transcript, multiplicand, progress);
             }
             else if (cmd == "process")
             {
@@ -260,7 +260,7 @@ void run_setup(std::string const &dir, size_t num_g1_points, size_t num_g2_point
         // Being manually run.
         if (num_g1_points > 0)
         {
-            compute_initial_transcripts(dir, num_g1_points, num_g2_points, multiplicand, progress);
+            compute_initial_transcripts(dir, num_g1_points, num_g2_points, POINTS_PER_TRANSCRIPT, multiplicand, progress);
         }
         else
         {

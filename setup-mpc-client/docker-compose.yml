@@ -2,24 +2,22 @@ version: '3'
 services:
   setup-mpc-client:
     build: .
-    image: aztec/setup-mpc-client
+    image: aztecprotocol/setup-mpc-client
     tty: true
     environment:
       API_URL: 'http://setup-mpc-server/api'
-      ACCOUNT_INDEX: '0'
-      POLYNOMIAL_DEGREE: '100000000'
+      PRIVATE_KEY: '0xf90214f59d15c663d4d13b06b115838ee8a397af1dbf6535479a818d6e32a26a'
     volumes:
       - .:/usr/src/setup-mpc-client
       - ../setup-mpc-common:/usr/src/setup-mpc-client/node_modules/setup-mpc-common
 
   setup-mpc-client1:
     build: .
-    image: aztec/setup-mpc-client
+    image: aztecprotocol/setup-mpc-client
     tty: true
     environment:
       API_URL: 'http://setup-mpc-server/api'
-      ACCOUNT_INDEX: '1'
-      POLYNOMIAL_DEGREE: '100000000'
+      PRIVATE_KEY: '0xf64420705123ff35ad7c8129018603ba617967543ba08702d1786c54818daeb3'
     volumes:
       - .:/usr/src/setup-mpc-client
       - ../setup-mpc-common:/usr/src/setup-mpc-client/node_modules/setup-mpc-common
@@ -28,14 +26,15 @@ services:
     build:
       context: ..
       dockerfile: setup-mpc-server/Dockerfile
-    image: aztec/setup-mpc-server
+    image: 278380418400.dkr.ecr.eu-west-2.amazonaws.com/setup-mpc-server
     environment:
       YOU_INDICIES: '0,1'
-      POLYNOMIAL_DEGREE: '100000000'
+      STORE_PATH: './store'
+      TMP_PATH: './store/tmp'
     expose:
       - 80
     ports:
-      - "8081:80"
+      - "80:80"
     volumes:
       - ../setup-mpc-server:/usr/src/setup-mpc-server
       - ../setup-mpc-common:/usr/src/setup-mpc-server/node_modules/setup-mpc-common
@@ -44,7 +43,7 @@ services:
     build:
       context: ..
       dockerfile: setup-mpc-web/Dockerfile
-    image: aztec/setup-mpc-web
+    image: 278380418400.dkr.ecr.eu-west-2.amazonaws.com/setup-mpc-web
     environment:
       PORT: '80'
     expose:
