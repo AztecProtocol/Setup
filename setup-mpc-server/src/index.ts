@@ -5,7 +5,7 @@ import { Server } from './server';
 import { DiskStateStore } from './state-store';
 import { DiskTranscriptStore } from './transcript-store';
 
-const { PORT = 80, STORE_PATH = './store', TMP_PATH = '/tmp' } = process.env;
+const { PORT = 80, STORE_PATH = './store' } = process.env;
 
 async function main() {
   const stateStore = new DiskStateStore(STORE_PATH + '/state');
@@ -14,6 +14,7 @@ async function main() {
   const server = new Server(transcriptStore, stateStore);
   await server.start();
 
+  const TMP_PATH = STORE_PATH + '/tmp';
   await mkdirAsync(TMP_PATH, { recursive: true });
   const httpServer = http.createServer(app(server, '/api', TMP_PATH).callback());
   httpServer.listen(PORT);

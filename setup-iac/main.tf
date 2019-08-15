@@ -360,3 +360,36 @@ resource "aws_acm_certificate_validation" "cert" {
     "${aws_route53_record.cert_validation.fqdn}",
   ]
 }
+
+# EC2 instances roles, policies, keys.
+data "aws_iam_policy_document" "instance_assume_role_policy" {
+  statement {
+    actions = ["sts:AssumeRole"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["ec2.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role" "setup_ecs_instance" {
+  name               = "setup-ecs-instance"
+  assume_role_policy = "${data.aws_iam_policy_document.instance_assume_role_policy.json}"
+}
+
+resource "aws_iam_instance_profile" "ecs" {
+  name  = "setup-ecs-instance"
+  roles = ["${aws_iam_role.setup_ecs_instance.name}"]
+}
+
+resource "aws_iam_policy_attachment" "ecs_instance" {
+  name       = "setup-ecs-instance"
+  roles      = ["${aws_iam_role.setup_ecs_instance.name}"]
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role"
+}
+
+resource "aws_key_pair" "instance_key_pair" {
+  key_name   = "setup-instance-key-pair"
+  public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDagCvr/+CA1jmFaJf+e9+Kw6iwfhvaKOpfbGEl5zLgB+rum5L4Kga6Jow1gLQeMnAHfqc2IgpsU4t04c8PYApAt8AWNDL+KxMiFytfjKfJ2DZJA73CYkFnkfnMtU+ki+JG9dAHd6m7ShtCSzE5n6EDO2yWCVWQfqE3dcnpwrymSWkJYrbxzeOixiNZ4f1nD9ddvFvTWGB4l+et5SWgeIaYgJYDqTI2teRt9ytJiDGrCWXs9olHsCZOL6TEJPUQmNekwBkjMAZ4TmbBMjwbUlIxOpW2UxzlONcNn7IlRcGQg0Gdbkpo/zOlCNXsvacvnphDk5vKKaQj+aQiG916LU5P charlie@aztecprotocol.com"
+}
