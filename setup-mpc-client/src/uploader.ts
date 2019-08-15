@@ -1,10 +1,8 @@
 import { EventEmitter } from 'events';
 import { unlink } from 'fs';
 import { MemoryFifo, MpcServer } from 'setup-mpc-common';
-import { promisify } from 'util';
 import { Address } from 'web3x/address';
 
-const unlinkAsync = promisify(unlink);
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 export class Uploader extends EventEmitter {
@@ -48,7 +46,7 @@ export class Uploader extends EventEmitter {
         await this.server.uploadData(this.address, num, filename, undefined, transferred => {
           this.emit('progress', num, transferred);
         });
-        await unlinkAsync(filename);
+        await new Promise(resolve => unlink(filename, resolve));
         this.emit('uploaded', num);
         break;
       } catch (err) {
