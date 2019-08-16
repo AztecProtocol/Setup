@@ -1,5 +1,4 @@
 import { Moment } from 'moment';
-import { Progress } from 'progress-stream';
 import { Readable } from 'stream';
 import { Address } from 'web3x/address';
 
@@ -19,6 +18,7 @@ export interface Transcript {
 
 export interface Participant {
   // Server controlled data.
+  sequence: number;
   address: Address;
   state: ParticipantState;
   position: number;
@@ -26,14 +26,17 @@ export interface Participant {
   startedAt?: Moment;
   completedAt?: Moment;
   error?: string;
+  online: boolean;
+  lastUpdate?: Moment;
   // Client controlled data.
   runningState: ParticipantRunningState;
   transcripts: Transcript[]; // Except 'complete'.
   computeProgress: number;
-  lastUpdate?: Moment;
 }
 
 export interface MpcState {
+  sequence: number;
+  statusSequence: number;
   numG1Points: number;
   numG2Points: number;
   pointsPerTranscript: number;
@@ -52,7 +55,8 @@ export interface MpcServer {
     invalidateAfter: number,
     participants: Address[]
   ): Promise<void>;
-  getState(): Promise<MpcState>;
+  getState(sequence?: number): Promise<MpcState>;
+  ping(address: Address): Promise<void>;
   updateParticipant(participant: Participant): Promise<void>;
   downloadData(address: Address, transcriptNumber: number): Promise<Readable>;
   uploadData(
