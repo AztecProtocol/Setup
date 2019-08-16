@@ -1,6 +1,7 @@
 add_subdirectory(generator)
 add_subdirectory(setup)
 add_subdirectory(aztec_common)
+add_subdirectory(print-point)
 add_subdirectory(range)
 add_subdirectory(range-prep)
 add_subdirectory(verify)

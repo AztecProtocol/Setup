@@ -49,10 +49,7 @@ export class App {
 
       await this.terminalInterface.updateState(remoteState);
 
-      // If the ceremony isn't complete, schedule next update.
-      if (!remoteState.completedAt) {
-        this.scheduleUpdate();
-      }
+      this.scheduleUpdate();
     } catch (err) {
       // If we fail to communicate properly with server, we can still update terminal state locally.
       if (this.compute) {

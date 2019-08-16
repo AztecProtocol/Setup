@@ -81,7 +81,7 @@ export function app(
     const address = Address.fromString(ctx.params.address);
     const signature = ctx.get('X-Signature');
 
-    // 500, unless we explicitly set it to 200 or somethings else.
+    // 500, unless we explicitly set it to 200 or something else.
     ctx.status = 500;
 
     if (!signature) {
