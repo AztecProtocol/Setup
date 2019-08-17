@@ -24,14 +24,34 @@ export class HttpClient implements MpcServer {
     throw new Error('Not implemented.');
   }
 
-  public async getState(): Promise<MpcState> {
-    const response = await fetch(`${this.apiUrl}/state`);
+  public async getState(sequence?: number): Promise<MpcState> {
+    const url = new URL(`${this.apiUrl}/state`);
+    if (sequence !== undefined) {
+      url.searchParams.append('sequence', `${sequence}`);
+    }
+    const response = await fetch(url.toString());
     if (response.status !== 200) {
       throw new Error(`Bad status code from server: ${response.status}`);
     }
     const json = await response.json();
 
     return mpcStateFromJSON(json);
+  }
+
+  public async ping(address: Address) {
+    if (!this.account) {
+      throw new Error('No account provided. Can only request server state, not modify.');
+    }
+    const { signature } = this.account.sign('ping');
+    const response = await fetch(`${this.apiUrl}/ping/${address.toString().toLowerCase()}`, {
+      method: 'GET',
+      headers: {
+        'X-Signature': signature,
+      },
+    });
+    if (response.status !== 200) {
+      throw new Error(`Bad status code from server: ${response.status}`);
+    }
   }
 
   public async updateParticipant(participant: Participant) {

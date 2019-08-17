@@ -1,5 +1,5 @@
 import moment from 'moment';
-import { cloneParticipant, MpcServer, MpcState, Participant } from 'setup-mpc-common';
+import { applyDelta, cloneParticipant, MpcServer, MpcState, Participant } from 'setup-mpc-common';
 import { Writable } from 'stream';
 import { Account } from 'web3x/account';
 import { Compute } from './compute';
@@ -10,6 +10,7 @@ export class App {
   private interval!: NodeJS.Timeout;
   private terminalInterface!: TerminalInterface;
   private compute?: Compute;
+  private state?: MpcState;
 
   constructor(
     private server: MpcServer,
@@ -42,17 +43,16 @@ export class App {
       await this.updateRemoteState();
 
       // Then get the latest state from the server.
-      const remoteState = await this.server.getState();
+      const remoteStateDelta = await this.server.getState(this.state ? this.state.sequence : undefined);
+
+      this.state = this.state === undefined ? remoteStateDelta : applyDelta(this.state, remoteStateDelta);
 
       // Start or stop computation.
-      await this.processRemoteState(remoteState);
+      await this.processRemoteState(this.state);
 
-      await this.terminalInterface.updateState(remoteState);
+      await this.terminalInterface.updateState(this.state);
 
-      // If the ceremony isn't complete, schedule next update.
-      if (!remoteState.completedAt) {
-        this.scheduleUpdate();
-      }
+      this.scheduleUpdate();
     } catch (err) {
       // If we fail to communicate properly with server, we can still update terminal state locally.
       if (this.compute) {
@@ -60,6 +60,8 @@ export class App {
         myState.lastUpdate = moment();
         const termState = this.terminalInterface.getParticipant(myState.address);
         this.terminalInterface.updateParticipant(this.mergeLocalAndRemoteParticipantState(myState, termState));
+      } else if (this.state) {
+        this.terminalInterface.updateState(this.state);
       }
 
       this.scheduleUpdate();
@@ -115,9 +117,15 @@ export class App {
   }
 
   private updateRemoteState = async () => {
+    if (!this.account) {
+      return;
+    }
+
     if (this.compute) {
       const myState = this.compute.getParticipant();
       await this.server.updateParticipant(myState);
+    } else {
+      await this.server.ping(this.account.address);
     }
   };
 }

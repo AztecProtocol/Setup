@@ -1,9 +1,11 @@
 import moment, { Moment } from 'moment';
-import { MpcServer, MpcState, Participant } from 'setup-mpc-common';
+import { MpcServer, MpcState, Participant, ParticipantState } from 'setup-mpc-common';
 import { Address } from 'web3x/address';
 import { StateStore } from './state-store';
 import { TranscriptStore } from './transcript-store';
 import { Verifier } from './verifier';
+
+const OFFLINE_AFTER = 10;
 
 export class Server implements MpcServer {
   private interval?: NodeJS.Timer;
@@ -30,14 +32,20 @@ export class Server implements MpcServer {
     this.verifier.run();
 
     // Get any files awaiting verification and add to the queue.
-    const unverified = await this.store.getUnverified();
-    unverified.forEach(item => this.verifier.put(item));
+    if (runningParticipant) {
+      const unverified = await this.store.getUnverified(runningParticipant.address);
+      unverified.forEach(item => this.verifier.put(item));
+    }
 
     this.scheduleAdvanceState();
   }
 
-  public async getState(): Promise<MpcState> {
-    return this.state;
+  public async getState(sequence?: number): Promise<MpcState> {
+    return {
+      ...this.state,
+      participants:
+        sequence === undefined ? this.state.participants : this.state.participants.filter(p => p.sequence > sequence),
+    };
   }
 
   public async resetState(
@@ -51,18 +59,33 @@ export class Server implements MpcServer {
     if (this.verifier) {
       this.verifier.cancel();
     }
-    this.state = { numG1Points, numG2Points, startTime, invalidateAfter, pointsPerTranscript, participants: [] };
+    this.state.sequence += 1;
+    this.state = {
+      sequence: this.state.sequence,
+      statusSequence: this.state.sequence,
+      ceremonyState: 'PRESELECTION',
+      numG1Points,
+      numG2Points,
+      startTime,
+      invalidateAfter,
+      pointsPerTranscript,
+      participants: [],
+    };
     participants.forEach(address => this.addNextParticipant(address));
-    await this.stateStore.setState(this.state);
+    await this.persistState();
     this.verifier = new Verifier(this.store, numG1Points, numG2Points, this.verifierCallback.bind(this));
     this.verifier.run();
   }
 
   private addNextParticipant(address: Address) {
     const participant: Participant = {
+      sequence: this.state.sequence,
+      online: false,
       state: 'WAITING',
       runningState: 'WAITING',
       position: this.state.participants.length + 1,
+      priority: this.state.participants.length + 1,
+      tier: 1,
       computeProgress: 0,
       verifyProgress: 0,
       transcripts: [],
@@ -73,8 +96,9 @@ export class Server implements MpcServer {
   }
 
   public async addParticipant(address: Address) {
+    this.state.sequence += 1;
     this.addNextParticipant(address);
-    await this.stateStore.setState(this.state);
+    await this.persistState();
   }
 
   private scheduleAdvanceState() {
@@ -92,46 +116,139 @@ export class Server implements MpcServer {
   }
 
   protected async advanceState() {
+    let writeState = false;
     const state = this.state;
 
-    if (moment().isBefore(state.startTime)) {
-      return;
+    const { sequence, startTime, completedAt, invalidateAfter, participants } = state;
+    const nextSequence = sequence + 1;
+
+    try {
+      // Shift any participants that haven't performed an update recently to offline state and reorder accordingly.
+      if (this.markIdleParticipantsOffline(nextSequence)) {
+        this.orderWaitingParticipants(nextSequence);
+        writeState = true;
+      }
+
+      if (state.ceremonyState === 'PRESELECTION') {
+        // TODO
+        state.statusSequence = nextSequence;
+        state.ceremonyState = 'SELECTED';
+        writeState = true;
+      }
+
+      // Nothing to do if not yet running, or already completed.
+      if (moment().isBefore(startTime) || completedAt) {
+        return;
+      }
+
+      // Shift to running state if not already.
+      if (state.ceremonyState !== 'RUNNING') {
+        state.statusSequence = nextSequence;
+        state.ceremonyState = 'RUNNING';
+        writeState = true;
+      }
+
+      // If all participants are done, shift ceremony to complete state.
+      if (participants.every(p => p.state === 'COMPLETE' || p.state === 'INVALIDATED')) {
+        state.statusSequence = nextSequence;
+        state.ceremonyState = 'COMPLETE';
+        state.completedAt = moment();
+        writeState = true;
+        return;
+      }
+
+      // If we have a running participant, mark as invalidated if timed out.
+      const runningParticipant = participants.find(p => p.state === 'RUNNING');
+      if (runningParticipant) {
+        if (
+          moment()
+            .subtract(invalidateAfter, 's')
+            .isAfter(runningParticipant.startedAt!)
+        ) {
+          runningParticipant.sequence = nextSequence;
+          runningParticipant.state = 'INVALIDATED';
+          runningParticipant.error = 'timed out';
+          writeState = true;
+        } else {
+          return;
+        }
+      }
+
+      // Find next waiting, online participant and shift them to the running state.
+      const waitingParticipant = participants.find(p => p.state === 'WAITING' && p.online);
+      if (waitingParticipant && waitingParticipant.state === 'WAITING') {
+        await this.store.erase(waitingParticipant.address);
+        state.statusSequence = nextSequence;
+        waitingParticipant.sequence = nextSequence;
+        waitingParticipant.startedAt = moment();
+        waitingParticipant.state = 'RUNNING';
+        this.verifier.runningAddress = waitingParticipant.address;
+        writeState = true;
+      }
+    } finally {
+      if (writeState) {
+        state.sequence = nextSequence;
+        await this.persistState();
+      }
     }
+  }
 
-    const { completedAt, invalidateAfter, participants } = state;
+  private markIdleParticipantsOffline(sequence: number) {
+    const { participants } = this.state;
+    let changed = false;
+    participants.forEach(p => {
+      if (
+        moment()
+          .subtract(OFFLINE_AFTER, 's')
+          .isAfter(p.lastUpdate!) &&
+        p.online
+      ) {
+        this.state.statusSequence = sequence;
+        p.sequence = sequence;
+        p.online = false;
+        changed = true;
+      }
+    });
+    return changed;
+  }
 
-    if (!completedAt && participants.every(p => p.state === 'COMPLETE' || p.state === 'INVALIDATED')) {
-      state.completedAt = moment();
-      await this.stateStore.setState(state);
-      return;
-    }
+  private orderWaitingParticipants(sequence: number) {
+    const { participants } = this.state;
+    const indexOfFirstWaiting = participants.findIndex(p => p.state === 'WAITING');
 
-    const i = participants.findIndex(p => p.state === 'WAITING' || p.state === 'RUNNING');
-    const p = participants[i];
+    const waiting = participants.slice(indexOfFirstWaiting).sort((a, b) => {
+      if (a.online !== b.online) {
+        return a.online ? -1 : 1;
+      }
+      if (a.tier !== b.tier) {
+        return a.tier - b.tier;
+      }
+      return a.priority - b.priority;
+    });
 
-    if (!p) {
-      return;
-    }
+    this.state.participants = [...participants.slice(0, indexOfFirstWaiting), ...waiting];
 
-    if (p.state === 'WAITING') {
-      this.store.eraseVerified(p.address);
-      p.startedAt = moment();
-      p.state = 'RUNNING';
-      this.verifier.runningAddress = p.address;
-      await this.stateStore.setState(state);
-      return;
-    }
+    // Adjust positions based on new order and advance sequence numbers if position changed.
+    this.state.participants.forEach((p, i) => {
+      if (p.position !== i + 1) {
+        p.position = i + 1;
+        p.sequence = sequence;
+      }
+    });
+  }
 
-    if (
-      moment()
-        .subtract(invalidateAfter, 's')
-        .isAfter(p.startedAt!)
-    ) {
-      p.state = 'INVALIDATED';
-      p.error = 'timed out';
-      await this.stateStore.setState(state);
-      await this.advanceState();
-      return;
+  public async ping(address: Address) {
+    const p = this.getParticipant(address);
+
+    p.lastUpdate = moment();
+
+    if (p.online === false) {
+      this.state.sequence += 1;
+      this.state.statusSequence = this.state.sequence;
+      p.sequence = this.state.sequence;
+      p.online = true;
+      this.orderWaitingParticipants(this.state.sequence);
+      await this.persistState();
     }
   }
 
@@ -146,6 +263,10 @@ export class Server implements MpcServer {
     p.runningState = runningState;
     p.computeProgress = computeProgress;
     p.lastUpdate = moment();
+    p.online = true;
+    this.state.sequence += 1;
+    p.sequence = this.state.sequence;
+    await this.persistState();
   }
 
   public async downloadData(address: Address, num: number) {
@@ -154,8 +275,7 @@ export class Server implements MpcServer {
 
   public async uploadData(address: Address, transcriptNumber: number, transcriptPath: string, signaturePath: string) {
     this.getAndAssertRunningParticipant(address);
-    await this.store.saveTranscript(address, transcriptNumber, transcriptPath);
-    await this.store.saveSignature(address, transcriptNumber, signaturePath);
+    await this.store.save(address, transcriptNumber, transcriptPath, signaturePath);
     this.verifier.put({ address, num: transcriptNumber });
   }
 
@@ -194,9 +314,7 @@ export class Server implements MpcServer {
   private async onVerified(address: Address, transcriptNumber: number) {
     const p = this.getParticipant(address);
 
-    p.verifyProgress = ((transcriptNumber + 1) / p.transcripts.length) * 100;
     p.transcripts[transcriptNumber].complete = true;
-    p.lastUpdate = moment();
 
     if (p.transcripts.every(t => t.complete)) {
       // Every transcript in clients transcript list is verified. We still need to verify the set
@@ -209,6 +327,7 @@ export class Server implements MpcServer {
       }
 
       if (fullyVerified) {
+        await this.store.makeLive(address);
         p.state = 'COMPLETE';
         p.runningState = 'COMPLETE';
         p.completedAt = moment();
@@ -221,7 +340,12 @@ export class Server implements MpcServer {
       }
     }
 
-    await this.stateStore.setState(this.state);
+    p.verifyProgress = ((transcriptNumber + 1) / p.transcripts.length) * 100;
+    p.lastUpdate = moment();
+    this.state.sequence += 1;
+    p.sequence = this.state.sequence;
+
+    await this.persistState();
   }
 
   private async onRejected(address: Address, transcriptNumber: number) {
@@ -230,7 +354,12 @@ export class Server implements MpcServer {
     p.state = 'INVALIDATED';
     p.runningState = 'COMPLETE';
     p.error = 'verify failed';
+    p.sequence += 1;
 
+    await this.persistState();
+  }
+
+  private async persistState() {
     await this.stateStore.setState(this.state);
   }
 }

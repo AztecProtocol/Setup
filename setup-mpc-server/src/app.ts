@@ -51,7 +51,18 @@ export function app(
   });
 
   router.get('/state', async (ctx: Koa.Context) => {
-    ctx.body = await server.getState();
+    ctx.body = await server.getState(ctx.query.sequence);
+  });
+
+  router.get('/ping/:address', koaBody(), async (ctx: Koa.Context) => {
+    const signature = ctx.get('X-Signature');
+    const address = Address.fromString(ctx.params.address);
+    if (!address.equals(recover('ping', signature))) {
+      ctx.status = 401;
+      return;
+    }
+    await server.ping(address);
+    ctx.status = 200;
   });
 
   router.patch('/participant/:address', koaBody(), async (ctx: Koa.Context) => {
@@ -81,7 +92,7 @@ export function app(
     const address = Address.fromString(ctx.params.address);
     const signature = ctx.get('X-Signature');
 
-    // 500, unless we explicitly set it to 200 or somethings else.
+    // 500, unless we explicitly set it to 200 or something else.
     ctx.status = 500;
 
     if (!signature) {

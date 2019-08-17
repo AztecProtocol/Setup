@@ -46,8 +46,6 @@ export class Verifier {
         if (await this.verifyTranscript(address, num, transcriptPath)) {
           console.error(`Verification succeeded: ${transcriptPath}...`);
 
-          await this.store.makeLive(address, num);
-
           await this.cb(address, num, true);
         } else {
           if (!this.cancelled) {
@@ -56,8 +54,6 @@ export class Verifier {
         }
       } catch (err) {
         console.error(err);
-      } finally {
-        await this.store.eraseUnverified(address, num);
       }
     }
     console.log('Verifier completed.');
@@ -80,7 +76,7 @@ export class Verifier {
     const args = [transcriptPath];
 
     // Argument 1 is the 0th transcript of the sequence.
-    args.push(transcriptNumber === 0 ? transcriptPath : this.store.getTranscriptPath(address, 0));
+    args.push(transcriptNumber === 0 ? transcriptPath : this.store.getUnverifiedTranscriptPath(address, 0));
 
     // Argument 3 is...
     if (transcriptNumber === 0) {
@@ -90,7 +86,7 @@ export class Verifier {
       }
     } else {
       // The previous transcript in the sequence.
-      args.push(this.store.getTranscriptPath(address, transcriptNumber - 1));
+      args.push(this.store.getUnverifiedTranscriptPath(address, transcriptNumber - 1));
     }
 
     console.error(`Verifiying transcript ${transcriptNumber}...`);
@@ -115,7 +111,7 @@ export class Verifier {
   }
 
   public async verifyTranscriptSet(address: Address) {
-    const transcriptPaths = await this.store.getTranscriptPaths(address);
+    const transcriptPaths = await this.store.getUnverifiedTranscriptPaths(address);
     const args = [this.numG1Points.toString(), this.numG2Points.toString(), ...transcriptPaths];
 
     return new Promise<boolean>(resolve => {

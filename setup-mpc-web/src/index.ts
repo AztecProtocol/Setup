@@ -1,13 +1,32 @@
+import FontFaceObserver from 'fontfaceobserver';
 import { App } from 'setup-mpc-client';
 import { HttpClient } from 'setup-mpc-common';
 import { Terminal } from 'xterm';
-import 'xterm/dist/xterm.css';
+
+require('xterm/dist/xterm.css');
+require('./index.css');
 
 import * as fit from 'xterm/lib/addons/fit/fit';
 
 Terminal.applyAddon(fit);
 
+declare global {
+  interface Window {
+    app: App;
+  }
+}
+
 async function main() {
+  let fontFamily;
+
+  if (window.navigator.platform === 'MacIntel') {
+    fontFamily = 'menlo';
+  } else {
+    const font = new FontFaceObserver('Roboto Mono');
+    await font.load();
+    fontFamily = 'Roboto Mono';
+  }
+
   const term = new Terminal();
   term.setOption('theme', {
     background: '#000000',
@@ -29,13 +48,16 @@ async function main() {
     brightCyan: '#e5e6fe',
     brightWhite: '#feffff',
   });
-  term.setOption('fontFamily', 'menlo');
+  term.setOption('fontFamily', fontFamily);
   term.setOption('fontSize', 12);
   term.open(document.getElementById('terminal') as HTMLElement);
 
-  const API_URL = process.env.API_URL || 'http://localhost:8081/api';
-  const server = new HttpClient(API_URL);
+  const url = window.location;
+  const apiUrl = `${url.protocol}//${url.hostname}/api`;
+  const server = new HttpClient(apiUrl);
   const app = new App(server, undefined, term as any, term.rows, term.cols);
+
+  window.app = app;
 
   term.on('resize', ({ cols, rows }) => app.resize(cols, rows));
   (term as any).fit();

@@ -10,6 +10,7 @@ This repo contains compiles several C++ executables that run the AZTEC trusted s
 - **compute_generator_polynomial** will compute the polynomial coefficients required to construct the AZTEC generator point `h`, from the results of _setup_.
 - **prep_range_data** prepares a set of transcripts for post processing by _compute_range_polynomials_.
 - **compute_range_polynomials** will compute the AZTEC signature points `mu_k`, from the results of _setup_ and _compute_generator_polynomial_.
+- **print_point** will print the given point for a given curve from a given transcript.
 
 The common reference string produced by `setup` can also be used to construct structured reference strings for [SONIC zk-SNARKS](https://eprint.iacr.org/2019/099.pdf)
 
@@ -136,6 +137,14 @@ usage: ./compute_range_polynomial <point to compute> <num g1 points>
 ```
 
 **TODO**: Modify to take input files as arguments. Determine `<num g1 points>` from size of input files.
+
+### print_point
+
+_print_point_range_polynomial_ prints the given point for a given curve from a given transcript.
+
+```
+usage: ./print_point <transcript path> <g1 || g2> <point num>
+```
 
 ## Development
 

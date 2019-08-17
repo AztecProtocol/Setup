@@ -36,3 +36,12 @@ export function cloneMpcState(state: MpcState): MpcState {
     participants: state.participants.map(cloneParticipant),
   };
 }
+
+export function applyDelta(state: MpcState, delta: MpcState): MpcState {
+  const participants = [...state.participants];
+  delta.participants.forEach(p => (participants[p.position - 1] = p));
+  return {
+    ...delta,
+    participants,
+  };
+}

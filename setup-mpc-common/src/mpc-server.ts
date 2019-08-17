@@ -1,8 +1,8 @@
 import { Moment } from 'moment';
-import { Progress } from 'progress-stream';
 import { Readable } from 'stream';
 import { Address } from 'web3x/address';
 
+export type CeremonyState = 'PRESELECTION' | 'SELECTED' | 'RUNNING' | 'COMPLETE';
 export type ParticipantState = 'WAITING' | 'RUNNING' | 'COMPLETE' | 'INVALIDATED';
 export type ParticipantRunningState = 'OFFLINE' | 'WAITING' | 'RUNNING' | 'COMPLETE';
 
@@ -19,21 +19,31 @@ export interface Transcript {
 
 export interface Participant {
   // Server controlled data.
+  sequence: number;
   address: Address;
   state: ParticipantState;
+  // Position in the queue (can vary due to online/offline changes), or position computation took place (fixed).
   position: number;
+  // Priority is randomised at the selection date, after which it is fixed. It's used to determine position.
+  priority: number;
+  tier: number;
   verifyProgress: number;
   startedAt?: Moment;
   completedAt?: Moment;
   error?: string;
+  online: boolean;
+  lastUpdate?: Moment;
+
   // Client controlled data.
   runningState: ParticipantRunningState;
   transcripts: Transcript[]; // Except 'complete'.
   computeProgress: number;
-  lastUpdate?: Moment;
 }
 
 export interface MpcState {
+  sequence: number;
+  statusSequence: number;
+  ceremonyState: CeremonyState;
   numG1Points: number;
   numG2Points: number;
   pointsPerTranscript: number;
@@ -52,7 +62,8 @@ export interface MpcServer {
     invalidateAfter: number,
     participants: Address[]
   ): Promise<void>;
-  getState(): Promise<MpcState>;
+  getState(sequence?: number): Promise<MpcState>;
+  ping(address: Address): Promise<void>;
   updateParticipant(participant: Participant): Promise<void>;
   downloadData(address: Address, transcriptNumber: number): Promise<Readable>;
   uploadData(
