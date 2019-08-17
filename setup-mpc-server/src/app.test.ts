@@ -21,6 +21,7 @@ describe('app', () => {
       updateParticipant: jest.fn(),
       downloadData: jest.fn(),
       uploadData: jest.fn(),
+      ping: jest.fn(),
     };
     app = appFactory(mockServer as any, undefined, '/tmp', 32);
   });

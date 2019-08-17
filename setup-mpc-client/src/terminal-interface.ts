@@ -177,7 +177,7 @@ export class TerminalInterface {
     this.term.white(`${leftPad(p.position.toString(), 2)}. `);
     switch (p.state) {
       case 'WAITING':
-        this.term.grey(p.address.toString());
+        this.term.grey(`${p.address.toString()} (${p.priority})`);
         break;
       case 'RUNNING':
         this.renderRunningLine(p);

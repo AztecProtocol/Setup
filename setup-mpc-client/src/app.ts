@@ -60,6 +60,8 @@ export class App {
         myState.lastUpdate = moment();
         const termState = this.terminalInterface.getParticipant(myState.address);
         this.terminalInterface.updateParticipant(this.mergeLocalAndRemoteParticipantState(myState, termState));
+      } else if (this.state) {
+        this.terminalInterface.updateState(this.state);
       }
 
       this.scheduleUpdate();

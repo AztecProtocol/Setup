@@ -1,66 +1,68 @@
-import { S3 } from 'aws-sdk';
 import { createReadStream, mkdirSync } from 'fs';
 import { Readable } from 'stream';
 import { Address } from 'web3x/address';
-import { existsAsync, mkdirAsync, readdirAsync, renameAsync, unlinkAsync } from './fs-async';
+import { existsAsync, mkdirAsync, readdirAsync, renameAsync, rmdirAsync, unlinkAsync } from './fs-async';
 
 export interface TranscriptStore {
-  saveTranscript(address: Address, num: number, path: string): Promise<void>;
-  saveSignature(address: Address, num: number, path: string): Promise<void>;
+  save(address: Address, num: number, transcriptPath: string, signaturePath: string): Promise<void>;
   getUnverifiedTranscriptPath(address: Address, num: number): string;
   getUnverifiedSignaturePath(address: Address, num: number): string;
-  makeLive(address: Address, num: number): Promise<void>;
+  makeLive(address: Address): Promise<void>;
   loadTranscript(address: Address, num: number): Readable;
   getTranscriptPath(address: Address, num: number): string;
   getTranscriptPaths(address: Address): Promise<string[]>;
-  getUnverified(): Promise<{ address: Address; num: number }[]>;
-  eraseVerified(address: Address): Promise<void>;
-  eraseUnverified(address: Address, num: number): Promise<void>;
+  getUnverifiedTranscriptPaths(address: Address): Promise<string[]>;
+  getUnverified(address: Address): Promise<{ address: Address; num: number }[]>;
+  erase(address: Address): Promise<void>;
 }
 
 export class DiskTranscriptStore implements TranscriptStore {
-  private toVerifyPath: string;
+  private unverified: string;
   private verifiedPath: string;
-  private datFileRegex = /transcript_(.+?)_(\d+).dat$/;
+  private datFileRegex = /transcript(\d+).dat$/;
 
   constructor(storePath: string) {
     this.verifiedPath = storePath + '/verified';
-    this.toVerifyPath = storePath + '/to_verify';
-    mkdirSync(this.toVerifyPath, { recursive: true });
+    this.unverified = storePath + '/unverified';
+    mkdirSync(this.unverified, { recursive: true });
   }
 
-  public async saveTranscript(address: Address, num: number, path: string) {
-    await renameAsync(path, this.getUnverifiedTranscriptPath(address, num));
+  public async save(address: Address, num: number, transcriptPath: string, signaturePath: string) {
+    await mkdirAsync(`${this.unverified}/${address.toString().toLowerCase()}`, { recursive: true });
+    await renameAsync(transcriptPath, this.getUnverifiedTranscriptPath(address, num));
+    await renameAsync(signaturePath, this.getUnverifiedSignaturePath(address, num));
   }
 
-  public async saveSignature(address: Address, num: number, path: string) {
-    await renameAsync(path, this.getUnverifiedSignaturePath(address, num));
-  }
-
-  public async makeLive(address: Address, num: number) {
-    await mkdirAsync(`${this.verifiedPath}/${address.toString().toLowerCase()}`, { recursive: true });
-    await renameAsync(this.getUnverifiedTranscriptPath(address, num), this.getTranscriptPath(address, num));
-    await renameAsync(this.getUnverifiedSignaturePath(address, num), this.getSignaturePath(address, num));
+  public async makeLive(address: Address) {
+    await renameAsync(this.getUnverifiedBasePath(address), this.getVerifiedBasePath(address));
   }
 
   public loadTranscript(address: Address, num: number) {
     return createReadStream(this.getTranscriptPath(address, num));
   }
 
+  private getVerifiedBasePath(address: Address) {
+    return `${this.verifiedPath}/${address.toString().toLowerCase()}`;
+  }
+
+  private getUnverifiedBasePath(address: Address) {
+    return `${this.unverified}/${address.toString().toLowerCase()}`;
+  }
+
   public getTranscriptPath(address: Address, num: number) {
-    return `${this.verifiedPath}/${address.toString().toLowerCase()}/transcript${num}.dat`;
+    return `${this.getVerifiedBasePath(address)}/transcript${num}.dat`;
   }
 
   public getSignaturePath(address: Address, num: number) {
-    return `${this.verifiedPath}/${address.toString().toLowerCase()}/transcript${num}.sig`;
+    return `${this.getVerifiedBasePath(address)}/transcript${num}.sig`;
   }
 
   public getUnverifiedTranscriptPath(address: Address, num: number) {
-    return `${this.toVerifyPath}/transcript_${address.toString().toLowerCase()}_${num}.dat`;
+    return `${this.getUnverifiedBasePath(address)}/transcript${num}.dat`;
   }
 
   public getUnverifiedSignaturePath(address: Address, num: number) {
-    return `${this.toVerifyPath}/transcript_${address.toString().toLowerCase()}_${num}.sig`;
+    return `${this.getUnverifiedBasePath(address)}/transcript${num}.sig`;
   }
 
   public async getTranscriptPaths(address: Address) {
@@ -73,44 +75,61 @@ export class DiskTranscriptStore implements TranscriptStore {
     return paths;
   }
 
-  public async getUnverified() {
-    const files = await readdirAsync(this.toVerifyPath);
-    return files
-      .filter(f => this.datFileRegex.test(f))
-      .map(f => {
-        const [, address, num] = f.match(this.datFileRegex)!;
-        return {
-          address: Address.fromString(address),
-          num: +num,
-        };
-      });
+  public async getUnverifiedTranscriptPaths(address: Address) {
+    let num = 0;
+    const paths: string[] = [];
+    while (await existsAsync(this.getUnverifiedTranscriptPath(address, num))) {
+      paths.push(this.getUnverifiedTranscriptPath(address, num));
+      ++num;
+    }
+    return paths;
   }
 
-  public async eraseVerified(address: Address) {
+  public async getUnverified(address: Address) {
+    const files = await this.getUnverifiedTranscriptPaths(address);
+    return files.map(f => {
+      const [, num] = f.match(this.datFileRegex)!;
+      return {
+        address,
+        num: +num,
+      };
+    });
+  }
+
+  public async erase(address: Address) {
+    await this.eraseVerified(address);
+    await this.eraseUnverified(address);
+  }
+
+  private async eraseVerified(address: Address) {
     try {
-      const files = await readdirAsync(`${this.verifiedPath}/${address}`);
-      for (const file of files) {
-        await unlinkAsync(`${this.verifiedPath}/${address}/${file}`);
+      const dir = this.getVerifiedBasePath(address);
+      if (!(await existsAsync(dir))) {
+        return;
       }
+      const files = await readdirAsync(dir);
+      for (const file of files) {
+        await unlinkAsync(`${dir}/${file}`);
+      }
+      await rmdirAsync(this.getVerifiedBasePath(address));
     } catch (err) {
-      // Swallow
+      console.error(err);
     }
   }
 
-  public async eraseUnverified(address: Address, num: number) {
+  private async eraseUnverified(address: Address) {
     try {
-      await unlinkAsync(this.getUnverifiedTranscriptPath(address, num));
-      await unlinkAsync(this.getUnverifiedSignaturePath(address, num));
+      const dir = this.getUnverifiedBasePath(address);
+      if (!(await existsAsync(dir))) {
+        return;
+      }
+      const files = await readdirAsync(dir);
+      for (const file of await files) {
+        await unlinkAsync(`${dir}/${file}`);
+      }
+      await rmdirAsync(this.getUnverifiedBasePath(address));
     } catch (err) {
-      // Swallow
+      console.error(err);
     }
-  }
-}
-
-export class S3TranscriptStore extends DiskTranscriptStore {
-  private s3 = new S3();
-
-  constructor(storePath: string) {
-    super(storePath);
   }
 }

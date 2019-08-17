@@ -3,24 +3,6 @@
   "version": "1.0.0",
   "main": "dest/index.js",
   "license": "MIT",
-  "dependencies": {
-    "@koa/cors": "^3.0.0",
-    "@types/node": "^12.6.8",
-    "aws-sdk": "^2.507.0",
-    "form-data": "^2.5.0",
-    "isomorphic-fetch": "^2.2.1",
-    "koa": "^2.7.0",
-    "koa-body": "^4.1.0",
-    "koa-compress": "^3.0.0",
-    "koa-router": "^7.4.0",
-    "moment": "^2.24.0",
-    "path": "^0.12.7",
-    "q": "^1.5.1",
-    "stream-meter": "^1.0.4",
-    "tsc-watch": "^2.2.1",
-    "typescript": "^3.5.3",
-    "web3x": "^4.0.3"
-  },
   "scripts": {
     "build": "tsc",
     "start": "node ./dest",
@@ -42,6 +24,23 @@
       "node"
     ],
     "rootDir": "./src"
+  },
+  "dependencies": {
+    "@koa/cors": "^3.0.0",
+    "@types/node": "^12.6.8",
+    "form-data": "^2.5.0",
+    "isomorphic-fetch": "^2.2.1",
+    "koa": "^2.7.0",
+    "koa-body": "^4.1.0",
+    "koa-compress": "^3.0.0",
+    "koa-router": "^7.4.0",
+    "moment": "^2.24.0",
+    "path": "^0.12.7",
+    "q": "^1.5.1",
+    "stream-meter": "^1.0.4",
+    "tsc-watch": "^2.2.1",
+    "typescript": "^3.5.3",
+    "web3x": "^4.0.3"
   },
   "devDependencies": {
     "@types/isomorphic-fetch": "^0.0.35",

@@ -2,6 +2,7 @@ import { Moment } from 'moment';
 import { Readable } from 'stream';
 import { Address } from 'web3x/address';
 
+export type CeremonyState = 'PRESELECTION' | 'SELECTED' | 'RUNNING' | 'COMPLETE';
 export type ParticipantState = 'WAITING' | 'RUNNING' | 'COMPLETE' | 'INVALIDATED';
 export type ParticipantRunningState = 'OFFLINE' | 'WAITING' | 'RUNNING' | 'COMPLETE';
 
@@ -21,13 +22,18 @@ export interface Participant {
   sequence: number;
   address: Address;
   state: ParticipantState;
+  // Position in the queue (can vary due to online/offline changes), or position computation took place (fixed).
   position: number;
+  // Priority is randomised at the selection date, after which it is fixed. It's used to determine position.
+  priority: number;
+  tier: number;
   verifyProgress: number;
   startedAt?: Moment;
   completedAt?: Moment;
   error?: string;
   online: boolean;
   lastUpdate?: Moment;
+
   // Client controlled data.
   runningState: ParticipantRunningState;
   transcripts: Transcript[]; // Except 'complete'.
@@ -37,6 +43,7 @@ export interface Participant {
 export interface MpcState {
   sequence: number;
   statusSequence: number;
+  ceremonyState: CeremonyState;
   numG1Points: number;
   numG2Points: number;
   pointsPerTranscript: number;
