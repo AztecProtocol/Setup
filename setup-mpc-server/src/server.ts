@@ -1,5 +1,5 @@
 import moment, { Moment } from 'moment';
-import { MpcServer, MpcState, Participant, ParticipantState } from 'setup-mpc-common';
+import { MpcServer, MpcState, Participant } from 'setup-mpc-common';
 import { Address } from 'web3x/address';
 import { StateStore } from './state-store';
 import { TranscriptStore } from './transcript-store';
@@ -354,7 +354,8 @@ export class Server implements MpcServer {
     p.state = 'INVALIDATED';
     p.runningState = 'COMPLETE';
     p.error = 'verify failed';
-    p.sequence += 1;
+    this.state.sequence += 1;
+    p.sequence = this.state.sequence;
 
     await this.persistState();
   }

@@ -120,9 +120,7 @@ export class TerminalInterface {
           break;
         case 'RUNNING':
           if (myState.runningState === 'OFFLINE') {
-            this.term.white(
-              `It's your turn. You have opted to perform the computation externally. Please compute and upload.\n`
-            );
+            this.term.white(`It's your turn. You have opted to perform the computation externally.\n`);
           } else {
             this.term.white(`You are currently processing your part of the ceremony...\n`);
           }

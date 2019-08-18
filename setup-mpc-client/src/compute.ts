@@ -24,6 +24,8 @@ export class Compute {
     if (this.computeOffline) {
       this.myState.runningState = 'OFFLINE';
       return;
+    } else {
+      this.myState.runningState = 'WAITING';
     }
 
     if (this.myState.runningState === 'WAITING') {
