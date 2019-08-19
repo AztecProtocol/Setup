@@ -87,7 +87,7 @@ export class TerminalInterface {
       this.banner = true;
       this.renderYourStatus();
     } else if (!banner && (this.banner || force)) {
-      const { participants } = this.state!;
+      const { participants, latestBlock, selectBlock } = this.state!;
       this.term.moveTo(0, this.bannerY);
       this.term.eraseLine();
       this.banner = false;
@@ -98,12 +98,18 @@ export class TerminalInterface {
         .green(`${online}`)
         .white(`) (offline: `)
         .red(`${offline}`)
-        .white(')\n');
+        .white(`)`);
+      const selectCountdown = selectBlock - latestBlock;
+      if (selectCountdown > 0) {
+        this.term.white(` (selection: B-${selectCountdown})\n`);
+      } else {
+        this.term.white('\n');
+      }
     }
   }
 
   private renderYourStatus() {
-    const { participants } = this.state!;
+    const { participants, selectBlock, ceremonyState } = this.state!;
 
     this.term.eraseLine();
 
@@ -116,7 +122,11 @@ export class TerminalInterface {
       switch (myState.state) {
         case 'WAITING':
           const position = myIndex - selectedIndex;
-          this.term.white(`You are ${position ? `number ${myIndex - selectedIndex}` : 'first'} in the queue.\n`);
+          if (ceremonyState === 'PRESELECTION') {
+            this.term.white(`Your position in the queue will determined at block number ${selectBlock}.\n`);
+          } else {
+            this.term.white(`You are ${position ? `number ${myIndex - selectedIndex}` : 'first'} in the queue.\n`);
+          }
           break;
         case 'RUNNING':
           if (myState.runningState === 'OFFLINE') {
@@ -175,7 +185,10 @@ export class TerminalInterface {
     this.term.white(`${leftPad(p.position.toString(), 2)}. `);
     switch (p.state) {
       case 'WAITING':
-        this.term.grey(`${p.address.toString()} (${p.priority})`);
+        this.term.grey(`${p.address.toString()}`);
+        if (this.state!.ceremonyState !== 'PRESELECTION') {
+          this.term.grey(` (${p.priority})`);
+        }
         break;
       case 'RUNNING':
         this.renderRunningLine(p);
@@ -217,7 +230,7 @@ export class TerminalInterface {
           const totalData = p.transcripts.reduce((a, t) => a + t.size, 0);
           const totalDownloaded = p.transcripts.reduce((a, t) => a + t.downloaded, 0);
           const totalUploaded = p.transcripts.reduce((a, t) => a + t.uploaded, 0);
-          const downloadProgress = (totalDownloaded / totalData) * 100;
+          const downloadProgress = totalData ? (totalDownloaded / totalData) * 100 : 100;
           const uploadProgress = (totalUploaded / totalData) * 100;
           const computeProgress = p.computeProgress;
           const verifyProgress = p.verifyProgress;
@@ -269,7 +282,11 @@ export class TerminalInterface {
       return;
     }
 
-    if (moment().isBefore(state.startTime) || state.statusSequence !== oldState.statusSequence) {
+    if (
+      state.ceremonyState === 'PRESELECTION' ||
+      state.ceremonyState === 'SELECTED' ||
+      state.statusSequence !== oldState.statusSequence
+    ) {
       // If the ceremony hasn't started, update the status line for the countdown.
       await this.renderStatus();
     } else {

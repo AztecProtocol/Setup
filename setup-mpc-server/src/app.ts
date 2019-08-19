@@ -9,7 +9,7 @@ import { Address } from 'web3x/address';
 import { bufferToHex, randomBuffer, recover } from 'web3x/utils';
 import { defaultState } from './default-state';
 import { unlinkAsync, writeFileAsync } from './fs-async';
-import { ParticipantSelector } from './participant-selector';
+import { ParticipantSelectorFactory } from './participant-selector';
 
 const cors = require('@koa/cors');
 
@@ -19,7 +19,7 @@ const MAX_UPLOAD_SIZE = 1024 * 1024 * 1024;
 export function appFactory(
   server: MpcServer,
   adminAddress: Address,
-  participantSelector: ParticipantSelector,
+  participantSelectorFactory: ParticipantSelectorFactory,
   prefix?: string,
   tmpDir: string = '/tmp',
   maxUploadSize: number = MAX_UPLOAD_SIZE
@@ -36,14 +36,13 @@ export function appFactory(
       ctx.status = 401;
       return;
     }
-    const latestBlock = await participantSelector.getCurrentBlockHeight();
+    const latestBlock = await participantSelectorFactory.getCurrentBlockHeight();
     const settings = {
       ...defaultState(latestBlock),
       ...ctx.request.body,
     };
     const {
       startTime,
-      startBlock,
       selectBlock,
       numG1Points,
       numG2Points,
@@ -53,7 +52,7 @@ export function appFactory(
     } = settings;
     await server.resetState(
       startTime,
-      startBlock,
+      latestBlock,
       selectBlock,
       numG1Points,
       numG2Points,
