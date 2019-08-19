@@ -42,6 +42,7 @@ export interface Participant {
 
 export interface MpcState {
   sequence: number;
+  startSequence: number;
   statusSequence: number;
   ceremonyState: CeremonyState;
   numG1Points: number;
@@ -49,6 +50,8 @@ export interface MpcState {
   pointsPerTranscript: number;
   invalidateAfter: number;
   startTime: Moment;
+  latestBlock: number;
+  selectBlock: number;
   completedAt?: Moment;
   participants: Participant[];
 }
@@ -56,6 +59,8 @@ export interface MpcState {
 export interface MpcServer {
   resetState(
     startTime: Moment,
+    latestBlock: number,
+    selectBlock: number,
     numG1Points: number,
     numG2Points: number,
     pointsPerTranscript: number,

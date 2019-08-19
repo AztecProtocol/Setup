@@ -3,7 +3,7 @@ import { MpcServer } from 'setup-mpc-common';
 import request from 'supertest';
 import { Account } from 'web3x/account';
 import { bufferToHex, hexToBuffer } from 'web3x/utils';
-import { app as appFactory } from './app';
+import { appFactory } from './app';
 
 type Mockify<T> = { [P in keyof T]: jest.Mock<{}> };
 
@@ -23,7 +23,11 @@ describe('app', () => {
       uploadData: jest.fn(),
       ping: jest.fn(),
     };
-    app = appFactory(mockServer as any, undefined, '/tmp', 32);
+
+    const mockParticipantSelector = {
+      getCurrentBlockHeight: jest.fn(),
+    };
+    app = appFactory(mockServer as any, account.address, mockParticipantSelector as any, undefined, '/tmp', 32);
   });
 
   describe('GET /', () => {

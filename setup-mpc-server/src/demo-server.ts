@@ -1,5 +1,6 @@
 import moment from 'moment';
 import { Wallet } from 'web3x/wallet';
+import { ParticipantSelector } from './participant-selector';
 import { Server } from './server';
 import { StateStore } from './state-store';
 import { TranscriptStore } from './transcript-store';
@@ -13,9 +14,10 @@ export class DemoServer extends Server {
     numParticipants: number,
     store: TranscriptStore,
     stateStore: StateStore,
+    participantSelector: ParticipantSelector,
     private youIndicies: number[] = []
   ) {
-    super(store, stateStore);
+    super(store, stateStore, participantSelector);
     this.wallet = Wallet.fromMnemonic(
       'face cook metal cost prevent term foam drive sure caught pet gentle',
       numParticipants
@@ -24,7 +26,7 @@ export class DemoServer extends Server {
 
   public async addParticipants() {
     for (const address of this.wallet.currentAddresses()) {
-      await super.addParticipant(address);
+      await super.addTier1Participant(address);
     }
   }
 

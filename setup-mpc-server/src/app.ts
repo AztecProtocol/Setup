@@ -9,20 +9,22 @@ import { Address } from 'web3x/address';
 import { bufferToHex, randomBuffer, recover } from 'web3x/utils';
 import { defaultState } from './default-state';
 import { unlinkAsync, writeFileAsync } from './fs-async';
+import { ParticipantSelector } from './participant-selector';
 
 const cors = require('@koa/cors');
 
 // 1GB
 const MAX_UPLOAD_SIZE = 1024 * 1024 * 1024;
 
-export function app(
+export function appFactory(
   server: MpcServer,
+  adminAddress: Address,
+  participantSelector: ParticipantSelector,
   prefix?: string,
   tmpDir: string = '/tmp',
   maxUploadSize: number = MAX_UPLOAD_SIZE
 ) {
   const router = new Router({ prefix });
-  const adminAddress = Address.fromString('0x3a9b2101bff555793b85493b5171451fa00124c8');
 
   router.get('/', async (ctx: Koa.Context) => {
     ctx.body = 'OK\n';
@@ -34,13 +36,25 @@ export function app(
       ctx.status = 401;
       return;
     }
+    const latestBlock = await participantSelector.getCurrentBlockHeight();
     const settings = {
-      ...defaultState(),
+      ...defaultState(latestBlock),
       ...ctx.request.body,
     };
-    const { startTime, numG1Points, numG2Points, pointsPerTranscript, invalidateAfter, participants } = settings;
+    const {
+      startTime,
+      startBlock,
+      selectBlock,
+      numG1Points,
+      numG2Points,
+      pointsPerTranscript,
+      invalidateAfter,
+      participants,
+    } = settings;
     await server.resetState(
       startTime,
+      startBlock,
+      selectBlock,
       numG1Points,
       numG2Points,
       pointsPerTranscript,
