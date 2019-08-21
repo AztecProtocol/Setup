@@ -144,8 +144,8 @@ resource "aws_ecs_service" "setup_mpc_server" {
   desired_count = "1"
 
   network_configuration {
-    subnets         = ["${data.terraform_remote_state.setup_iac.outputs.subnet_az1_id}"]
-    security_groups = ["${data.terraform_remote_state.setup_iac.outputs.security_group_public_id}"]
+    subnets         = ["${data.terraform_remote_state.setup_iac.outputs.subnet_az1_private_id}"]
+    security_groups = ["${data.terraform_remote_state.setup_iac.outputs.security_group_private_id}"]
   }
 
   load_balancer {

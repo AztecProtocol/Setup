@@ -11,7 +11,7 @@ provider "aws" {
   region  = "eu-west-2"
 }
 
-# We create a private network just for handling setup.
+# Create a vpc.
 resource "aws_vpc" "setup" {
   cidr_block           = "10.0.0.0/16"
   enable_dns_support   = true
@@ -22,6 +22,15 @@ resource "aws_vpc" "setup" {
   }
 }
 
+# We create an addional CIDR block to expand beyond initial /16 limits.
+resource "aws_vpc_ipv4_cidr_block_association" "setup_cidr1" {
+  vpc_id     = "${aws_vpc.setup.id}"
+  cidr_block = "10.1.0.0/16"
+}
+
+### PUBLIC NETWORK
+
+# Public subnets in each availability zone.
 resource "aws_subnet" "setup" {
   vpc_id            = "${aws_vpc.setup.id}"
   cidr_block        = "10.0.0.0/17"
@@ -42,6 +51,7 @@ resource "aws_subnet" "setup_az2" {
   }
 }
 
+# Internet gateway.
 resource "aws_internet_gateway" "gw" {
   vpc_id = "${aws_vpc.setup.id}"
 
@@ -50,56 +60,26 @@ resource "aws_internet_gateway" "gw" {
   }
 }
 
+# NAT gateway.
+resource "aws_eip" "nat_eip" {
+  vpc        = true
+  depends_on = ["aws_internet_gateway.gw"]
+}
+
+resource "aws_nat_gateway" "gw" {
+  allocation_id = "${aws_eip.nat_eip.id}"
+  subnet_id     = "${aws_subnet.setup.id}"
+  depends_on    = ["aws_internet_gateway.gw"]
+}
+
+# Route main routing table default traffic through gateway.
 resource "aws_route" "internet_access" {
   route_table_id         = "${aws_vpc.setup.main_route_table_id}"
   destination_cidr_block = "0.0.0.0/0"
   gateway_id             = "${aws_internet_gateway.gw.id}"
 }
 
-resource "aws_security_group" "setup" {
-  name   = "setup"
-  vpc_id = "${aws_vpc.setup.id}"
-
-  ingress {
-    protocol    = "tcp"
-    from_port   = 80
-    to_port     = 80
-    cidr_blocks = ["82.163.119.138/32", "217.169.11.246/32"]
-  }
-
-  ingress {
-    protocol    = "tcp"
-    from_port   = 22
-    to_port     = 22
-    cidr_blocks = ["82.163.119.138/32", "217.169.11.246/32"]
-  }
-
-  ingress {
-    protocol  = "-1"
-    from_port = 0
-    to_port   = 0
-    self      = true
-  }
-
-  ingress {
-    protocol        = "-1"
-    from_port       = 0
-    to_port         = 0
-    security_groups = ["${aws_security_group.setup_public.id}"]
-  }
-
-  egress {
-    protocol    = "-1"
-    from_port   = 0
-    to_port     = 0
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = {
-    Name = "setup"
-  }
-}
-
+# Public security group and rules.
 resource "aws_security_group" "setup_public" {
   name   = "setup-public"
   vpc_id = "${aws_vpc.setup.id}"
@@ -143,6 +123,99 @@ resource "aws_security_group_rule" "setup_public_allow_all_outgoing" {
   protocol          = "-1"
   cidr_blocks       = ["0.0.0.0/0"]
   security_group_id = "${aws_security_group.setup_public.id}"
+}
+
+### PRIVATE NETWORK
+
+# Private subnets in each avilability zone.
+resource "aws_subnet" "setup_az1_private" {
+  vpc_id            = "${aws_vpc.setup.id}"
+  cidr_block        = "10.1.0.0/17"
+  availability_zone = "eu-west-2a"
+
+  tags = {
+    Name = "setup-az1-private"
+  }
+}
+
+resource "aws_subnet" "setup_az2_private" {
+  vpc_id            = "${aws_vpc.setup.id}"
+  cidr_block        = "10.1.128.0/17"
+  availability_zone = "eu-west-2a"
+
+  tags = {
+    Name = "setup-az2-private"
+  }
+}
+
+# Private network routing table, rule to NAT gateway, and subnet associations.
+resource "aws_route_table" "setup_private" {
+  vpc_id = "${aws_vpc.setup.id}"
+
+  tags = {
+    Name = "setup-private"
+  }
+}
+
+resource "aws_route" "private_route" {
+  route_table_id         = "${aws_route_table.setup_private.id}"
+  destination_cidr_block = "0.0.0.0/0"
+  nat_gateway_id         = "${aws_nat_gateway.gw.id}"
+}
+
+resource "aws_route_table_association" "setup_az1_subnet_association" {
+  subnet_id      = "${aws_subnet.setup_az1_private.id}"
+  route_table_id = "${aws_route_table.setup_private.id}"
+}
+
+resource "aws_route_table_association" "setup_az2_subnet_association" {
+  subnet_id      = "${aws_subnet.setup_az2_private.id}"
+  route_table_id = "${aws_route_table.setup_private.id}"
+}
+
+# Private security group.
+resource "aws_security_group" "setup" {
+  name   = "setup"
+  vpc_id = "${aws_vpc.setup.id}"
+
+  ingress {
+    protocol    = "tcp"
+    from_port   = 80
+    to_port     = 80
+    cidr_blocks = ["82.163.119.138/32", "217.169.11.246/32"]
+  }
+
+  ingress {
+    protocol    = "tcp"
+    from_port   = 22
+    to_port     = 22
+    cidr_blocks = ["82.163.119.138/32", "217.169.11.246/32"]
+  }
+
+  ingress {
+    protocol  = "-1"
+    from_port = 0
+    to_port   = 0
+    self      = true
+  }
+
+  ingress {
+    protocol        = "-1"
+    from_port       = 0
+    to_port         = 0
+    security_groups = ["${aws_security_group.setup_public.id}"]
+  }
+
+  egress {
+    protocol    = "-1"
+    from_port   = 0
+    to_port     = 0
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "setup"
+  }
 }
 
 # Private link endpoint interfaces to get access to AWS services.
