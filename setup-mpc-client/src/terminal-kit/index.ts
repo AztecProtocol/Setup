@@ -89,6 +89,7 @@ export class TerminalKit {
   public clear() {
     this.moveTo(1, 1);
     this.stream.write('\u001B[2J');
+    this.stream.write('\u001B[3J');
   }
 
   public eraseLine() {

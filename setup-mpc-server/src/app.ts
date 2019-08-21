@@ -1,4 +1,4 @@
-import { createWriteStream } from 'fs';
+import { createWriteStream, unlink } from 'fs';
 import Koa from 'koa';
 import koaBody from 'koa-body';
 import compress from 'koa-compress';
@@ -8,21 +8,23 @@ import meter from 'stream-meter';
 import { Address } from 'web3x/address';
 import { bufferToHex, randomBuffer, recover } from 'web3x/utils';
 import { defaultState } from './default-state';
-import { unlinkAsync, writeFileAsync } from './fs-async';
+import { writeFileAsync } from './fs-async';
+import { ParticipantSelectorFactory } from './participant-selector';
 
 const cors = require('@koa/cors');
 
 // 1GB
 const MAX_UPLOAD_SIZE = 1024 * 1024 * 1024;
 
-export function app(
+export function appFactory(
   server: MpcServer,
+  adminAddress: Address,
+  participantSelectorFactory: ParticipantSelectorFactory,
   prefix?: string,
   tmpDir: string = '/tmp',
   maxUploadSize: number = MAX_UPLOAD_SIZE
 ) {
   const router = new Router({ prefix });
-  const adminAddress = Address.fromString('0x3a9b2101bff555793b85493b5171451fa00124c8');
 
   router.get('/', async (ctx: Koa.Context) => {
     ctx.body = 'OK\n';
@@ -34,13 +36,26 @@ export function app(
       ctx.status = 401;
       return;
     }
+    const latestBlock = await participantSelectorFactory.getCurrentBlockHeight();
     const settings = {
-      ...defaultState(),
+      ...defaultState(latestBlock),
       ...ctx.request.body,
     };
-    const { startTime, numG1Points, numG2Points, pointsPerTranscript, invalidateAfter, participants } = settings;
+    const {
+      startTime,
+      selectBlock,
+      maxTier2,
+      numG1Points,
+      numG2Points,
+      pointsPerTranscript,
+      invalidateAfter,
+      participants,
+    } = settings;
     await server.resetState(
       startTime,
+      latestBlock,
+      selectBlock,
+      maxTier2,
       numG1Points,
       numG2Points,
       pointsPerTranscript,
@@ -56,7 +71,7 @@ export function app(
 
   router.get('/ping/:address', koaBody(), async (ctx: Koa.Context) => {
     const signature = ctx.get('X-Signature');
-    const address = Address.fromString(ctx.params.address);
+    const address = Address.fromString(ctx.params.address.toLowerCase());
     if (!address.equals(recover('ping', signature))) {
       ctx.status = 401;
       return;
@@ -65,9 +80,20 @@ export function app(
     ctx.status = 200;
   });
 
+  router.put('/participant/:address', async (ctx: Koa.Context) => {
+    const signature = ctx.get('X-Signature');
+    if (!adminAddress.equals(recover('SignMeWithYourPrivateKey', signature))) {
+      ctx.status = 401;
+      return;
+    }
+    const address = Address.fromString(ctx.params.address.toLowerCase());
+    server.addParticipant(address, 2);
+    ctx.status = 204;
+  });
+
   router.patch('/participant/:address', koaBody(), async (ctx: Koa.Context) => {
     const signature = ctx.get('X-Signature');
-    const address = Address.fromString(ctx.params.address);
+    const address = Address.fromString(ctx.params.address.toLowerCase());
     if (!address.equals(recover(JSON.stringify(ctx.request.body), signature))) {
       ctx.status = 401;
       return;
@@ -85,11 +111,11 @@ export function app(
 
   router.get('/data/:address/:num', async (ctx: Koa.Context) => {
     const { address, num } = ctx.params;
-    ctx.body = await server.downloadData(Address.fromString(address), num);
+    ctx.body = await server.downloadData(Address.fromString(address.toLowerCase()), num);
   });
 
   router.put('/data/:address/:num', async (ctx: Koa.Context) => {
-    const address = Address.fromString(ctx.params.address);
+    const address = Address.fromString(ctx.params.address.toLowerCase());
     const signature = ctx.get('X-Signature');
 
     // 500, unless we explicitly set it to 200 or something else.
@@ -153,10 +179,9 @@ export function app(
 
       ctx.status = 200;
     } catch (err) {
-      console.error(err);
       ctx.body = { error: err.message };
-      await unlinkAsync(transcriptPath);
-      await unlinkAsync(signaturePath);
+      unlink(transcriptPath, () => {});
+      unlink(signaturePath, () => {});
       return;
     }
   });

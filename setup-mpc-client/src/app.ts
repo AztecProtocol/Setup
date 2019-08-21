@@ -39,18 +39,24 @@ export class App {
 
   private updateState = async () => {
     try {
-      // First send any local state changes to the server.
-      await this.updateRemoteState();
-
       // Then get the latest state from the server.
       const remoteStateDelta = await this.server.getState(this.state ? this.state.sequence : undefined);
 
-      this.state = this.state === undefined ? remoteStateDelta : applyDelta(this.state, remoteStateDelta);
+      if (!this.state) {
+        this.state = remoteStateDelta;
+      } else if (this.state.startSequence !== remoteStateDelta.startSequence) {
+        this.state = await this.server.getState();
+      } else {
+        this.state = applyDelta(this.state, remoteStateDelta);
+      }
 
       // Start or stop computation.
       await this.processRemoteState(this.state);
 
       await this.terminalInterface.updateState(this.state);
+
+      // Send any local state changes to the server.
+      await this.updateRemoteState();
 
       this.scheduleUpdate();
     } catch (err) {

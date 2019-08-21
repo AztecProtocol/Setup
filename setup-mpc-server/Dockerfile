@@ -7,7 +7,7 @@ COPY --from=1 /usr/src/setup-mpc-common .
 RUN yarn link
 WORKDIR /usr/src/setup-mpc-server
 COPY . .
-RUN yarn install && yarn build && rm -rf node_modules && yarn install --production
+RUN yarn install && yarn test && yarn build && rm -rf node_modules && yarn install --production
 
 FROM ubuntu:latest
 RUN apt update && \

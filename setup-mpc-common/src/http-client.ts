@@ -15,12 +15,19 @@ export class HttpClient implements MpcServer {
 
   public async resetState(
     startTime: Moment,
+    startBlock: number,
+    selectBlock: number,
+    maxTier2: number,
     numG1Points: number,
     numG2Points: number,
     pointsPerTranscript: number,
     invalidateAfter: number,
     participants: Address[]
   ) {
+    throw new Error('Not implemented.');
+  }
+
+  public async addParticipant(address: Address, tier: number) {
     throw new Error('Not implemented.');
   }
 

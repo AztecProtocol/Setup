@@ -1,12 +1,12 @@
-import { exists, promises } from 'fs';
+import { access, exists, mkdir, readdir, readFile, rename, rmdir, unlink, writeFile } from 'fs';
 import { promisify } from 'util';
 
-export const accessAsync = promises.access;
+export const accessAsync = promisify(access);
 export const existsAsync = promisify(exists);
-export const renameAsync = promises.rename;
-export const mkdirAsync = promises.mkdir;
-export const unlinkAsync = promises.unlink;
-export const writeFileAsync = promises.writeFile;
-export const readFileAsync = promises.readFile;
-export const readdirAsync = promises.readdir;
-export const rmdirAsync = promises.rmdir;
+export const renameAsync = promisify(rename);
+export const mkdirAsync = promisify(mkdir);
+export const unlinkAsync = promisify(unlink);
+export const writeFileAsync = promisify(writeFile);
+export const readFileAsync = promisify(readFile);
+export const readdirAsync = promisify(readdir);
+export const rmdirAsync = promisify(rmdir);

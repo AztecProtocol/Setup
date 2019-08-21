@@ -1,11 +1,14 @@
 import { createHash } from 'crypto';
+import moment from 'moment';
 import { MpcServer } from 'setup-mpc-common';
 import request from 'supertest';
 import { Account } from 'web3x/account';
 import { bufferToHex, hexToBuffer } from 'web3x/utils';
-import { app as appFactory } from './app';
+import { appFactory } from './app';
+import { defaultState } from './default-state';
+import { createParticipant } from './state/create-participant';
 
-type Mockify<T> = { [P in keyof T]: jest.Mock<{}> };
+type Mockify<T> = { [P in keyof T]: jest.Mock<any> };
 
 describe('app', () => {
   const account = Account.fromPrivate(
@@ -18,12 +21,23 @@ describe('app', () => {
     mockServer = {
       getState: jest.fn(),
       resetState: jest.fn(),
+      addParticipant: jest.fn(),
       updateParticipant: jest.fn(),
       downloadData: jest.fn(),
       uploadData: jest.fn(),
       ping: jest.fn(),
     };
-    app = appFactory(mockServer as any, undefined, '/tmp', 32);
+
+    const state = defaultState(1234);
+    const participant = createParticipant(0, moment(), 0, 1, account.address);
+    participant.state = 'RUNNING';
+    state.participants.push(participant);
+    mockServer.getState.mockResolvedValue(state);
+
+    const mockParticipantSelector = {
+      getCurrentBlockHeight: jest.fn(),
+    };
+    app = appFactory(mockServer as any, account.address, mockParticipantSelector as any, undefined, '/tmp', 32);
   });
 
   describe('GET /', () => {

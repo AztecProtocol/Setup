@@ -28,6 +28,7 @@ export interface Participant {
   priority: number;
   tier: number;
   verifyProgress: number;
+  addedAt: Moment;
   startedAt?: Moment;
   completedAt?: Moment;
   error?: string;
@@ -42,13 +43,17 @@ export interface Participant {
 
 export interface MpcState {
   sequence: number;
+  startSequence: number;
   statusSequence: number;
   ceremonyState: CeremonyState;
+  maxTier2: number;
   numG1Points: number;
   numG2Points: number;
   pointsPerTranscript: number;
   invalidateAfter: number;
   startTime: Moment;
+  latestBlock: number;
+  selectBlock: number;
   completedAt?: Moment;
   participants: Participant[];
 }
@@ -56,6 +61,9 @@ export interface MpcState {
 export interface MpcServer {
   resetState(
     startTime: Moment,
+    latestBlock: number,
+    selectBlock: number,
+    maxTier2: number,
     numG1Points: number,
     numG2Points: number,
     pointsPerTranscript: number,
@@ -64,6 +72,7 @@ export interface MpcServer {
   ): Promise<void>;
   getState(sequence?: number): Promise<MpcState>;
   ping(address: Address): Promise<void>;
+  addParticipant(address: Address, tier: number): Promise<void>;
   updateParticipant(participant: Participant): Promise<void>;
   downloadData(address: Address, transcriptNumber: number): Promise<Readable>;
   uploadData(
