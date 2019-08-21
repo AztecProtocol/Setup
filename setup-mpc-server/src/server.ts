@@ -1,10 +1,12 @@
 import { Mutex } from 'async-mutex';
 import moment, { Moment } from 'moment';
-import seedrandom from 'seedrandom';
 import { cloneMpcState, MpcServer, MpcState, Participant } from 'setup-mpc-common';
 import { Address } from 'web3x/address';
 import { ParticipantSelector, ParticipantSelectorFactory } from './participant-selector';
 import { StateStore } from './state-store';
+import { createParticipant } from './state/create-participant';
+import { orderWaitingParticipants } from './state/order-waiting-participants';
+import { selectParticipants } from './state/select-participants';
 import { TranscriptStore } from './transcript-store';
 import { Verifier } from './verifier';
 
@@ -46,6 +48,7 @@ export class Server implements MpcServer {
     startTime: Moment,
     latestBlock: number,
     selectBlock: number,
+    maxTier2: number,
     numG1Points: number,
     numG2Points: number,
     pointsPerTranscript: number,
@@ -56,13 +59,14 @@ export class Server implements MpcServer {
     const state: MpcState = {
       sequence: nextSequence,
       statusSequence: nextSequence,
-      startSequence: this.state.startSequence,
+      startSequence: nextSequence,
       ceremonyState: 'PRESELECTION',
       numG1Points,
       numG2Points,
       startTime,
       latestBlock,
       selectBlock,
+      maxTier2,
       invalidateAfter,
       pointsPerTranscript,
       participants: [],
@@ -89,9 +93,7 @@ export class Server implements MpcServer {
 
   private createParticipantSelector(latestBlock: number, selectBlock: number) {
     const participantSelector = this.participantSelectorFactory.create(latestBlock, selectBlock);
-    participantSelector.on('newParticipants', (addresses, latestBlock) =>
-      this.addTier2Participants(addresses, latestBlock)
-    );
+    participantSelector.on('newParticipants', (addresses, latestBlock) => this.addParticipants(addresses, latestBlock));
     participantSelector.on('selectParticipants', blockHash => this.selectParticipants(blockHash));
     return participantSelector;
   }
@@ -127,59 +129,28 @@ export class Server implements MpcServer {
     };
   }
 
-  public async addTier1Participant(address: Address) {
+  public async addParticipant(address: Address, tier: number) {
     const release = await this.mutex.acquire();
     this.state.sequence += 1;
-    this.addNextParticipant(this.state, address, 1);
+    this.state.statusSequence = this.state.sequence;
+    this.addNextParticipant(this.state, address, tier);
     release();
   }
 
-  private async addTier2Participants(addresses: Address[], latestBlock: number) {
+  private async addParticipants(addresses: Address[], latestBlock: number) {
     const release = await this.mutex.acquire();
     this.state.sequence += 1;
     this.state.statusSequence = this.state.sequence;
     this.state.latestBlock = latestBlock;
-    addresses.forEach(address => this.addNextParticipant(this.state, address, 2));
+    const tier = this.state.ceremonyState === 'PRESELECTION' ? 2 : 3;
+    addresses.forEach(address => this.addNextParticipant(this.state, address, tier));
     release();
   }
 
   private async selectParticipants(blockHash: Buffer) {
-    if (this.state.ceremonyState !== 'PRESELECTION') {
-      return;
-    }
-
     const release = await this.mutex.acquire();
     try {
-      console.log('Selection time!');
-
-      this.state.sequence += 1;
-      this.state.statusSequence = this.state.sequence;
-      this.state.ceremonyState = 'SELECTED';
-
-      const prng = seedrandom(blockHash.toString('hex'));
-      const { participants } = this.state;
-      let m = participants.length;
-      let p: Participant;
-      let i: number;
-
-      // Fisher-Yates shuffle.
-      while (m) {
-        // Pick a remaining element.
-        i = Math.floor(prng.double() * m--);
-        p = participants[m];
-
-        // And swap it with the current element.
-        participants[m] = participants[i];
-        participants[i] = p;
-      }
-
-      participants.forEach((p, i) => {
-        // Modify state.
-        p.sequence = this.state.sequence;
-        p.priority = i + 1;
-      });
-
-      this.orderWaitingParticipants(this.state.sequence);
+      selectParticipants(this.state, blockHash);
     } finally {
       release();
     }
@@ -189,19 +160,7 @@ export class Server implements MpcServer {
     if (state.participants.find(p => p.address.equals(address))) {
       return;
     }
-    const participant: Participant = {
-      sequence: state.sequence,
-      online: false,
-      state: 'WAITING',
-      runningState: 'WAITING',
-      position: state.participants.length + 1,
-      priority: state.participants.length + 1,
-      tier,
-      computeProgress: 0,
-      verifyProgress: 0,
-      transcripts: [],
-      address,
-    };
+    const participant = createParticipant(state.sequence, moment(), state.participants.length + 1, tier, address);
     state.participants.push(participant);
     return participant;
   }
@@ -218,18 +177,18 @@ export class Server implements MpcServer {
     }, 500);
   }
 
-  protected async advanceState() {
+  private async advanceState() {
     let stateChanged = false;
     const state = this.state;
 
-    const { sequence, startTime, completedAt, invalidateAfter, participants } = state;
+    const { sequence, startTime, completedAt, invalidateAfter } = state;
     const nextSequence = sequence + 1;
     const release = await this.mutex.acquire();
 
     try {
       // Shift any participants that haven't performed an update recently to offline state and reorder accordingly.
       if (this.markIdleParticipantsOffline(nextSequence)) {
-        this.orderWaitingParticipants(nextSequence);
+        state.participants = orderWaitingParticipants(state.participants, nextSequence);
         stateChanged = true;
       }
 
@@ -251,7 +210,7 @@ export class Server implements MpcServer {
       }
 
       // If all participants are done, shift ceremony to complete state.
-      if (participants.every(p => p.state === 'COMPLETE' || p.state === 'INVALIDATED')) {
+      if (state.participants.every(p => p.state === 'COMPLETE' || p.state === 'INVALIDATED')) {
         state.statusSequence = nextSequence;
         state.ceremonyState = 'COMPLETE';
         state.completedAt = moment();
@@ -260,7 +219,7 @@ export class Server implements MpcServer {
       }
 
       // If we have a running participant, mark as invalidated if timed out.
-      const runningParticipant = participants.find(p => p.state === 'RUNNING');
+      const runningParticipant = state.participants.find(p => p.state === 'RUNNING');
       if (runningParticipant) {
         if (
           moment()
@@ -277,7 +236,7 @@ export class Server implements MpcServer {
       }
 
       // Find next waiting, online participant and shift them to the running state.
-      const waitingParticipant = participants.find(p => p.state === 'WAITING' && p.online);
+      const waitingParticipant = state.participants.find(p => p.state === 'WAITING' && p.online);
       if (waitingParticipant && waitingParticipant.state === 'WAITING') {
         await this.store.erase(waitingParticipant.address);
         state.statusSequence = nextSequence;
@@ -316,31 +275,6 @@ export class Server implements MpcServer {
     return changed;
   }
 
-  private orderWaitingParticipants(sequence: number) {
-    const { participants } = this.state;
-    const indexOfFirstWaiting = participants.findIndex(p => p.state === 'WAITING');
-
-    const waiting = participants.slice(indexOfFirstWaiting).sort((a, b) => {
-      if (a.online !== b.online) {
-        return a.online ? -1 : 1;
-      }
-      if (a.tier !== b.tier) {
-        return a.tier - b.tier;
-      }
-      return a.priority - b.priority;
-    });
-
-    this.state.participants = [...participants.slice(0, indexOfFirstWaiting), ...waiting];
-
-    // Adjust positions based on new order and advance sequence numbers if position changed.
-    this.state.participants.forEach((p, i) => {
-      if (p.position !== i + 1) {
-        p.position = i + 1;
-        p.sequence = sequence;
-      }
-    });
-  }
-
   public async ping(address: Address) {
     const release = await this.mutex.acquire();
     try {
@@ -354,7 +288,7 @@ export class Server implements MpcServer {
         p.sequence = this.state.sequence;
         p.online = true;
 
-        this.orderWaitingParticipants(this.state.sequence);
+        this.state.participants = orderWaitingParticipants(this.state.participants, this.state.sequence);
       }
     } finally {
       release();

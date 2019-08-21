@@ -175,6 +175,9 @@ export class TerminalInterface {
   }
 
   private renderLine(p: Participant, i: number) {
+    if (this.listY + i > this.term.height) {
+      return;
+    }
     this.term.moveTo(0, this.listY + i);
     this.term.eraseLine();
     if (p.online) {
@@ -276,8 +279,8 @@ export class TerminalInterface {
     const oldState = this.state;
     this.state = state;
 
-    if (!oldState) {
-      // If first time render everything.
+    if (!oldState || oldState.startSequence !== state.startSequence) {
+      // If first time or reset render everything.
       this.render();
       return;
     }
