@@ -4,13 +4,12 @@ import { cloneMpcState, MpcServer, MpcState, Participant } from 'setup-mpc-commo
 import { Address } from 'web3x/address';
 import { ParticipantSelector, ParticipantSelectorFactory } from './participant-selector';
 import { StateStore } from './state-store';
+import { advanceState } from './state/advance-state';
 import { createParticipant } from './state/create-participant';
 import { orderWaitingParticipants } from './state/order-waiting-participants';
 import { selectParticipants } from './state/select-participants';
 import { TranscriptStore } from './transcript-store';
 import { Verifier } from './verifier';
-
-const OFFLINE_AFTER = 10;
 
 export class Server implements MpcServer {
   private interval?: NodeJS.Timer;
@@ -46,9 +45,11 @@ export class Server implements MpcServer {
 
   public async resetState(
     startTime: Moment,
+    endTime: Moment,
     latestBlock: number,
     selectBlock: number,
     maxTier2: number,
+    minParticipants: number,
     numG1Points: number,
     numG2Points: number,
     pointsPerTranscript: number,
@@ -64,9 +65,11 @@ export class Server implements MpcServer {
       numG1Points,
       numG2Points,
       startTime,
+      endTime,
       latestBlock,
       selectBlock,
       maxTier2,
+      minParticipants,
       invalidateAfter,
       pointsPerTranscript,
       participants: [],
@@ -166,113 +169,23 @@ export class Server implements MpcServer {
   }
 
   private scheduleAdvanceState() {
-    this.interval = setTimeout(async () => {
-      try {
-        await this.advanceState();
-      } catch (err) {
-        console.error(err);
-      } finally {
-        this.scheduleAdvanceState();
-      }
-    }, 500);
+    this.interval = setTimeout(() => this.advanceState(), 1000);
   }
 
   private async advanceState() {
-    let stateChanged = false;
-    const state = this.state;
-
-    const { sequence, startTime, completedAt, invalidateAfter } = state;
-    const nextSequence = sequence + 1;
     const release = await this.mutex.acquire();
 
     try {
-      // Shift any participants that haven't performed an update recently to offline state and reorder accordingly.
-      if (this.markIdleParticipantsOffline(nextSequence)) {
-        state.participants = orderWaitingParticipants(state.participants, nextSequence);
-        stateChanged = true;
-      }
-
-      // Nothing to do if not yet running, or already completed.
-      if (moment().isBefore(startTime) || completedAt) {
-        return;
-      }
-
-      // If we've not yet hit our selection block. Do nothing.
-      if (state.ceremonyState === 'PRESELECTION') {
-        return;
-      }
-
-      // Shift to running state if not already.
-      if (state.ceremonyState !== 'RUNNING') {
-        state.statusSequence = nextSequence;
-        state.ceremonyState = 'RUNNING';
-        stateChanged = true;
-      }
-
-      // If all participants are done, shift ceremony to complete state.
-      if (state.participants.every(p => p.state === 'COMPLETE' || p.state === 'INVALIDATED')) {
-        state.statusSequence = nextSequence;
-        state.ceremonyState = 'COMPLETE';
-        state.completedAt = moment();
-        stateChanged = true;
-        return;
-      }
-
-      // If we have a running participant, mark as invalidated if timed out.
-      const runningParticipant = state.participants.find(p => p.state === 'RUNNING');
-      if (runningParticipant) {
-        if (
-          moment()
-            .subtract(invalidateAfter, 's')
-            .isAfter(runningParticipant.startedAt!)
-        ) {
-          runningParticipant.sequence = nextSequence;
-          runningParticipant.state = 'INVALIDATED';
-          runningParticipant.error = 'timed out';
-          stateChanged = true;
-        } else {
-          return;
-        }
-      }
-
-      // Find next waiting, online participant and shift them to the running state.
-      const waitingParticipant = state.participants.find(p => p.state === 'WAITING' && p.online);
-      if (waitingParticipant && waitingParticipant.state === 'WAITING') {
-        await this.store.erase(waitingParticipant.address);
-        state.statusSequence = nextSequence;
-        waitingParticipant.sequence = nextSequence;
-        waitingParticipant.startedAt = moment();
-        waitingParticipant.state = 'RUNNING';
-        this.verifier.runningAddress = waitingParticipant.address;
-        stateChanged = true;
-      }
+      await advanceState(this.state, this.store, this.verifier, moment());
+    } catch (err) {
+      console.error(err);
     } finally {
-      if (stateChanged) {
-        state.sequence = nextSequence;
-      }
       await this.stateStore.setState(this.state);
-      this.readState = cloneMpcState(state);
+      this.readState = cloneMpcState(this.state);
       release();
     }
-  }
 
-  private markIdleParticipantsOffline(sequence: number) {
-    const { participants } = this.state;
-    let changed = false;
-    participants.forEach(p => {
-      if (
-        moment()
-          .subtract(OFFLINE_AFTER, 's')
-          .isAfter(p.lastUpdate!) &&
-        p.online
-      ) {
-        this.state.statusSequence = sequence;
-        p.sequence = sequence;
-        p.online = false;
-        changed = true;
-      }
-    });
-    return changed;
+    this.scheduleAdvanceState();
   }
 
   public async ping(address: Address) {
@@ -371,6 +284,7 @@ export class Server implements MpcServer {
       return;
     }
 
+    p.lastVerified = moment();
     p.transcripts[transcriptNumber].complete = true;
 
     if (p.transcripts.every(t => t.complete)) {

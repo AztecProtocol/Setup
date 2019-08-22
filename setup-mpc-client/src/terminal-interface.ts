@@ -262,17 +262,27 @@ export class TerminalInterface {
       }
     }
 
-    this.term
-      .white(` (`)
-      .blue('\u25b6\u25b6')
-      .white(
-        ` ${Math.max(
-          0,
-          moment(p.startedAt!)
-            .add(this.state!.invalidateAfter, 's')
-            .diff(moment(), 's')
-        )}s)`
-      );
+    const { invalidateAfter, numG1Points, numG2Points, pointsPerTranscript } = this.state!;
+    const verifyWithin = invalidateAfter / (Math.max(numG1Points, numG2Points) / pointsPerTranscript);
+    const verifyTimeout = Math.max(
+      0,
+      moment(p.lastVerified || p.startedAt!)
+        .add(verifyWithin, 's')
+        .diff(moment(), 's')
+    );
+    const timeout = Math.max(
+      0,
+      moment(p.startedAt!)
+        .add(this.state!.invalidateAfter, 's')
+        .diff(moment(), 's')
+    );
+
+    term.white(` (`).blue('\u25b6\u25b6 ');
+
+    if (p.tier > 1) {
+      term.white(`${verifyTimeout}/`);
+    }
+    term.white(`${timeout}s)`);
   }
 
   public async updateState(state: MpcState) {

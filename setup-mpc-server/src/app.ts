@@ -41,26 +41,18 @@ export function appFactory(
       ...defaultState(latestBlock),
       ...ctx.request.body,
     };
-    const {
-      startTime,
-      selectBlock,
-      maxTier2,
-      numG1Points,
-      numG2Points,
-      pointsPerTranscript,
-      invalidateAfter,
-      participants,
-    } = settings;
     await server.resetState(
-      startTime,
-      latestBlock,
-      selectBlock,
-      maxTier2,
-      numG1Points,
-      numG2Points,
-      pointsPerTranscript,
-      invalidateAfter,
-      participants.map(Address.fromString)
+      settings.startTime,
+      settings.endTime,
+      settings.latestBlock,
+      settings.selectBlock,
+      settings.maxTier2,
+      settings.minParticipants,
+      settings.numG1Points,
+      settings.numG2Points,
+      settings.pointsPerTranscript,
+      settings.invalidateAfter,
+      settings.participants.map(Address.fromString)
     );
     ctx.body = 'OK\n';
   });

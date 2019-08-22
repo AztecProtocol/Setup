@@ -99,8 +99,13 @@ export class App {
 
     // Either launch or destroy the computation based on remote state.
     if (myRemoteState.state === 'RUNNING' && !this.compute) {
-      // Compute takes a copy of the participants state. It can modify at will, and emits 'update' events as modified.
-      this.compute = new Compute(remoteState, cloneParticipant(myRemoteState), this.server, this.computeOffline);
+      // Compute takes a copy of the participants state and modifies it with local telemetry.
+      this.compute = new Compute(
+        remoteState,
+        cloneParticipant(myRemoteState),
+        this.server,
+        this.computeOffline && myRemoteState.tier === 1
+      );
 
       this.compute.start().catch(err => {
         console.error(`Compute failed: `, err);
