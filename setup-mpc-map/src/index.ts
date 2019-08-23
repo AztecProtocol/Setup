@@ -236,29 +236,53 @@ class Coordinator {
     this.setProgress(p, invalidateAfter);
   }
 
+  private updateCeremonyStatus(state: MpcState) {
+    if (state.ceremonyState === 'RUNNING' && !state.participants.some(p => p.state === 'RUNNING')) {
+      document.getElementById('overlay-ceremony-status')!.innerHTML = `AWAITING PARTICIPANT`;
+    } else if (state.ceremonyState === 'PRESELECTION') {
+      document.getElementById('overlay-ceremony-status')!.innerHTML = `SELECTING IN ${state.selectBlock -
+        state.latestBlock} BLOCKS`;
+    } else {
+      document.getElementById('overlay-ceremony-status')!.innerHTML = `${state.ceremonyState}`;
+    }
+    if (state.ceremonyState === 'PRESELECTION' || state.ceremonyState === 'SELECTED') {
+      document.getElementById('overlay-ceremony-status')!.className = 'yellow';
+    } else {
+      document.getElementById('overlay-ceremony-status')!.className = 'green';
+    }
+  }
+
   private updateStatusOverlay(state: MpcState) {
-    document.getElementById('overlay-started-at')!.innerHTML = state.startTime.toISOString();
     document.getElementById('overlay-participants')!.innerHTML = `${state.participants.length}`;
     const online = state.participants.reduce((a, p) => (p.online ? a + 1 : a), 0);
     const offline = state.participants.reduce((a, p) => (!p.online ? a + 1 : a), 0);
     const complete = state.participants.reduce((a, p) => (p.state === 'COMPLETE' ? a + 1 : a), 0);
     const invalidated = state.participants.reduce((a, p) => (p.state === 'INVALIDATED' ? a + 1 : a), 0);
+    const startIn = Math.max(0, moment(state.startTime).diff(moment(), 's'));
     document.getElementById('overlay-online')!.innerHTML = `${online}`;
     document.getElementById('overlay-offline')!.innerHTML = `${offline}`;
     document.getElementById('overlay-complete')!.innerHTML = `${complete}`;
     document.getElementById('overlay-invalidated')!.innerHTML = `${invalidated}`;
-    document.getElementById('overlay-ceremony-status')!.innerHTML = `${state.ceremonyState}`;
-    switch (state.ceremonyState) {
-      case 'PRESELECTION':
-      case 'SELECTED':
-        document.getElementById('overlay-ceremony-status')!.className = 'yellow';
-        break;
-      case 'COMPLETE':
-        document.getElementById('status-overlay-time')!.style.display = 'none';
-        document.getElementById('status-overlay-completed-at')!.style.display = 'block';
-        document.getElementById('overlay-completed-at')!.innerHTML = state.completedAt!.toISOString();
-      default:
-        document.getElementById('overlay-ceremony-status')!.className = 'green';
+
+    this.updateCeremonyStatus(state);
+
+    if (state.ceremonyState === 'PRESELECTION' || state.ceremonyState === 'SELECTED') {
+      document.getElementById('status-overlay-starting-in')!.style.display = 'block';
+      document.getElementById('status-overlay-started-at')!.style.display = 'none';
+      document.getElementById('overlay-starting-in')!.innerHTML = `T-${startIn}s`;
+    } else {
+      document.getElementById('status-overlay-started-at')!.style.display = 'block';
+      document.getElementById('status-overlay-starting-in')!.style.display = 'none';
+      document.getElementById('overlay-started-at')!.innerHTML = state.startTime.toISOString();
+    }
+
+    if (state.completedAt) {
+      document.getElementById('status-overlay-time')!.style.display = 'none';
+      document.getElementById('status-overlay-completed-at')!.style.display = 'block';
+      document.getElementById('overlay-completed-at')!.innerHTML = state.completedAt!.toISOString();
+    } else {
+      document.getElementById('status-overlay-time')!.style.display = 'block';
+      document.getElementById('status-overlay-completed-at')!.style.display = 'none';
     }
   }
 

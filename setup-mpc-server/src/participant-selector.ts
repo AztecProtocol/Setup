@@ -1,7 +1,7 @@
 import { EventEmitter } from 'events';
 import { Address } from 'web3x/address';
 import { Eth } from 'web3x/eth';
-import { HttpProvider, WebsocketProvider } from 'web3x/providers';
+import { HttpProvider } from 'web3x/providers';
 
 export type EthNet = 'mainnet' | 'ropsten';
 
@@ -20,14 +20,14 @@ export class ParticipantSelectorFactory {
 }
 
 export class ParticipantSelector extends EventEmitter {
-  private provider: WebsocketProvider;
+  private provider: HttpProvider;
   private eth: Eth;
   private cancelled = false;
 
   constructor(ethNet: EthNet, private signupAddress: Address, private startBlock: number, private selectBlock: number) {
     super();
 
-    this.provider = new WebsocketProvider(`wss://${ethNet}.infura.io/ws`);
+    this.provider = new HttpProvider(`https://${ethNet}.infura.io`);
     this.eth = new Eth(this.provider);
   }
 

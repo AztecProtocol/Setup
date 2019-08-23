@@ -1,7 +1,6 @@
 :root {
-  --background: #000000;
-  --foreground: #c7c7c7;
-  --ansiBlack: #000000;
+  --black: #000000;
+  --grey: #c7c7c7;
   --red: #ff8272;
   --green: #64fa72;
   --yellow: #fefdc2;
@@ -52,8 +51,30 @@ body,
   z-index: 100;
 }
 
+#links {
+  position: absolute;
+  font-family: 'menlo';
+  font-size: 12px;
+  top: 80px;
+  width: 100%;
+  text-align: center;
+  margin-left: auto;
+  margin-right: auto;
+  z-index: 101;
+}
+
+a.link {
+  color: var(--grey);
+  text-decoration: none;
+}
+
+a.link:hover {
+  color: var(--yellow);
+  text-decoration: none;
+}
+
 #status-overlay-title {
-  color: var(--blue);
+  color: var(--cyan);
   text-align: center;
   padding-top: 5px;
   padding-bottom: 5px;
@@ -66,14 +87,14 @@ body,
 #status-overlay {
   position: absolute;
   border-radius: 5px;
-  color: var(--foreground);
+  color: var(--grey);
   background-color: rgba(0, 0, 0, 0.8);
   border: 1px solid var(--brightBlack);
   font-family: 'menlo';
-  font-size: 12;
+  font-size: 12px;
   width: 450px;
   left: 20px;
-  top: 100px;
+  top: 150px;
   padding: 5px 10px 5px 10px;
 }
 
@@ -81,14 +102,14 @@ body,
   display: none;
   position: absolute;
   border-radius: 5px;
-  color: var(--foreground);
+  color: var(--grey);
   background-color: rgba(0, 0, 0, 0.8);
   border: 1px solid var(--brightBlack);
   font-family: 'menlo';
-  font-size: 12;
+  font-size: 12px;
   width: 500px;
   right: 20px;
-  top: 100px;
+  top: 150px;
   padding: 5px 10px 5px 10px;
 }
 
@@ -102,7 +123,7 @@ body,
 
 .status-overlay-label {
   display: inline-block;
-  min-width: 100px;
+  min-width: 110px;
   text-align: right;
   padding-top: 2px;
   padding-bottom: 2px;

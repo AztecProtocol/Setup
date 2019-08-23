@@ -8,12 +8,17 @@
     />
     <title>AZTEC Trusted Setup Multi Party Computation</title>
   </head>
-  <body>
+  <body style="background-color: #000000">
     <div id="logo"></div>
+    <div id="links"><span class="blue">[ GLOBE VIEW ]</span>&nbsp;&nbsp;<a href="http://localhost:8080" class="link">[ TERMINAL VIEW ]</a></div>
     <div id="cesiumContainer"></div>
     <div id="status-overlay">
       <div id="status-overlay-title">AZTEC Trusted Setup Multi Party Computation</div>
-      <div>
+      <div id="status-overlay-starting-in">
+        <span class="status-overlay-label">Starting In :</span>
+        <span id="overlay-starting-in" class="white"></span>
+      </div>
+      <div id="status-overlay-started-at">
         <span class="status-overlay-label">Started At :</span>
         <span id="overlay-started-at" class="white"></span>
       </div>
@@ -35,7 +40,7 @@
       </div>
       <div>
         <span class="status-overlay-label">Network :</span>
-        <span class="white">(online: <span id="overlay-online" class="white"></span>) (offline: <span id="overlay-offline" class="white"></span>)</span>
+        <span class="white">(online: <span id="overlay-online" class="green"></span>) (offline: <span id="overlay-offline" class="red"></span>)</span>
       </div>
     </div>
     <div id="overlay">
