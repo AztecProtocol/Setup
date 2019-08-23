@@ -56,7 +56,7 @@ export class TerminalInterface {
     this.term.eraseLine();
 
     if (completedAt) {
-      const completedStr = `${startTime.utc().format('MMM Do YYYY HH:mm:ss')} UTC`;
+      const completedStr = `${completedAt.utc().format('MMM Do YYYY HH:mm:ss')} UTC`;
       const duration = completedAt.diff(startTime);
       const durationText = humanizeDuration(duration, { largest: 2, round: true });
       this.term.white(`The ceremony was completed at ${completedStr} taking ${durationText}.\n\n`);
@@ -234,7 +234,7 @@ export class TerminalInterface {
           const totalDownloaded = p.transcripts.reduce((a, t) => a + t.downloaded, 0);
           const totalUploaded = p.transcripts.reduce((a, t) => a + t.uploaded, 0);
           const downloadProgress = totalData ? (totalDownloaded / totalData) * 100 : 100;
-          const uploadProgress = (totalUploaded / totalData) * 100;
+          const uploadProgress = totalData ? (totalUploaded / totalData) * 100 : 0;
           const computeProgress = p.computeProgress;
           const verifyProgress = p.verifyProgress;
           term

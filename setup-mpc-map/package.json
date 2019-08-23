@@ -1,38 +1,31 @@
 {
   "name": "cesium-webpack-example",
   "version": "1.0.0",
-  "description": "The minimal recomended setup for an app using Cesium with Webpack.",
-  "main": "index.js",
-  "keywords": [
-    "cesium",
-    "webpack",
-    "example"
-  ],
-  "author": {
-    "name": "Analytical Graphics, Inc.",
-    "url": "https://www.agi.com"
+  "main": "dist/index.js",
+  "license": "MIT",
+  "scripts": {
+    "build": "webpack --config webpack.config.js",
+    "start:dev": "webpack-dev-server --config webpack.config.js",
+    "release": "webpack --config webpack.release.config.js",
+    "serve-release": "webpack-dev-server --config webpack.release.config.js --content-base /dist"
   },
-  "homepage": "https://cesiumjs.org",
-  "license": "Apache-2.0",
   "devDependencies": {
     "@types/node": "^12.7.1",
     "cesium": "^1.39.0",
-    "copy-webpack-plugin": "^4.0.1",
-    "css-loader": "^0.28.7",
-    "html-webpack-plugin": "^2.30.1",
+    "copy-webpack-plugin": "^5.0.4",
+    "css-loader": "^3.2.0",
+    "html-webpack-plugin": "^3.2.0",
+    "moment": "^2.24.0",
     "strip-pragma-loader": "^1.0.0",
-    "style-loader": "^0.18.2",
+    "style-loader": "^1.0.0",
     "ts-loader": "^6.0.4",
+    "tslint": "^5.19.0",
+    "tslint-config-prettier": "^1.18.0",
     "typescript": "^3.5.3",
     "uglifyjs-webpack-plugin": "^1.0.0-beta.3",
     "url-loader": "^0.6.2",
-    "webpack": "^3.5.6",
-    "webpack-dev-server": "^2.9.1"
-  },
-  "scripts": {
-    "build": "node_modules/.bin/webpack --config webpack.config.js",
-    "start": "node_modules/.bin/webpack-dev-server --config webpack.config.js",
-    "release": "node_modules/.bin/webpack --config webpack.release.config.js",
-    "serve-release": "node_modules/.bin/webpack-dev-server --config webpack.release.config.js --content-base /dist"
+    "webpack": "^4.16.0",
+    "webpack-cli": "^3.0.8",
+    "webpack-dev-server": "^3.1.4"
   }
 }

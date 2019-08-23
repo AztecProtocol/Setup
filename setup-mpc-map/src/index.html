@@ -11,18 +11,49 @@
   <body>
     <div id="logo"></div>
     <div id="cesiumContainer"></div>
-    <div id="overlay">
+    <div id="status-overlay">
+      <div id="status-overlay-title">AZTEC Trusted Setup Multi Party Computation</div>
       <div>
-        <span class="overlay-label">Time :</span>
-        <span id="overlay-time"></span>
+        <span class="status-overlay-label">Started At :</span>
+        <span id="overlay-started-at" class="white"></span>
+      </div>
+      <div id="status-overlay-completed-at">
+        <span class="status-overlay-label">Completed At :</span>
+        <span id="overlay-completed-at" class="white"></span>
+      </div>
+      <div id="status-overlay-time">
+        <span class="status-overlay-label">Time :</span>
+        <span id="overlay-time" class="white"></span>
       </div>
       <div>
-        <span class="overlay-label">City :</span>
-        <span id="overlay-city">London, United Kingdom</span>
+        <span class="status-overlay-label">Status :</span>
+        <span id="overlay-ceremony-status"></span>
+      </div>
+      <div>
+        <span class="status-overlay-label">Participants :</span>
+        <span class="white">(total: <span id="overlay-participants" class="white"></span>) (complete: <span id="overlay-complete" class="white"></span>) (invalid: <span id="overlay-invalidated" class="white"></span>)</span>
+      </div>
+      <div>
+        <span class="status-overlay-label">Network :</span>
+        <span class="white">(online: <span id="overlay-online" class="white"></span>) (offline: <span id="overlay-offline" class="white"></span>)</span>
+      </div>
+    </div>
+    <div id="overlay">
+      <div>
+        <span class="overlay-label">Location :</span>
+        <span id="overlay-location" class="white"></span>
       </div>
       <div>
         <span class="overlay-label">Address :</span>
-        <span id="overlay-address">0x3a9b2101bff555793b85493b5171451fa00124c8</span>
+        <span id="overlay-address-done"></span><span id="overlay-address-not-done"></span>
+      </div>
+      <div>
+        <span class="overlay-label">Status :</span>
+        <span id="overlay-status"></span>
+      </div>
+      <div>
+        <span class="overlay-label">Progress :</span>
+        <span class="white">(<span class="overlay-progress-icon">&#x2b07</span><span id="overlay-progress-download"></span>) (<span class="overlay-progress-icon">&#x2699</span><span id="overlay-progress-compute"></span>) (<span class="overlay-progress-icon">&#x2b06</span><span id="overlay-progress-upload"></span>) (<span class="overlay-progress-icon">&#x2714</span><span id="overlay-progress-verify"></span>) (<span class="overlay-progress-icon">&#x25b6&#x25b6</span><span id="overlay-progress-skip"></span>)
       </div>
     </div>
   </body>

@@ -54,7 +54,7 @@ module.exports = [
           use: ['style-loader', 'css-loader'],
         },
         {
-          test: /\.(png|gif|jpg|jpeg|svg|xml|json)$/,
+          test: /\.(png|gif|jpg|jpeg|svg|xml)$/,
           use: ['url-loader'],
         },
       ],
@@ -71,14 +71,21 @@ module.exports = [
         // Define relative base path in cesium for loading assets
         CESIUM_BASE_URL: JSON.stringify(''),
       }),
-      // Split cesium into a seperate bundle
-      new webpack.optimize.CommonsChunkPlugin({
-        name: 'cesium',
-        minChunks: function(module) {
-          return module.context && module.context.indexOf('cesium') !== -1;
-        },
-      }),
     ],
+
+    // Maybe this is wrong?
+    optimization: {
+      runtimeChunk: 'single',
+      splitChunks: {
+        cacheGroups: {
+          cesium: {
+            test: /[\\/]cesium[\\/]/,
+            name: 'cesium',
+            chunks: 'all',
+          },
+        },
+      },
+    },
 
     // development server options
     devServer: {

@@ -1,7 +1,9 @@
 import 'cesium/Widgets/widgets.css';
 import './css/main.css';
 import Cesium from 'cesium/Cesium';
-import { HttpClient, MpcServer, MpcState } from 'setup-mpc-common';
+import { HttpClient, MpcServer, MpcState, applyDelta, Participant, ParticipantLocation } from 'setup-mpc-common';
+import { EventEmitter } from 'events';
+import moment from 'moment';
 
 class Marker {
   private markerClock = new Cesium.Clock();
@@ -60,11 +62,13 @@ class Marker {
   }
 }
 
-class AztecViewer {
+class AztecViewer extends EventEmitter {
   private viewer: Cesium.Viewer;
   private marker?: Marker;
 
   constructor() {
+    super();
+
     const imageryProviderViewModels = [];
 
     imageryProviderViewModels.push(
@@ -95,7 +99,7 @@ class AztecViewer {
     this.viewer.scene.moon = undefined;
 
     this.viewer.clock.onTick.addEventListener(clock => {
-      document.getElementById('overlay-time')!.innerHTML = Cesium.JulianDate.toDate(clock.currentTime).toISOString();
+      this.emit('tick', Cesium.JulianDate.toDate(clock.currentTime));
       if (this.marker) {
         this.marker.tick();
       }
@@ -126,35 +130,182 @@ class AztecViewer {
 }
 
 class Coordinator {
-  constructor(private viewer: AztecViewer, private server: MpcServer) {}
+  private timer?: NodeJS.Timer;
+  private state!: MpcState;
+  private running?: Participant;
+
+  constructor(private viewer: AztecViewer, private server: MpcServer) {
+    viewer.on('tick', time => this.onTick(time));
+  }
 
   start() {
     this.updateState();
   }
 
-  private async updateState() {
-    const state = await this.server.getState();
-    await this.processState(state);
-    setTimeout(() => this.updateState(), 1000);
+  stop() {
+    if (this.timer) {
+      clearTimeout(this.timer);
+    }
+    this.viewer.removeAllListeners();
   }
 
-  private async processState(state: MpcState) {}
+  private onTick(currentTime: Date) {
+    document.getElementById('overlay-time')!.innerHTML = currentTime.toISOString();
+  }
+
+  private async updateState() {
+    try {
+      // Then get the latest state from the server.
+      const remoteStateDelta = await this.server.getState(this.state ? this.state.sequence : undefined);
+
+      let state: MpcState;
+      if (!this.state) {
+        state = remoteStateDelta;
+      } else if (this.state.startSequence !== remoteStateDelta.startSequence) {
+        state = await this.server.getState();
+      } else {
+        state = applyDelta(this.state, remoteStateDelta);
+      }
+
+      await this.processState(state);
+    } finally {
+      setTimeout(() => this.updateState(), 1000);
+    }
+  }
+
+  private getLocationString(location: ParticipantLocation) {
+    return [location.city, location.country, location.continent]
+      .filter(x => x)
+      .slice(0, 2)
+      .join(', ');
+  }
+
+  private setAddress(p: Participant) {
+    const addrString = p.address.toString();
+    const progIndex = addrString.length * (p.computeProgress / 100);
+    document.getElementById('overlay-address-done')!.innerHTML = addrString.slice(0, progIndex);
+    document.getElementById('overlay-address-not-done')!.innerHTML = addrString.slice(progIndex);
+    document.getElementById('overlay-address-not-done')!.className = 'grey';
+
+    if (p.computeProgress < 100) {
+      document.getElementById('overlay-address-done')!.className = 'yellow';
+    } else {
+      document.getElementById('overlay-address-done')!.className = 'green';
+    }
+  }
+
+  private setProgress(p: Participant, invalidateAfter: number) {
+    const totalData = p.transcripts.reduce((a, t) => a + t.size, 0);
+    const totalDownloaded = p.transcripts.reduce((a, t) => a + t.downloaded, 0);
+    const totalUploaded = p.transcripts.reduce((a, t) => a + t.uploaded, 0);
+    const downloadProgress = totalData ? (totalDownloaded / totalData) * 100 : 100;
+    const uploadProgress = totalData ? (totalUploaded / totalData) * 100 : 0;
+    const computeProgress = p.computeProgress;
+    const verifyProgress = p.verifyProgress;
+
+    const totalSkip = Math.max(
+      0,
+      moment(p.startedAt!)
+        .add(invalidateAfter, 's')
+        .diff(moment(), 's')
+    );
+
+    document.getElementById('overlay-progress-download')!.innerHTML = `${downloadProgress.toFixed(2)}%`;
+    document.getElementById('overlay-progress-compute')!.innerHTML = `${computeProgress.toFixed(2)}%`;
+    document.getElementById('overlay-progress-upload')!.innerHTML = `${uploadProgress.toFixed(2)}%`;
+    document.getElementById('overlay-progress-verify')!.innerHTML = `${verifyProgress.toFixed(2)}%`;
+    document.getElementById('overlay-progress-skip')!.innerHTML = `${totalSkip}s`;
+  }
+
+  private updateOverlay(p: Participant, invalidateAfter: number) {
+    document.getElementById('overlay')!.style.display = 'block';
+    document.getElementById('overlay-location')!.innerHTML = p.location
+      ? this.getLocationString(p.location)
+      : 'Unknown';
+
+    this.setAddress(p);
+
+    if (p.online) {
+      document.getElementById('overlay-status')!.innerHTML = 'ONLINE';
+      document.getElementById('overlay-status')!.className = 'green';
+    } else {
+      document.getElementById('overlay-status')!.innerHTML = 'OFFLINE';
+      document.getElementById('overlay-status')!.className = 'red';
+    }
+
+    this.setProgress(p, invalidateAfter);
+  }
+
+  private updateStatusOverlay(state: MpcState) {
+    document.getElementById('overlay-started-at')!.innerHTML = state.startTime.toISOString();
+    document.getElementById('overlay-participants')!.innerHTML = `${state.participants.length}`;
+    const online = state.participants.reduce((a, p) => (p.online ? a + 1 : a), 0);
+    const offline = state.participants.reduce((a, p) => (!p.online ? a + 1 : a), 0);
+    const complete = state.participants.reduce((a, p) => (p.state === 'COMPLETE' ? a + 1 : a), 0);
+    const invalidated = state.participants.reduce((a, p) => (p.state === 'INVALIDATED' ? a + 1 : a), 0);
+    document.getElementById('overlay-online')!.innerHTML = `${online}`;
+    document.getElementById('overlay-offline')!.innerHTML = `${offline}`;
+    document.getElementById('overlay-complete')!.innerHTML = `${complete}`;
+    document.getElementById('overlay-invalidated')!.innerHTML = `${invalidated}`;
+    document.getElementById('overlay-ceremony-status')!.innerHTML = `${state.ceremonyState}`;
+    switch (state.ceremonyState) {
+      case 'PRESELECTION':
+      case 'SELECTED':
+        document.getElementById('overlay-ceremony-status')!.className = 'yellow';
+        break;
+      case 'COMPLETE':
+        document.getElementById('status-overlay-time')!.style.display = 'none';
+        document.getElementById('status-overlay-completed-at')!.style.display = 'block';
+        document.getElementById('overlay-completed-at')!.innerHTML = state.completedAt!.toISOString();
+      default:
+        document.getElementById('overlay-ceremony-status')!.className = 'green';
+    }
+  }
+
+  private async processState(state: MpcState) {
+    this.updateStatusOverlay(state);
+
+    if (this.running) {
+      this.running = state.participants.find(p => this.running!.address.equals(p.address));
+    }
+
+    const running = state.participants.find(p => p.state === 'RUNNING');
+
+    if (this.running && (!running || !running.address.equals(this.running.address))) {
+      // We are shifting to standby, or a new participant. First wait a few seconds so we can see why.
+      this.updateOverlay(this.running, state.invalidateAfter);
+      await new Promise(resolve => setTimeout(resolve, 3000));
+    }
+
+    if (running && (!this.running || !this.running.address.equals(running.address))) {
+      // We are shifting from standby, or to a new participant.
+      this.running = running;
+      if (running.location) {
+        await this.viewer.focus(running.location.latitude!, running.location.longitude!);
+      } else {
+        await this.viewer.standby();
+      }
+    } else if (!running && this.running) {
+      // We are shifting to standby.
+      await this.viewer.standby();
+      this.running = undefined;
+    }
+
+    if (running) {
+      this.updateOverlay(running, state.invalidateAfter);
+    } else {
+      document.getElementById('overlay')!.style.display = 'none';
+    }
+
+    this.state = state;
+  }
 }
 
 async function main() {
-  const av = new AztecViewer();
-  //const httpClient = new HttpClient('http://localhost/api');
-  //const coordinator = new Coordinator(av, httpClient);
-  //coordinator.start();
-
-  await new Promise(resolve => setTimeout(resolve, 5000));
-  await av.focus(51.509865, -0.118092);
-  await new Promise(resolve => setTimeout(resolve, 5000));
-  await av.focus(40.6974034, -74.1197614);
-  await new Promise(resolve => setTimeout(resolve, 5000));
-  await av.focus(35.5079447, 139.2094269);
-  await new Promise(resolve => setTimeout(resolve, 5000));
-  await av.standby();
+  const viewer = new AztecViewer();
+  const httpClient = new HttpClient('http://localhost/api');
+  const coordinator = new Coordinator(viewer, httpClient);
+  coordinator.start();
 }
 
 main().catch(console.error);

@@ -382,6 +382,9 @@ export class Server implements MpcServer {
         await this.store.makeLive(address);
         p.state = 'COMPLETE';
         p.runningState = 'COMPLETE';
+        // We may not have yet received final state update from the client, and once we're no longer
+        // running we won't process the update. Force compute progress to 100%.
+        p.computeProgress = 100;
         p.completedAt = moment();
         this.verifier.lastCompleteAddress = p.address;
       } else {

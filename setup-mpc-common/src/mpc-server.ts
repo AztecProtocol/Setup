@@ -34,11 +34,20 @@ export interface Participant {
   error?: string;
   online: boolean;
   lastUpdate?: Moment;
+  location?: ParticipantLocation;
 
   // Client controlled data.
   runningState: ParticipantRunningState;
   transcripts: Transcript[]; // Except 'complete'.
   computeProgress: number;
+}
+
+export interface ParticipantLocation {
+  city?: string;
+  country?: string;
+  continent?: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface MpcState {

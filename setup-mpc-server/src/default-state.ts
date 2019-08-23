@@ -9,7 +9,7 @@ export function defaultState(latestBlock: number): MpcState {
     ceremonyState: 'PRESELECTION',
     startTime: moment().add(5, 's'),
     latestBlock,
-    selectBlock: latestBlock + 3,
+    selectBlock: latestBlock,
     maxTier2: 0,
     numG1Points: 1000000,
     numG2Points: 1,

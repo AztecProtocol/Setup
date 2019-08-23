@@ -123,7 +123,7 @@ export class App {
   }
 
   private updateRemoteState = async () => {
-    if (!this.account) {
+    if (!this.account || !this.state!.participants.find(p => p.address.equals(this.account!.address))) {
       return;
     }
 

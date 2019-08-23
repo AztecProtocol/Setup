@@ -52,7 +52,18 @@ body,
   z-index: 100;
 }
 
-#overlay {
+#status-overlay-title {
+  color: var(--blue);
+  text-align: center;
+  padding-top: 5px;
+  padding-bottom: 5px;
+}
+
+#status-overlay-completed-at {
+  display: none;
+}
+
+#status-overlay {
   position: absolute;
   border-radius: 5px;
   color: var(--foreground);
@@ -60,6 +71,22 @@ body,
   border: 1px solid var(--brightBlack);
   font-family: 'menlo';
   font-size: 12;
+  width: 450px;
+  left: 20px;
+  top: 100px;
+  padding: 5px 10px 5px 10px;
+}
+
+#overlay {
+  display: none;
+  position: absolute;
+  border-radius: 5px;
+  color: var(--foreground);
+  background-color: rgba(0, 0, 0, 0.8);
+  border: 1px solid var(--brightBlack);
+  font-family: 'menlo';
+  font-size: 12;
+  width: 500px;
   right: 20px;
   top: 100px;
   padding: 5px 10px 5px 10px;
@@ -69,16 +96,43 @@ body,
   display: inline-block;
   min-width: 80px;
   text-align: right;
+  padding-top: 2px;
+  padding-bottom: 2px;
 }
 
-#overlay-time {
-  color: var(--white);
+.status-overlay-label {
+  display: inline-block;
+  min-width: 100px;
+  text-align: right;
+  padding-top: 2px;
+  padding-bottom: 2px;
 }
 
-#overlay-city {
-  color: var(--white);
+.yellow {
+  color: var(--yellow);
 }
 
-#overlay-address {
+.grey {
+  color: var(--grey);
+}
+
+.green {
   color: var(--green);
+}
+
+.red {
+  color: var(--red);
+}
+
+.blue {
+  color: var(--blue);
+}
+
+.overlay-progress-icon {
+  color: var(--blue);
+  padding-right: 2px;
+}
+
+.white {
+  color: var(--white);
 }
