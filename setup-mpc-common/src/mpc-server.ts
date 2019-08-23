@@ -28,6 +28,7 @@ export interface Participant {
   priority: number;
   tier: number;
   verifyProgress: number;
+  lastVerified?: Moment;
   addedAt: Moment;
   startedAt?: Moment;
   completedAt?: Moment;
@@ -56,11 +57,13 @@ export interface MpcState {
   statusSequence: number;
   ceremonyState: CeremonyState;
   maxTier2: number;
+  minParticipants: number;
   numG1Points: number;
   numG2Points: number;
   pointsPerTranscript: number;
   invalidateAfter: number;
   startTime: Moment;
+  endTime: Moment;
   latestBlock: number;
   selectBlock: number;
   completedAt?: Moment;
@@ -70,9 +73,11 @@ export interface MpcState {
 export interface MpcServer {
   resetState(
     startTime: Moment,
+    endTime: Moment,
     latestBlock: number,
     selectBlock: number,
     maxTier2: number,
+    minParticipants: number,
     numG1Points: number,
     numG2Points: number,
     pointsPerTranscript: number,
