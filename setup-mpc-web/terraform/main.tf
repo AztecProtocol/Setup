@@ -125,6 +125,12 @@ resource "aws_alb_target_group" "setup_mpc_web" {
   protocol    = "HTTP"
   target_type = "ip"
   vpc_id      = "${data.terraform_remote_state.setup_iac.outputs.vpc_id}"
+
+  health_check {
+    path    = "/terminal"
+    matcher = "200"
+  }
+
   tags = {
     name = "setup-mpc-web"
   }
@@ -141,6 +147,6 @@ resource "aws_lb_listener_rule" "setup_mpc_web" {
 
   condition {
     field  = "path-pattern"
-    values = ["/terminal/*"]
+    values = ["/terminal*"]
   }
 }
