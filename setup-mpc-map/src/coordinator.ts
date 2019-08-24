@@ -215,6 +215,19 @@ export class Coordinator {
     document.getElementById('queue-overlay')!.style.display = 'block';
   }
 
+  private updateIgnitionCountdown(state: MpcState) {
+    const startIn = Math.max(0, moment(state.startTime).diff(moment(), 's'));
+    if (state.startTime.isAfter() && startIn <= 60) {
+      document.getElementById('ignition-countdown')!.style.display = 'block';
+      const ignitionEl = document.getElementById('ignition-countdown')!;
+      const newIgnitionEl = ignitionEl.cloneNode() as HTMLElement;
+      newIgnitionEl.innerHTML = `${startIn}`;
+      ignitionEl.replaceWith(newIgnitionEl);
+    } else {
+      document.getElementById('ignition-countdown')!.style.display = 'none';
+    }
+  }
+
   private async processState(state: MpcState) {
     document.getElementById('overlay-container')!.style.display = 'block';
 
@@ -253,6 +266,8 @@ export class Coordinator {
       await this.viewer.standby();
       this.running = undefined;
     }
+
+    this.updateIgnitionCountdown(state);
 
     this.state = state;
   }
