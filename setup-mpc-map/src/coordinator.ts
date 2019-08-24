@@ -230,6 +230,14 @@ export class Coordinator {
       await new Promise(resolve => setTimeout(resolve, 3000));
     }
 
+    if (running) {
+      this.updateParticipantOverlay(running, state);
+      document.getElementById('queue-overlay')!.style.display = 'none';
+    } else {
+      this.updateQueueOverlay(state);
+      document.getElementById('participant-overlay')!.style.display = 'none';
+    }
+
     if (running && (!this.running || !this.running.address.equals(running.address))) {
       // We are shifting from standby, or to a new participant.
       this.running = running;
@@ -242,14 +250,6 @@ export class Coordinator {
       // We are shifting to standby.
       await this.viewer.standby();
       this.running = undefined;
-    }
-
-    if (running) {
-      this.updateParticipantOverlay(running, state);
-      document.getElementById('queue-overlay')!.style.display = 'none';
-    } else {
-      this.updateQueueOverlay(state);
-      document.getElementById('participant-overlay')!.style.display = 'none';
     }
 
     this.state = state;
