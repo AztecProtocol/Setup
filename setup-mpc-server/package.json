@@ -4,7 +4,7 @@
   "main": "dest/index.js",
   "license": "MIT",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && ln -f ./src/maxmind/GeoLite2-City.mmdb ./dest/maxmind/GeoLite2-City.mmdb",
     "start": "node ./dest",
     "start:dev": "tsc-watch --onSuccess 'yarn start'",
     "test": "jest --silent",
