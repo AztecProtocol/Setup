@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "main": "src/index.ts",
   "license": "MIT",
-  "sideEffects": false,
   "scripts": {
     "build": "webpack --config webpack.prod.js",
     "start": "node ./server",
@@ -12,6 +11,7 @@
   },
   "dependencies": {
     "koa": "^2.5.2",
+    "koa-mount": "^4.0.0",
     "koa-static": "^5.0.0"
   },
   "devDependencies": {

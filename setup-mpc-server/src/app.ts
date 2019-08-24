@@ -3,8 +3,10 @@ import Koa from 'koa';
 import koaBody from 'koa-body';
 import compress from 'koa-compress';
 import Router from 'koa-router';
+import moment from 'moment';
 import { hashFiles, MpcServer } from 'setup-mpc-common';
 import meter from 'stream-meter';
+import { isNumber, isString } from 'util';
 import { Address } from 'web3x/address';
 import { bufferToHex, randomBuffer, recover } from 'web3x/utils';
 import { defaultState } from './default-state';
@@ -15,6 +17,25 @@ const cors = require('@koa/cors');
 
 // 1GB
 const MAX_UPLOAD_SIZE = 1024 * 1024 * 1024;
+
+function normaliseSettings(settings: any) {
+  if (isString(settings.startTime)) {
+    settings.startTime = moment(settings.startTime);
+  } else if (isNumber(settings.startTime)) {
+    settings.startTime = moment().add(settings.startTime, 's');
+  }
+
+  if (isString(settings.endTime)) {
+    settings.endTime = moment(settings.endTime);
+  } else if (isNumber(settings.endTime)) {
+    settings.endTime = moment().add(settings.endTime, 's');
+  }
+
+  if (settings.selectBlock < 0) {
+    // If select block is negative, use it as an offset from the latest block.
+    settings.selectBlock = settings.latestBlock - settings.selectBlock;
+  }
+}
 
 export function appFactory(
   server: MpcServer,
@@ -36,31 +57,26 @@ export function appFactory(
       ctx.status = 401;
       return;
     }
+
     const latestBlock = await participantSelectorFactory.getCurrentBlockHeight();
     const settings = {
       ...defaultState(latestBlock),
       ...ctx.request.body,
     };
-    const {
-      startTime,
-      selectBlock,
-      maxTier2,
-      numG1Points,
-      numG2Points,
-      pointsPerTranscript,
-      invalidateAfter,
-      participants,
-    } = settings;
+    normaliseSettings(settings);
+
     await server.resetState(
-      startTime,
-      latestBlock,
-      selectBlock,
-      maxTier2,
-      numG1Points,
-      numG2Points,
-      pointsPerTranscript,
-      invalidateAfter,
-      participants.map(Address.fromString)
+      settings.startTime,
+      settings.endTime,
+      settings.latestBlock,
+      settings.selectBlock,
+      settings.maxTier2,
+      settings.minParticipants,
+      settings.numG1Points,
+      settings.numG2Points,
+      settings.pointsPerTranscript,
+      settings.invalidateAfter,
+      settings.participants.map(Address.fromString)
     );
     ctx.body = 'OK\n';
   });

@@ -2,7 +2,7 @@ import { Readable } from 'stream';
 import { hashStreams } from './hash-files';
 
 describe('hash-files', () => {
-  it('should create create hash', async () => {
+  it('should create correct hash', async () => {
     const file1 = new Readable();
     const file2 = new Readable();
 

@@ -52,3 +52,17 @@ services:
       - "8080:80"
     volumes:
       - ../setup-mpc-web:/usr/src/setup-mpc-web
+
+  setup-mpc-map:
+    build:
+      context: ..
+      dockerfile: setup-mpc-map/Dockerfile
+    image: 278380418400.dkr.ecr.eu-west-2.amazonaws.com/setup-mpc-map
+    environment:
+      PORT: '80'
+    expose:
+      - 80
+    ports:
+      - "8080:80"
+    volumes:
+      - ../setup-mpc-map:/usr/src/setup-mpc-map

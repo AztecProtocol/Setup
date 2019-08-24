@@ -1,4 +1,4 @@
-import moment = require('moment');
+import moment from 'moment';
 import { Address } from 'web3x/address';
 import { MpcState, Participant } from './mpc-server';
 

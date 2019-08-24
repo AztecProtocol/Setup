@@ -15,9 +15,11 @@ export class HttpClient implements MpcServer {
 
   public async resetState(
     startTime: Moment,
+    endTime: Moment,
     startBlock: number,
     selectBlock: number,
     maxTier2: number,
+    minParticipants: number,
     numG1Points: number,
     numG2Points: number,
     pointsPerTranscript: number,

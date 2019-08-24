@@ -56,7 +56,7 @@ export class TerminalInterface {
     this.term.eraseLine();
 
     if (completedAt) {
-      const completedStr = `${startTime.utc().format('MMM Do YYYY HH:mm:ss')} UTC`;
+      const completedStr = `${completedAt.utc().format('MMM Do YYYY HH:mm:ss')} UTC`;
       const duration = completedAt.diff(startTime);
       const durationText = humanizeDuration(duration, { largest: 2, round: true });
       this.term.white(`The ceremony was completed at ${completedStr} taking ${durationText}.\n\n`);
@@ -234,7 +234,7 @@ export class TerminalInterface {
           const totalDownloaded = p.transcripts.reduce((a, t) => a + t.downloaded, 0);
           const totalUploaded = p.transcripts.reduce((a, t) => a + t.uploaded, 0);
           const downloadProgress = totalData ? (totalDownloaded / totalData) * 100 : 100;
-          const uploadProgress = (totalUploaded / totalData) * 100;
+          const uploadProgress = totalData ? (totalUploaded / totalData) * 100 : 0;
           const computeProgress = p.computeProgress;
           const verifyProgress = p.verifyProgress;
           term
@@ -262,17 +262,27 @@ export class TerminalInterface {
       }
     }
 
-    this.term
-      .white(` (`)
-      .blue('\u25b6\u25b6')
-      .white(
-        ` ${Math.max(
-          0,
-          moment(p.startedAt!)
-            .add(this.state!.invalidateAfter, 's')
-            .diff(moment(), 's')
-        )}s)`
-      );
+    const { invalidateAfter, numG1Points, numG2Points, pointsPerTranscript } = this.state!;
+    const verifyWithin = invalidateAfter / (Math.max(numG1Points, numG2Points) / pointsPerTranscript);
+    const verifyTimeout = Math.max(
+      0,
+      moment(p.lastVerified || p.startedAt!)
+        .add(verifyWithin, 's')
+        .diff(moment(), 's')
+    );
+    const timeout = Math.max(
+      0,
+      moment(p.startedAt!)
+        .add(this.state!.invalidateAfter, 's')
+        .diff(moment(), 's')
+    );
+
+    term.white(` (`).blue('\u25b6\u25b6 ');
+
+    if (p.tier > 1) {
+      term.white(`${verifyTimeout}/`);
+    }
+    term.white(`${timeout}s)`);
   }
 
   public async updateState(state: MpcState) {
