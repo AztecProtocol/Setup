@@ -75,6 +75,7 @@ a.link:hover {
 
 #overlay-container {
   position: absolute;
+  display: none;
   left: 20px;
   bottom: 0px;
 }

@@ -216,6 +216,8 @@ export class Coordinator {
   }
 
   private async processState(state: MpcState) {
+    document.getElementById('overlay-container')!.style.display = 'block';
+
     this.updateStatusOverlay(state);
 
     if (this.running) {

@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "main": "src/index.ts",
   "license": "MIT",
-  "sideEffects": false,
   "scripts": {
     "build": "webpack --config webpack.prod.js",
     "start": "node ./server",

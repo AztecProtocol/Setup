@@ -1,13 +1,17 @@
 {
-  "name": "cesium-webpack-example",
+  "name": "setup-mpc-map",
   "version": "1.0.0",
   "main": "dist/index.js",
   "license": "MIT",
   "scripts": {
-    "build": "webpack --config webpack.config.js",
-    "start:dev": "webpack-dev-server --config webpack.config.js",
-    "release": "webpack --config webpack.release.config.js",
-    "serve-release": "webpack-dev-server --config webpack.release.config.js --content-base /dist"
+    "build": "webpack --config webpack.prod.js",
+    "start": "node ./server",
+    "start:dev": "webpack-dev-server --config webpack.dev.js",
+    "postinstall": "yarn link setup-mpc-common"
+  },
+  "dependencies": {
+    "koa": "^2.5.2",
+    "koa-static": "^5.0.0"
   },
   "devDependencies": {
     "@types/node": "^12.7.1",
