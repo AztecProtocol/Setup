@@ -132,7 +132,7 @@ resource "aws_alb_target_group" "setup_mpc_map" {
 
 resource "aws_lb_listener_rule" "setup_mpc_map" {
   listener_arn = "${data.terraform_remote_state.setup_iac.outputs.alb_listener_arn}"
-  priority     = 1000
+  priority     = 300
 
   action {
     type             = "forward"
