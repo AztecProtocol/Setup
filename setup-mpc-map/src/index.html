@@ -10,55 +10,74 @@
   </head>
   <body style="background-color: #000000">
     <div id="logo"></div>
-    <div id="links"><span class="blue">[ GLOBE VIEW ]</span>&nbsp;&nbsp;<a href="http://localhost:8080" class="link">[ TERMINAL VIEW ]</a></div>
+    <div id="links"><span class="blue">[ GLOBAL VIEW ]</span>&nbsp;&nbsp;<a href="http://localhost:8080" class="link">[ TERMINAL VIEW ]</a></div>
     <div id="cesiumContainer"></div>
-    <div id="status-overlay">
-      <div id="status-overlay-title">AZTEC Trusted Setup Multi Party Computation</div>
-      <div id="status-overlay-starting-in">
-        <span class="status-overlay-label">Starting In :</span>
-        <span id="overlay-starting-in" class="white"></span>
+    <div id="overlay-container">
+      <div id="status-overlay" class="overlay">
+        <div id="status-overlay-title">AZTEC Trusted Setup Multi Party Computation</div>
+        <div id="status-overlay-starting-in">
+          <span class="status-overlay-label">Ignition :</span>
+          <span id="overlay-starting-in" class="white"></span>
+        </div>
+        <div id="status-overlay-started-at">
+          <span class="status-overlay-label">Ignition :</span>
+          <span id="overlay-started-at" class="white"></span>
+        </div>
+        <div id="status-overlay-completed-at">
+          <span class="status-overlay-label">Completed :</span>
+          <span id="overlay-completed-at" class="white"></span>
+        </div>
+        <div id="status-overlay-time">
+          <span class="status-overlay-label">Time :</span>
+          <span id="overlay-time" class="white"></span>
+        </div>
+        <div>
+          <span class="status-overlay-label">Status :</span>
+          <span id="overlay-ceremony-status"></span>
+        </div>
+        <div>
+          <span class="status-overlay-label">Participants :</span>
+          <span class="white">(total: <span id="overlay-participants" class="white"></span>) (complete: <span id="overlay-complete" class="white"></span>) (invalid: <span id="overlay-invalidated" class="white"></span>)</span>
+        </div>
+        <div>
+          <span class="status-overlay-label">Network :</span>
+          <span class="white">(online: <span id="overlay-online" class="green"></span>) (offline: <span id="overlay-offline" class="red"></span>)</span>
+        </div>
       </div>
-      <div id="status-overlay-started-at">
-        <span class="status-overlay-label">Started At :</span>
-        <span id="overlay-started-at" class="white"></span>
+      <div id="queue-overlay-outer" class="overlay">
+        <div id="queue-overlay" class="overlay">
+          <div id="status-overlay-title">Participant Queue</div>
+          <div id="queue-overlay-list">
+            <div class="queue-overlay-line"><span id="queue-overlay-online1">&#x25cf</span> <span id="queue-overlay-position1" class="white"></span> <span id="queue-overlay-address1"></span> <span id="queue-overlay-meta1" class="grey"></span></div>
+            <div class="queue-overlay-line"><span id="queue-overlay-online2">&#x25cf</span> <span id="queue-overlay-position2" class="white"></span> <span id="queue-overlay-address2"></span> <span id="queue-overlay-meta2" class="grey"></span></div>
+            <div class="queue-overlay-line"><span id="queue-overlay-online3">&#x25cf</span> <span id="queue-overlay-position3" class="white"></span> <span id="queue-overlay-address3"></span> <span id="queue-overlay-meta3" class="grey"></span></div>
+            <div class="queue-overlay-line"><span id="queue-overlay-online4">&#x25cf</span> <span id="queue-overlay-position4" class="white"></span> <span id="queue-overlay-address4"></span> <span id="queue-overlay-meta4" class="grey"></span></div>
+            <div class="queue-overlay-line"><span id="queue-overlay-online5">&#x25cf</span> <span id="queue-overlay-position5" class="white"></span> <span id="queue-overlay-address5"></span> <span id="queue-overlay-meta5" class="grey"></span></div>
+          </div>
+        </div>
       </div>
-      <div id="status-overlay-completed-at">
-        <span class="status-overlay-label">Completed At :</span>
-        <span id="overlay-completed-at" class="white"></span>
-      </div>
-      <div id="status-overlay-time">
-        <span class="status-overlay-label">Time :</span>
-        <span id="overlay-time" class="white"></span>
-      </div>
-      <div>
-        <span class="status-overlay-label">Status :</span>
-        <span id="overlay-ceremony-status"></span>
-      </div>
-      <div>
-        <span class="status-overlay-label">Participants :</span>
-        <span class="white">(total: <span id="overlay-participants" class="white"></span>) (complete: <span id="overlay-complete" class="white"></span>) (invalid: <span id="overlay-invalidated" class="white"></span>)</span>
-      </div>
-      <div>
-        <span class="status-overlay-label">Network :</span>
-        <span class="white">(online: <span id="overlay-online" class="green"></span>) (offline: <span id="overlay-offline" class="red"></span>)</span>
-      </div>
-    </div>
-    <div id="overlay">
-      <div>
-        <span class="overlay-label">Location :</span>
-        <span id="overlay-location" class="white"></span>
-      </div>
-      <div>
-        <span class="overlay-label">Address :</span>
-        <span id="overlay-address-done"></span><span id="overlay-address-not-done"></span>
-      </div>
-      <div>
-        <span class="overlay-label">Status :</span>
-        <span id="overlay-status"></span>
-      </div>
-      <div>
-        <span class="overlay-label">Progress :</span>
-        <span class="white">(<span class="overlay-progress-icon">&#x2b07</span><span id="overlay-progress-download"></span>) (<span class="overlay-progress-icon">&#x2699</span><span id="overlay-progress-compute"></span>) (<span class="overlay-progress-icon">&#x2b06</span><span id="overlay-progress-upload"></span>) (<span class="overlay-progress-icon">&#x2714</span><span id="overlay-progress-verify"></span>) (<span class="overlay-progress-icon">&#x25b6&#x25b6</span><span id="overlay-progress-skip"></span>)
+      <div id="participant-overlay" class="overlay">
+        <div id="status-overlay-title">Running Participant</div>
+        <div>
+          <span class="overlay-label">Address :</span>
+          <span id="overlay-address-done"></span><span id="overlay-address-not-done"></span>
+        </div>
+        <div>
+          <span class="overlay-label">Location :</span>
+          <span id="overlay-location" class="white"></span>
+        </div>
+        <div>
+          <span class="overlay-label">Status :</span>
+          <span id="overlay-status"></span>
+        </div>
+        <div>
+          <span class="overlay-label">Progress :</span>
+          <span class="white">(<span class="overlay-progress-icon">&#x2b07</span><span id="overlay-progress-download"></span>) (<span class="overlay-progress-icon">&#x2699</span><span id="overlay-progress-compute"></span>) (<span class="overlay-progress-icon">&#x2b06</span><span id="overlay-progress-upload"></span>) (<span class="overlay-progress-icon">&#x2714</span><span id="overlay-progress-verify"></span>)
+        </div>
+        <div>
+          <span class="overlay-label">Timeout :</span>
+          <span id="overlay-progress-skip" class="white"></span>
+        </div>
       </div>
     </div>
   </body>

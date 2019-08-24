@@ -73,6 +73,12 @@ a.link:hover {
   text-decoration: none;
 }
 
+#overlay-container {
+  position: absolute;
+  left: 20px;
+  bottom: 0px;
+}
+
 #status-overlay-title {
   color: var(--cyan);
   text-align: center;
@@ -84,33 +90,36 @@ a.link:hover {
   display: none;
 }
 
-#status-overlay {
-  position: absolute;
+.overlay {
   border-radius: 5px;
   color: var(--grey);
   background-color: rgba(0, 0, 0, 0.8);
   border: 1px solid var(--brightBlack);
   font-family: 'menlo';
   font-size: 12px;
-  width: 450px;
-  left: 20px;
-  top: 150px;
+  width: 430px;
+  min-width: 320px;
   padding: 5px 10px 5px 10px;
+  margin-bottom: 20px;
+  box-shadow: 3px 3px 5px 6px rgba(0, 0, 0, 0.4);
 }
 
-#overlay {
+#queue-overlay-list {
+  width: 100%;
+  padding-left: 5px;
+}
+
+.queue-overlay-line {
+  padding-top: 2px;
+  padding-bottom: 2px;
+}
+
+#participant-overlay {
   display: none;
-  position: absolute;
-  border-radius: 5px;
-  color: var(--grey);
-  background-color: rgba(0, 0, 0, 0.8);
-  border: 1px solid var(--brightBlack);
-  font-family: 'menlo';
-  font-size: 12px;
-  width: 500px;
-  right: 20px;
-  top: 150px;
-  padding: 5px 10px 5px 10px;
+}
+
+#queue-overlay-outer {
+  display: none;
 }
 
 .overlay-label {
@@ -123,10 +132,77 @@ a.link:hover {
 
 .status-overlay-label {
   display: inline-block;
-  min-width: 110px;
+  min-width: 100px;
   text-align: right;
   padding-top: 2px;
   padding-bottom: 2px;
+}
+
+@media (max-width: 492px) {
+  .overlay {
+    border: 0px;
+    border-radius: 0px;
+    width: 100%;
+    margin-bottom: 0px;
+  }
+  #overlay-container {
+    border-top: 1px solid var(--brightBlack);
+    left: 0px;
+    width: 100%;
+  }
+}
+
+@media (max-width: 430px) {
+  .overlay {
+    font-size: 10px;
+  }
+  .overlay-label {
+    min-width: 70px;
+  }
+  .status-overlay-label {
+    min-width: 90px;
+  }
+}
+
+@media (max-width: 350px) {
+  .overlay {
+    font-size: 9px;
+    padding: 0px;
+    padding-bottom: 5px;
+  }
+  .overlay-label {
+    min-width: 60px;
+  }
+  .status-overlay-label {
+    min-width: 80px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .overlay {
+    margin-bottom: 0px;
+  }
+  #overlay-container {
+    position: static;
+  }
+  #status-overlay {
+    position: absolute;
+    left: 20px;
+    bottom: 20px;
+  }
+  #queue-overlay-outer {
+    display: block;
+  }
+  #queue-overlay {
+    position: absolute;
+    right: 20px;
+    bottom: 20px;
+  }
+  #participant-overlay {
+    position: absolute;
+    right: 20px;
+    bottom: 20px;
+  }
 }
 
 .yellow {

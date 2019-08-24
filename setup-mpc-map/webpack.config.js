@@ -29,12 +29,6 @@ module.exports = [
       // Resolve node module use of fs
       fs: 'empty',
     },
-    resolve: {
-      alias: {
-        // Cesium module name
-        cesium: path.resolve(__dirname, cesiumSource),
-      },
-    },
     module: {
       rules: [
         {
@@ -58,6 +52,13 @@ module.exports = [
           use: ['url-loader'],
         },
       ],
+    },
+    resolve: {
+      alias: {
+        // Cesium module name
+        cesium: path.resolve(__dirname, cesiumSource),
+      },
+      extensions: ['.ts', '.tsx', '.js'],
     },
     plugins: [
       new HtmlWebpackPlugin({
