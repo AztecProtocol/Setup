@@ -60,16 +60,20 @@ export class Coordinator {
     const progIndex = addrString.length * (p.computeProgress / 100);
     document.getElementById('overlay-address-done')!.innerHTML = addrString.slice(0, progIndex);
     document.getElementById('overlay-address-not-done')!.innerHTML = addrString.slice(progIndex);
+    document.getElementById('overlay-address-done')!.className = 'yellow';
     document.getElementById('overlay-address-not-done')!.className = 'grey';
 
-    if (p.computeProgress < 100) {
-      document.getElementById('overlay-address-done')!.className = 'yellow';
-    } else {
-      document.getElementById('overlay-address-done')!.className = 'green';
+    switch (p.state) {
+      case 'COMPLETE':
+        document.getElementById('overlay-address-done')!.className = 'green';
+        break;
+      case 'INVALIDATED':
+        document.getElementById('overlay-address-done')!.className = 'red';
+        document.getElementById('overlay-address-not-done')!.className = 'red';
     }
   }
 
-  private setProgress(p: Participant, invalidateAfter: number) {
+  private setProgress(p: Participant) {
     const totalData = p.transcripts.reduce((a, t) => a + t.size, 0);
     const totalDownloaded = p.transcripts.reduce((a, t) => a + t.downloaded, 0);
     const totalUploaded = p.transcripts.reduce((a, t) => a + t.uploaded, 0);
@@ -78,21 +82,19 @@ export class Coordinator {
     const computeProgress = p.computeProgress;
     const verifyProgress = p.verifyProgress;
 
-    const totalSkip = Math.max(
-      0,
-      moment(p.startedAt!)
-        .add(invalidateAfter, 's')
-        .diff(moment(), 's')
-    );
+    if (p.runningState === 'OFFLINE') {
+      document.getElementById('overlay-progress-online-only')!.style.display = 'none';
+    } else {
+      document.getElementById('overlay-progress-online-only')!.style.display = 'inline';
+    }
 
     document.getElementById('overlay-progress-download')!.innerHTML = `${downloadProgress.toFixed(2)}%`;
     document.getElementById('overlay-progress-compute')!.innerHTML = `${computeProgress.toFixed(2)}%`;
     document.getElementById('overlay-progress-upload')!.innerHTML = `${uploadProgress.toFixed(2)}%`;
     document.getElementById('overlay-progress-verify')!.innerHTML = `${verifyProgress.toFixed(2)}%`;
-    document.getElementById('overlay-progress-skip')!.innerHTML = `${totalSkip}s`;
   }
 
-  private updateOverlay(p: Participant, invalidateAfter: number) {
+  private updateParticipantOverlay(p: Participant, state: MpcState) {
     document.getElementById('participant-overlay')!.style.display = 'block';
     document.getElementById('overlay-location')!.innerHTML = p.location
       ? this.getLocationString(p.location)
@@ -101,14 +103,34 @@ export class Coordinator {
     this.setAddress(p);
 
     if (p.online) {
-      document.getElementById('overlay-status')!.innerHTML = 'ONLINE';
+      document.getElementById('overlay-status')!.innerHTML =
+        p.runningState === 'OFFLINE' ? 'COMPUTING OFFLINE' : 'ONLINE';
       document.getElementById('overlay-status')!.className = 'green';
     } else {
       document.getElementById('overlay-status')!.innerHTML = 'OFFLINE';
       document.getElementById('overlay-status')!.className = 'red';
     }
 
-    this.setProgress(p, invalidateAfter);
+    this.setProgress(p);
+
+    const { invalidateAfter, numG1Points, numG2Points, pointsPerTranscript } = state!;
+    const verifyWithin = invalidateAfter / (Math.max(numG1Points, numG2Points) / pointsPerTranscript);
+    const verifyTimeout = Math.max(
+      0,
+      moment(p.lastVerified || p.startedAt!)
+        .add(verifyWithin, 's')
+        .diff(moment(), 's')
+    );
+
+    const totalSkip = Math.max(
+      0,
+      moment(p.startedAt!)
+        .add(invalidateAfter, 's')
+        .diff(moment(), 's')
+    );
+
+    document.getElementById('overlay-progress-skip')!.innerHTML =
+      p.tier > 1 ? `${verifyTimeout}/${totalSkip}s` : `${totalSkip}s`;
   }
 
   private updateCeremonyStatus(state: MpcState) {
@@ -204,7 +226,7 @@ export class Coordinator {
 
     if (this.running && (!running || !running.address.equals(this.running.address))) {
       // We are shifting to standby, or a new participant. First wait a few seconds so we can see why.
-      this.updateOverlay(this.running, state.invalidateAfter);
+      this.updateParticipantOverlay(this.running, state);
       await new Promise(resolve => setTimeout(resolve, 3000));
     }
 
@@ -223,7 +245,7 @@ export class Coordinator {
     }
 
     if (running) {
-      this.updateOverlay(running, state.invalidateAfter);
+      this.updateParticipantOverlay(running, state);
       document.getElementById('queue-overlay')!.style.display = 'none';
     } else {
       this.updateQueueOverlay(state);
