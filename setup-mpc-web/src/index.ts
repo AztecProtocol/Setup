@@ -13,6 +13,7 @@ Terminal.applyAddon(fit);
 declare global {
   interface Window {
     app: App;
+    term: Terminal;
   }
 }
 
@@ -58,6 +59,7 @@ async function main() {
   const app = new App(server, undefined, term as any, term.rows, term.cols);
 
   window.app = app;
+  window.term = term;
 
   term.on('resize', ({ cols, rows }) => app.resize(cols, rows));
   (term as any).fit();

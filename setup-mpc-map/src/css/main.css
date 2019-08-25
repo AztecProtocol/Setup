@@ -21,6 +21,7 @@
 html,
 body,
 #cesiumContainer {
+  -webkit-text-size-adjust: none;
   width: 100%;
   height: 100%;
   margin: 0;
@@ -51,7 +52,7 @@ body,
   z-index: 100;
 }
 
-#links {
+#title {
   position: absolute;
   font-family: 'menlo';
   font-size: 12px;
@@ -81,7 +82,7 @@ a.link:hover {
   z-index: 80;
 }
 
-#status-overlay-title {
+.status-overlay-title {
   color: var(--cyan);
   text-align: center;
   padding-top: 5px;
@@ -101,7 +102,7 @@ a.link:hover {
   font-size: 12px;
   width: 430px;
   min-width: 320px;
-  padding: 5px 10px 5px 10px;
+  padding: 5px 0px 5px 0px;
   margin-bottom: 20px;
   box-shadow: 3px 3px 5px 4px rgba(0, 0, 0, 0.4);
 }
@@ -134,7 +135,7 @@ a.link:hover {
 
 .status-overlay-label {
   display: inline-block;
-  min-width: 100px;
+  min-width: 110px;
   text-align: right;
   padding-top: 2px;
   padding-bottom: 2px;
@@ -181,6 +182,9 @@ a.link:hover {
     border-radius: 0px;
     width: 100%;
     margin-bottom: 0px;
+  }
+  .status-overlay-title {
+    display: none;
   }
   #overlay-container {
     border-top: 1px solid var(--brightBlack);

@@ -20,9 +20,12 @@
 
 html,
 body {
+  -webkit-text-size-adjust: none;
   background-color: #000;
   height: 100%;
   margin: 0;
+  display: flex;
+  flex-flow: column;
 }
 
 #screen {
@@ -72,11 +75,12 @@ a.link:hover {
 }
 
 #terminal {
-  width: 860px;
-  height: 900px;
+  flex: 1;
+  width: 780px;
+  height: 100px;
   margin: auto;
-  padding-left: 30px;
-  padding-right: 30px;
+  padding-left: 5px;
+  padding-right: 5px;
 }
 
 .xterm .xterm-viewport {
