@@ -27,6 +27,9 @@ export class Viewer extends EventEmitter {
       fullscreenButton: false,
       timeline: false,
       animation: false,
+      terrainProvider: Cesium.createWorldTerrain({
+        requestWaterMask: true,
+      }),
     });
 
     this.viewer.scene.screenSpaceCameraController.enableLook = false;
