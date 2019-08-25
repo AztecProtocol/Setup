@@ -1,6 +1,6 @@
 import moment, { Moment } from 'moment';
 import { applyDelta, MpcServer, MpcState, Participant, ParticipantLocation } from 'setup-mpc-common';
-import { Viewer } from './viewer';
+import { CompleteMarker, Viewer } from './viewer';
 
 const formatMoment = (m: Moment) => m.format('YYYY-MM-DD HH:mm:ss.SS');
 
@@ -196,7 +196,7 @@ export class Coordinator {
 
   private updateQueueOverlay(state: MpcState) {
     const focusIndex = state.participants.findIndex(p => p.state === 'RUNNING' || p.state === 'WAITING');
-    const startIndex = Math.max(0, focusIndex - 2);
+    const startIndex = Math.min(Math.max(0, focusIndex - 2), state.participants.length - 5);
     const queue = state.participants.slice(startIndex, startIndex + 5);
     queue.forEach((p, i) => {
       document.getElementById(`queue-overlay-online${i + 1}`)!.className = p.online ? 'green' : 'red';
@@ -266,20 +266,47 @@ export class Coordinator {
 
     if (running && (!this.running || !this.running.address.equals(running.address))) {
       // We are shifting from standby, or to a new participant.
-      this.running = running;
       if (running.location) {
+        this.running = running;
         await this.viewer.focus(running.location.latitude!, running.location.longitude!);
-      } else {
+      } else if (this.running) {
+        this.running = running;
         await this.viewer.standby();
       }
     } else if (!running && this.running) {
       // We are shifting to standby.
+      this.viewer.completeMarkers = this.getCompletedEntityData(state);
       await this.viewer.standby();
       this.running = undefined;
     }
 
     this.updateIgnitionCountdown(state);
 
+    if (!this.viewer.completeMarkers) {
+      // First time processing state. Add completed markers.
+      this.viewer.completeMarkers = this.getCompletedEntityData(state);
+      this.viewer.standby();
+    }
+
     this.state = state;
+  }
+
+  private getCompletedEntityData(state: MpcState) {
+    const data = state.participants
+      .filter(p => p.state === 'COMPLETE' && p.location)
+      .map(p => [p.location!.latitude!, p.location!.longitude!])
+      .reduce(
+        (a, [lat, lon]) => {
+          const key = `${lat.toFixed(2)},${lon.toFixed(2)}`;
+          if (a[key]) {
+            a[key].height += 1;
+          } else {
+            a[key] = { lat, lon, height: 1 };
+          }
+          return a;
+        },
+        {} as { [key: string]: CompleteMarker }
+      );
+    return Object.values(data);
   }
 }

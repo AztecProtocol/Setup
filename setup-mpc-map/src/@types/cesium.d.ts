@@ -1970,8 +1970,8 @@ declare module 'cesium/Cesium' {
 
     class EllipseGraphics {
         definitionChanged: Event;
-        semiMajorAxis: Property;
-        semiMinorAxis: Property;
+        semiMajorAxis: Property | number;
+        semiMinorAxis: Property | number;
         rotation: Property;
         show: Property;
         material: MaterialProperty | Color;
@@ -2461,9 +2461,10 @@ declare module 'cesium/Cesium' {
         show: Property;
         material: MaterialProperty;
         positions: Property;
-        width: number;
+        width: Property | number;
         followSurface: Property;
         granularity: Property;
+        arcType: Property;
         constructor(options?: {
             positions?: Cartesian3[];
             followSurface?: Property;
@@ -5159,6 +5160,10 @@ declare module 'cesium/Cesium' {
         CENTER,
         BOTTOM,
         TOP,
+    }
+
+    enum ArcType {
+        NONE
     }
 
     function createOpenStreetMapImageryProvider(options: {

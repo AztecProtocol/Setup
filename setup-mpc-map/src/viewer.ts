@@ -2,9 +2,16 @@ import Cesium from 'cesium/Cesium';
 import { EventEmitter } from 'events';
 import { Marker } from './marker';
 
+export interface CompleteMarker {
+  lat: number;
+  lon: number;
+  height: number;
+}
+
 export class Viewer extends EventEmitter {
   private viewer: Cesium.Viewer;
   private marker?: Marker;
+  public completeMarkers?: CompleteMarker[];
 
   constructor() {
     super();
@@ -53,6 +60,7 @@ export class Viewer extends EventEmitter {
   public async standby() {
     this.viewer.entities.removeAll();
     this.marker = undefined;
+    this.addCompleteMarkers();
     this.viewer.scene.camera.flyHome(2);
   }
 
@@ -69,5 +77,33 @@ export class Viewer extends EventEmitter {
     });
 
     this.viewer.camera.lookAt(position, offset);
+  }
+
+  private addCompleteMarkers() {
+    if (!this.completeMarkers) {
+      return;
+    }
+    const heightScale = 100000;
+    this.viewer.entities.suspendEvents();
+    this.completeMarkers.forEach(({ lat, lon, height }, i) => {
+      const color = Cesium.Color.fromHsl(0.3 - height * 0.02, 1.0, 0.5, 1);
+      const surfacePosition = Cesium.Cartesian3.fromDegrees(lon, lat, 0);
+      const heightPosition = Cesium.Cartesian3.fromDegrees(lon, lat, height * heightScale);
+
+      const polyline = new Cesium.PolylineGraphics();
+      polyline.material = new Cesium.ColorMaterialProperty(color);
+      polyline.width = new Cesium.ConstantProperty(2);
+      polyline.arcType = new Cesium.ConstantProperty(Cesium.ArcType.NONE);
+      polyline.positions = new Cesium.ConstantProperty([surfacePosition, heightPosition]);
+
+      const entity = new Cesium.Entity({
+        id: 'index ' + i.toString(),
+        show: true,
+        polyline,
+      });
+
+      this.viewer.entities.add(entity);
+    });
+    this.viewer.entities.resumeEvents();
   }
 }
