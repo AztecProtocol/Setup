@@ -27,6 +27,7 @@ body,
   margin: 0;
   padding: 0;
   overflow: hidden;
+  font-family: menlo, 'Roboto Mono';
 }
 
 .cesium-viewer-toolbar {
@@ -54,7 +55,6 @@ body,
 
 #title {
   position: absolute;
-  font-family: 'menlo';
   font-size: 12px;
   top: 80px;
   width: 100%;
@@ -98,7 +98,6 @@ a.link:hover {
   color: var(--grey);
   background-color: rgba(0, 0, 0, 0.8);
   border: 1px solid var(--brightBlack);
-  font-family: 'menlo';
   font-size: 12px;
   width: 430px;
   min-width: 320px;
@@ -109,7 +108,7 @@ a.link:hover {
 
 #queue-overlay-list {
   width: 100%;
-  padding-left: 5px;
+  padding-left: 10px;
 }
 
 .queue-overlay-line {
