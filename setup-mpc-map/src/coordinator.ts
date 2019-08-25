@@ -134,18 +134,29 @@ export class Coordinator {
   }
 
   private updateCeremonyStatus(state: MpcState) {
-    if (state.ceremonyState === 'RUNNING' && !state.participants.some(p => p.state === 'RUNNING')) {
-      document.getElementById('overlay-ceremony-status')!.innerHTML = `AWAITING PARTICIPANT`;
-    } else if (state.ceremonyState === 'PRESELECTION') {
-      document.getElementById('overlay-ceremony-status')!.innerHTML = `SELECTING IN ${state.selectBlock -
-        state.latestBlock} BLOCKS`;
-    } else {
-      document.getElementById('overlay-ceremony-status')!.innerHTML = `${state.ceremonyState}`;
-    }
-    if (state.ceremonyState === 'PRESELECTION' || state.ceremonyState === 'SELECTED') {
-      document.getElementById('overlay-ceremony-status')!.className = 'yellow';
-    } else {
-      document.getElementById('overlay-ceremony-status')!.className = 'green';
+    const el = document.getElementById('overlay-ceremony-status')!;
+    switch (state.ceremonyState) {
+      case 'PRESELECTION':
+        el.className = 'yellow';
+        el.innerHTML = `SELECTING IN ${state.selectBlock - state.latestBlock} BLOCKS`;
+        break;
+      case 'SELECTED':
+        el.className = 'green';
+        el.innerHTML = `PARTICIPANTS SELECTED`;
+        break;
+      case 'RUNNING':
+        if (!state.participants.some(p => p.state === 'RUNNING')) {
+          el.className = 'yellow';
+          el.innerHTML = `AWAITING PARTICIPANT`;
+        } else {
+          el.className = 'green';
+          el.innerHTML = `RUNNING`;
+        }
+        break;
+      case 'COMPLETE':
+        el.className = 'green';
+        el.innerHTML = 'COMPLETE';
+        break;
     }
   }
 
