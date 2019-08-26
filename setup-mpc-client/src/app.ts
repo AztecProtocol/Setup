@@ -76,6 +76,13 @@ export class App {
   };
 
   private scheduleUpdate = () => {
+    if (process.env.EXIT_ON_COMPLETE && this.account) {
+      const p = this.state!.participants.find(p => p.address.equals(this.account!.address));
+      if (p && p.state === 'COMPLETE') {
+        this.stop();
+        return;
+      }
+    }
     this.interval = setTimeout(this.updateState, 1000);
   };
 

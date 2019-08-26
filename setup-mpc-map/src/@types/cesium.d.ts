@@ -261,6 +261,7 @@ declare module 'cesium/Cesium' {
         static fromRadians(longitude: number, latitude: number, height?: number, result?: Cartographic): Cartographic;
         static fromDegrees(longitude: number, latitude: number, height?: number, result?: Cartographic): Cartographic;
         static toCartesian(cartographic: Cartographic, ellipsoid?: Ellipsoid, result?: Cartesian3): Cartesian3;
+        static fromCartesian(cartesian: Cartesian3): Cartographic;
         static clone(cartographic: Cartographic, result?: Cartographic): Cartographic;
         static equals(left?: Cartographic, right?: Cartographic): boolean;
         static equalsEpsilon(left: Cartographic, right: Cartographic, epsilon: number): boolean;
@@ -2439,7 +2440,7 @@ declare module 'cesium/Cesium' {
     class PolylineGlowMaterialProperty extends MaterialProperty {
         color: Color;
         glowPower: Property;
-        constructor(options?: { color?: Property; glowPower?: Property });
+        constructor(options?: { color?: Property | Color; glowPower?: Property | number; taperPower?: Property | number });
     }
 
     class PolylineDashMaterialProperty extends MaterialProperty {

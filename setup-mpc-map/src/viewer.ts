@@ -1,17 +1,22 @@
 import Cesium from 'cesium/Cesium';
 import { EventEmitter } from 'events';
 import { Marker } from './marker';
+import { ShootingStars } from './shooting-stars';
 
-export interface CompleteMarker {
+export interface LatLon {
   lat: number;
   lon: number;
+}
+
+export interface CompleteMarker extends LatLon {
   height: number;
 }
 
 export class Viewer extends EventEmitter {
   private viewer: Cesium.Viewer;
   private marker?: Marker;
-  public completeMarkers?: CompleteMarker[];
+  private completeMarkers?: CompleteMarker[];
+  private shootingStars?: ShootingStars;
 
   constructor() {
     super();
@@ -45,6 +50,7 @@ export class Viewer extends EventEmitter {
     this.viewer.scene.screenSpaceCameraController.enableTranslate = false;
     this.viewer.scene.screenSpaceCameraController.enableZoom = false;
     this.viewer.scene.highDynamicRange = false;
+    this.viewer.clock.clockRange = Cesium.ClockRange.LOOP_STOP;
     this.viewer.clock.shouldAnimate = true;
     this.viewer.scene.moon = undefined;
 
@@ -104,6 +110,32 @@ export class Viewer extends EventEmitter {
 
       this.viewer.entities.add(entity);
     });
+
+    if (this.shootingStars) {
+      this.shootingStars.getEntities().forEach(e => this.viewer.entities.add(e));
+    }
+
     this.viewer.entities.resumeEvents();
+  }
+
+  public updateCompletedEntities(locations: LatLon[]) {
+    this.completeMarkers = this.getCompletedMarkerEntityData(locations);
+    this.shootingStars = new ShootingStars(locations, this.viewer);
+  }
+
+  private getCompletedMarkerEntityData(locations: LatLon[]) {
+    const data = locations.reduce(
+      (a, { lat, lon }) => {
+        const key = `${lat.toFixed(2)},${lon.toFixed(2)}`;
+        if (a[key]) {
+          a[key].height += 1;
+        } else {
+          a[key] = { lat, lon, height: 1 };
+        }
+        return a;
+      },
+      {} as { [key: string]: CompleteMarker }
+    );
+    return Object.values(data);
   }
 }

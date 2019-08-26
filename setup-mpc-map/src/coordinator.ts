@@ -1,6 +1,6 @@
 import moment, { Moment } from 'moment';
 import { applyDelta, MpcServer, MpcState, Participant, ParticipantLocation } from 'setup-mpc-common';
-import { CompleteMarker, Viewer } from './viewer';
+import { LatLon, Viewer } from './viewer';
 
 const formatMoment = (m: Moment) => m.format('YYYY-MM-DD HH:mm:ss.SS');
 
@@ -275,38 +275,25 @@ export class Coordinator {
       }
     } else if (!running && this.running) {
       // We are shifting to standby.
-      this.viewer.completeMarkers = this.getCompletedEntityData(state);
+      this.viewer.updateCompletedEntities(this.getCompletedLocations(state));
       await this.viewer.standby();
       this.running = undefined;
     }
 
     this.updateIgnitionCountdown(state);
 
-    if (!this.viewer.completeMarkers) {
+    if (!this.state || this.state.startSequence !== state.startSequence) {
       // First time processing state. Add completed markers.
-      this.viewer.completeMarkers = this.getCompletedEntityData(state);
+      this.viewer.updateCompletedEntities(this.getCompletedLocations(state));
       this.viewer.standby();
     }
 
     this.state = state;
   }
 
-  private getCompletedEntityData(state: MpcState) {
-    const data = state.participants
+  private getCompletedLocations(state: MpcState): LatLon[] {
+    return state.participants
       .filter(p => p.state === 'COMPLETE' && p.location)
-      .map(p => [p.location!.latitude!, p.location!.longitude!])
-      .reduce(
-        (a, [lat, lon]) => {
-          const key = `${lat.toFixed(2)},${lon.toFixed(2)}`;
-          if (a[key]) {
-            a[key].height += 1;
-          } else {
-            a[key] = { lat, lon, height: 1 };
-          }
-          return a;
-        },
-        {} as { [key: string]: CompleteMarker }
-      );
-    return Object.values(data);
+      .map(p => ({ lat: p.location!.latitude!, lon: p.location!.longitude! }));
   }
 }
