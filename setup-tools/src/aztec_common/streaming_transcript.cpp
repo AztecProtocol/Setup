@@ -29,6 +29,13 @@ void read_manifest(std::vector<char> &buffer, Manifest &manifest)
   manifest.start_from = ntohl(manifest.start_from);
 }
 
+std::vector<char> read_checksum(std::string const &path)
+{
+    auto buffer = read_file_into_buffer(path);
+    std::vector<char> checksum = validate_checksum(buffer);
+    return checksum;
+}
+
 void read_transcript(std::vector<G1> &g1_x, std::vector<G2> &g2_x, Manifest &manifest, std::string const &path)
 {
   auto buffer = read_file_into_buffer(path);

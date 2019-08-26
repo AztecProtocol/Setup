@@ -114,7 +114,7 @@ void write_buffer_to_file(std::string const &filename, std::vector<char> const &
     file.close();
 }
 
-void validate_checksum(std::vector<char> const &buffer)
+std::vector<char> validate_checksum(std::vector<char> const &buffer)
 {
     const size_t message_size = buffer.size() - checksum::BLAKE2B_CHECKSUM_LENGTH;
     char checksum[checksum::BLAKE2B_CHECKSUM_LENGTH] = {0};
@@ -128,6 +128,9 @@ void validate_checksum(std::vector<char> const &buffer)
             throw std::runtime_error("Checksum failed.");
         }
     }
+    std::vector<char> result;
+    result.insert(result.begin(), &checksum[0], &checksum[0] + checksum::BLAKE2B_CHECKSUM_LENGTH);
+    return result;
 }
 
 void add_checksum_to_buffer(char *buffer, size_t message_size)
