@@ -223,12 +223,27 @@ private:
     T t_;
 };
 
-void run_setup(std::string const &dir, size_t num_g1_points, size_t num_g2_points)
+void run_setup(std::string const &dir, size_t num_g1_points, size_t num_g2_points, size_t num_setup_files)
 {
     size_t progress = 0;
 
+#ifdef SIMULATE_PARTICIPANT
+    std::vector<char> checksums;
+    std::cerr << "Running setup with simulated participant." << std::endl;
+    for (size_t i = 0; i < num_setup_files; ++i)
+    {
+        std::string const filename = getTranscriptInPath(dir, i);
+        std::vector<char> checksum = streaming::read_checksum(filename);
+        checksums.insert(checksums.end(), checksum.begin(), checksum.end());
+    }
+    char checksum_of_checksums[checksum::BLAKE2B_CHECKSUM_LENGTH] = {0};
+    checksum::create_checksum(&checksums[0], checksums.size(), &checksum_of_checksums[0]);
+    Fr simulated_secret = utils::convert_buffer_to_field_element<Fr>(&checksum_of_checksums[0], checksum::BLAKE2B_CHECKSUM_LENGTH);
+    Secret<Fr> multiplicand(simulated_secret);
+#else
     // Our toxic waste. Will be zeroed before going out of scope.
     Secret<Fr> multiplicand(Fr::random_element());
+#endif
 
     if (!isatty(fileno(stdin)))
     {

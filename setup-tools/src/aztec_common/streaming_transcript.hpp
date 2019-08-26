@@ -21,6 +21,8 @@ size_t get_transcript_size(Manifest const &manifest);
 
 void read_manifest(std::vector<char> &buffer, Manifest &manifest);
 
+std::vector<char> read_checksum(std::string const &path);
+
 void read_transcript(std::vector<G1> &g1_x, std::vector<G2> &g2_x, Manifest &manifest, std::string const &path);
 
 void read_transcript_manifest(Manifest &manifest, std::string const &path);

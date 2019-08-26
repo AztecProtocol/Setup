@@ -70,6 +70,16 @@ wrote 2
 Done.
 ```
 
+To run the setup with a simulated participant, where the toxic waste is set to the hash of the previous transcript, `setup` must be compiled with the SIMULATE_PARTICIPANT environment variable set to ON.
+
+```
+cd build
+cmake .. -DSIMULATE_PARTICIPANT=ON
+cmake --build .
+```
+
+When in simulate mode, usage is `setup <setup_dir> <number_of_transcript_files> [<num_g1_points>, <num_g2_points>]`
+
 ### verify
 
 _verify_ will check that the points in a given transcript have been computed correctly. For the first participant, we only need to check that the powering sequence is consistent across all transcripts.
@@ -160,6 +170,6 @@ Once in the container you can build executables from your modified source code o
 ```
 mkdir build
 cd ./build
-cmake ..
+cmake .. -DSIMULATE_PARTICIPANT=OFF
 make [executable name]
 ```

@@ -23,7 +23,7 @@ void write_buffer_to_file(std::string const &filename, std::vector<char> const &
 
 bool is_file_exist(std::string const &fileName);
 
-void validate_checksum(std::vector<char> const &buffer);
+std::vector<char> validate_checksum(std::vector<char> const &buffer);
 
 void add_checksum_to_buffer(char *buffer, size_t message_size);
 
