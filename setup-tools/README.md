@@ -78,8 +78,6 @@ cmake .. -DSIMULATE_PARTICIPANT=ON
 cmake --build .
 ```
 
-When in simulate mode, usage is `setup <setup_dir> <number_of_transcript_files> [<num_g1_points>, <num_g2_points>]`
-
 ### verify
 
 _verify_ will check that the points in a given transcript have been computed correctly. For the first participant, we only need to check that the powering sequence is consistent across all transcripts.
