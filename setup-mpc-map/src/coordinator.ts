@@ -77,7 +77,7 @@ export class Coordinator {
     const totalData = p.transcripts.reduce((a, t) => a + t.size, 0);
     const totalDownloaded = p.transcripts.reduce((a, t) => a + t.downloaded, 0);
     const totalUploaded = p.transcripts.reduce((a, t) => a + t.uploaded, 0);
-    const downloadProgress = totalData ? (totalDownloaded / totalData) * 100 : 100;
+    const downloadProgress = totalData ? (totalDownloaded / totalData) * 100 : 0;
     const uploadProgress = totalData ? (totalUploaded / totalData) * 100 : 0;
     const computeProgress = p.computeProgress;
     const verifyProgress = p.verifyProgress;
