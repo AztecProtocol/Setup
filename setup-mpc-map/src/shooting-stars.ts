@@ -1,4 +1,4 @@
-import Cesium, { PositionProperty } from 'cesium/Cesium';
+import Cesium from 'cesium/Cesium';
 import { LatLon } from './viewer';
 
 export class ShootingStars {
@@ -6,9 +6,7 @@ export class ShootingStars {
   private entities: Cesium.Entity[] = [];
 
   constructor(locations: LatLon[], viewer: Cesium.Viewer) {
-    // const baseTime = Cesium.JulianDate.fromIso8601('2018-01-01T00:00:00.00Z');
     const baseTime = viewer.clock.startTime;
-    // locations = locations.slice(0, 2);
 
     if (locations.length > 1) {
       viewer.clock.stopTime = Cesium.JulianDate.addSeconds(
@@ -17,13 +15,6 @@ export class ShootingStars {
         new Cesium.JulianDate()
       );
     }
-    // this.clock.startTime = baseTime;
-    // this.clock.currentTime = baseTime;
-    // this.clock.stopTime = Cesium.JulianDate.addSeconds(baseTime, 3 * (locations.length - 1), new Cesium.JulianDate());
-    // this.clock.clockRange = Cesium.ClockRange.LOOP_STOP;
-    // this.clock.shouldAnimate = true;
-    // this.clock.multiplier = 1;
-    // this.clock.clockStep = Cesium.ClockStep.TICK_DEPENDENT;
 
     for (let i = 1; i < locations.length; ++i) {
       const currentTime = Cesium.JulianDate.addSeconds(baseTime, 3 * (i - 1), new Cesium.JulianDate());
@@ -84,7 +75,6 @@ export class ShootingStars {
   }
 
   public getEntities() {
-    console.log(this.entities);
     return this.entities;
   }
 }

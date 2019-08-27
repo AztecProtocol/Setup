@@ -40,13 +40,14 @@ resource "aws_service_discovery_service" "setup_mpc_server" {
 }
 
 resource "aws_instance" "setup_mpc_server" {
-  ami                         = "ami-0de1dc478496a9e9b"
-  instance_type               = "m5.xlarge"
+  ami                         = "ami-010624faf51b049d3"
+  instance_type               = "m5.large"
   subnet_id                   = "${data.terraform_remote_state.setup_iac.outputs.subnet_az1_id}"
   vpc_security_group_ids      = ["${data.terraform_remote_state.setup_iac.outputs.security_group_private_id}"]
   iam_instance_profile        = "${data.terraform_remote_state.setup_iac.outputs.ecs_instance_profile_name}"
   associate_public_ip_address = true
   key_name                    = "${data.terraform_remote_state.setup_iac.outputs.ecs_instance_key_pair_name}"
+  availability_zone           = "eu-west-2a"
 
   user_data = <<USER_DATA
 #!/bin/bash

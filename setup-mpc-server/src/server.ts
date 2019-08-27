@@ -142,6 +142,7 @@ export class Server implements MpcServer {
 
   private async addParticipants(addresses: Address[], latestBlock: number) {
     const release = await this.mutex.acquire();
+    console.log(`Adding participants from block ${latestBlock}:`, addresses.map(a => a.toString()));
     this.state.sequence += 1;
     this.state.statusSequence = this.state.sequence;
     this.state.latestBlock = latestBlock;

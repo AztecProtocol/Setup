@@ -141,7 +141,7 @@ export class TerminalInterface {
           );
           break;
         case 'INVALIDATED':
-          this.term.white(`You failed to compute your part of the ceremony within the time limit.\n`);
+          this.term.white(`You failed to compute your part of the ceremony.\n`);
           break;
       }
     }

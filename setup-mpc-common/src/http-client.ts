@@ -142,7 +142,7 @@ export class HttpClient implements MpcServer {
         });
 
         if (response.status !== 200) {
-          throw new Error(`Uplaod failed, bad status code: ${response.status}`);
+          throw new Error(`Upload failed, bad status code: ${response.status}`);
         }
 
         resolve();

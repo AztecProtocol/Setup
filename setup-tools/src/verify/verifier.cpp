@@ -53,7 +53,7 @@ VerificationKey<GroupT> same_ratio_preprocess(std::vector<GroupT> const &g_x)
     std::vector<std::thread> threads;
     std::vector<std::future<VerificationKey<GroupT>>> results;
 
-    if (thread_range == 0)
+    if (thread_range < 2)
     {
         return same_ratio_preprocess_thread(g_x, scalars, 0, g_x.size());
     }
@@ -156,6 +156,7 @@ bool validate_transcript(
 {
     if (g1_x_previous.size() && g2_y.size())
     {
+        std::cout << "Checking transcript was derived from previous participants..." << std::endl;
         if (!validate_transcript_derived_from_previous(g1_x_previous[0], g1_0, g2_y[0]))
         {
             throw std::runtime_error("Transcript was not derived from previous participants.");
@@ -163,12 +164,14 @@ bool validate_transcript(
     }
 
     // Validate that the ratio between successive g1_x elements is defined by g2_x[0].
+    std::cout << "Checking " << g1_x.size() << " G1 points..." << std::endl;
     if (!validate_polynomial_evaluation(g1_x, g2_0))
     {
         throw std::runtime_error("G1 elements failed.");
     }
 
     // Validate that the ratio between successive g2_x elements is defined by g1_x[0].
+    std::cout << "Checking " << g2_x.size() << " G2 points..." << std::endl;
     if (g2_x.size() > 1 && !validate_polynomial_evaluation(g2_x, g1_0))
     {
         throw std::runtime_error("G2 elements failed.");

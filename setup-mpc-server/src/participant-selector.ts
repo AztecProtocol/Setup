@@ -40,7 +40,6 @@ export class ParticipantSelector extends EventEmitter {
         const participants = block.transactions
           .filter(t => (t.to ? t.to.equals(this.signupAddress) : false))
           .map(t => t.from);
-        console.log(`Fetched block ${currentBlock} with ${participants.length} participants.`);
         this.emit('newParticipants', participants, currentBlock);
         if (currentBlock === this.selectBlock) {
           this.emit('selectParticipants', block.hash);
