@@ -240,6 +240,12 @@ export class Coordinator {
   }
 
   private async processState(state: MpcState) {
+    if (!this.state || this.state.startSequence !== state.startSequence) {
+      // First time processing state. Update completed markers and go to standby.
+      this.viewer.updateCompletedEntities(this.getCompletedLocations(state));
+      await this.viewer.standby();
+    }
+
     document.getElementById('overlay-container')!.style.display = 'block';
 
     this.updateStatusOverlay(state);
@@ -281,12 +287,6 @@ export class Coordinator {
     }
 
     this.updateIgnitionCountdown(state);
-
-    if (!this.state || this.state.startSequence !== state.startSequence) {
-      // First time processing state. Add completed markers.
-      this.viewer.updateCompletedEntities(this.getCompletedLocations(state));
-      this.viewer.standby();
-    }
 
     this.state = state;
   }

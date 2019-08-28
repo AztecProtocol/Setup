@@ -2,7 +2,6 @@ import Cesium from 'cesium/Cesium';
 import { LatLon } from './viewer';
 
 export class ShootingStars {
-  // private clock = new Cesium.Clock();
   private entities: Cesium.Entity[] = [];
 
   constructor(locations: LatLon[], viewer: Cesium.Viewer) {
@@ -30,26 +29,28 @@ export class ShootingStars {
     startTime: Cesium.JulianDate,
     ellipsoid: Cesium.Ellipsoid
   ) {
+    const q1Time = Cesium.JulianDate.addSeconds(startTime, 0.25, new Cesium.JulianDate());
     const midTime = Cesium.JulianDate.addSeconds(startTime, 0.5, new Cesium.JulianDate());
-    const stopTime = Cesium.JulianDate.addSeconds(startTime, 1, new Cesium.JulianDate());
+    const q2Time = Cesium.JulianDate.addSeconds(startTime, 0.75, new Cesium.JulianDate());
+    const endTime = Cesium.JulianDate.addSeconds(startTime, 1, new Cesium.JulianDate());
 
-    // Create a straight-line path.
-    let property = new Cesium.SampledPositionProperty();
-    const startPosition = Cesium.Cartesian3.fromDegrees(start.lon, start.lat, 0);
-    property.addSample(startTime, startPosition);
-    const stopPosition = Cesium.Cartesian3.fromDegrees(end.lon, end.lat, 0);
-    property.addSample(stopTime, stopPosition);
+    const property = new Cesium.SampledPositionProperty();
+    const startPoint = Cesium.Cartographic.fromDegrees(start.lon, start.lat, 0);
+    const endPoint = Cesium.Cartographic.fromDegrees(end.lon, end.lat, 0);
 
-    // Find the midpoint of the straight path, and raise its altitude.
-    const midPoint = Cesium.Cartographic.fromCartesian(property.getValue(midTime));
-    midPoint.height = 400000;
-    const midPosition = ellipsoid.cartographicToCartesian(midPoint, new Cesium.Cartesian3());
+    const geodesic = new Cesium.EllipsoidGeodesic(startPoint, endPoint);
+    const q1Point = geodesic.interpolateUsingFraction(0.25, new Cesium.Cartographic());
+    q1Point.height = 200000;
+    const midPoint = geodesic.interpolateUsingFraction(0.5, new Cesium.Cartographic());
+    midPoint.height = 300000;
+    const q2Point = geodesic.interpolateUsingFraction(0.75, new Cesium.Cartographic());
+    q2Point.height = 200000;
 
-    // Redo the path to be the new arc.
-    property = new Cesium.SampledPositionProperty();
-    property.addSample(startTime, startPosition);
-    property.addSample(midTime, midPosition);
-    property.addSample(stopTime, stopPosition);
+    property.addSample(startTime, ellipsoid.cartographicToCartesian(startPoint));
+    property.addSample(q1Time, ellipsoid.cartographicToCartesian(q1Point));
+    property.addSample(midTime, ellipsoid.cartographicToCartesian(midPoint));
+    property.addSample(q2Time, ellipsoid.cartographicToCartesian(q2Point));
+    property.addSample(endTime, ellipsoid.cartographicToCartesian(endPoint));
     property.setInterpolationOptions({
       interpolationDegree: 5,
       interpolationAlgorithm: Cesium.LagrangePolynomialApproximation,

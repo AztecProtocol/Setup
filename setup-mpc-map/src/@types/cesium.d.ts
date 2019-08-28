@@ -675,7 +675,7 @@ declare module 'cesium/Cesium' {
         endHeading: number;
         constructor(start?: Cartographic, end?: Cartographic, ellipsoid?: Ellipsoid);
         setEndPoints(start: Cartographic, end: Cartographic): void;
-        interpolateUsingFraction(fraction: number): Cartographic;
+        interpolateUsingFraction(fraction: number, result?: Cartographic): Cartographic;
         interpolateUsingSurfaceDistance(distance: number): Cartographic;
     }
 
