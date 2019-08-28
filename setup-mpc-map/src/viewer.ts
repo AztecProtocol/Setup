@@ -45,7 +45,7 @@ export class Viewer extends EventEmitter {
     });
 
     this.viewer.scene.screenSpaceCameraController.enableLook = false;
-    this.viewer.scene.screenSpaceCameraController.enableRotate = false;
+    // this.viewer.scene.screenSpaceCameraController.enableRotate = false;
     this.viewer.scene.screenSpaceCameraController.enableTilt = false;
     this.viewer.scene.screenSpaceCameraController.enableTranslate = false;
     this.viewer.scene.screenSpaceCameraController.enableZoom = false;
