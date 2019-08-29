@@ -23,7 +23,7 @@ aws ecr describe-repositories --repository-names $1 > /dev/null 2>&1 || \
   (aws ecr create-repository --repository-name $1 && \
    aws ecr put-lifecycle-policy --repository-name $1 --lifecycle-policy-text "$LIFECYCLE_POLICY")
 docker push 278380418400.dkr.ecr.eu-west-2.amazonaws.com/$1:latest
-if [ -n "$CIRCLE_SHA1"]; then
+if [ -n "$CIRCLE_SHA1" ]; then
   docker push 278380418400.dkr.ecr.eu-west-2.amazonaws.com/$1:$CIRCLE_SHA1
 fi
 
