@@ -1,7 +1,7 @@
 name: job-server
 build:
   default:
-    cmd: ./build.sh
-commands:
-  deploy:
-    cmd: ./deploy.sh
+    cmd: ../ci-scripts/build.sh
+# commands:
+#   deploy:
+#     cmd: ../ci-scripts/deploy.sh

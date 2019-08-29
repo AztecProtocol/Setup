@@ -1,7 +1,11 @@
 name: setup-mpc-common
 build:
   default:
-    cmd: ./build.sh
+    cmd: ../ci-scripts/build.sh
+    args:
+      - setup-mpc-common
 commands:
   deploy:
-    cmd: ./deploy.sh
+    cmd: ../ci-scripts/deploy.sh
+    args:
+      - setup-mpc-common

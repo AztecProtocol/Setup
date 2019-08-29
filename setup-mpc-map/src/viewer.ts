@@ -45,7 +45,6 @@ export class Viewer extends EventEmitter {
     });
 
     this.viewer.scene.screenSpaceCameraController.enableLook = false;
-    // this.viewer.scene.screenSpaceCameraController.enableRotate = false;
     this.viewer.scene.screenSpaceCameraController.enableTilt = false;
     this.viewer.scene.screenSpaceCameraController.enableTranslate = false;
     this.viewer.scene.screenSpaceCameraController.enableZoom = false;
@@ -64,6 +63,7 @@ export class Viewer extends EventEmitter {
   }
 
   public async standby() {
+    this.viewer.scene.screenSpaceCameraController.enableRotate = true;
     this.viewer.entities.removeAll();
     this.marker = undefined;
     this.addCompleteMarkers();
@@ -71,6 +71,7 @@ export class Viewer extends EventEmitter {
   }
 
   public async focus(lat: number, lon: number) {
+    this.viewer.scene.screenSpaceCameraController.enableRotate = false;
     this.viewer.entities.removeAll();
     const position = Cesium.Cartesian3.fromDegrees(lon, lat);
     const offset = new Cesium.HeadingPitchRange(0, -Cesium.Math.PI_OVER_FOUR, 4000000);

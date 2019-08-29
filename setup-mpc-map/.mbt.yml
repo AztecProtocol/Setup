@@ -1,9 +1,13 @@
 name: setup-mpc-map
 build:
   default:
-    cmd: ./build.sh
+    cmd: ../ci-scripts/build.sh
+    args:
+      - setup-mpc-map
 commands:
   deploy:
-    cmd: ./deploy.sh
+    cmd: ../ci-scripts/deploy.sh
+    args:
+      - setup-mpc-map
 dependencies:
   - setup-mpc-common
