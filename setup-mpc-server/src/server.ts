@@ -82,8 +82,10 @@ export class Server implements MpcServer {
   private async resetWithState(state: MpcState) {
     this.stop();
 
+    const release = await this.mutex.acquire();
     this.state = state;
     this.readState = state;
+    release();
 
     this.verifier = await this.createVerifier();
     this.verifier.run();
@@ -142,12 +144,14 @@ export class Server implements MpcServer {
 
   private async addParticipants(addresses: Address[], latestBlock: number) {
     const release = await this.mutex.acquire();
-    console.log(`Adding participants from block ${latestBlock}:`, addresses.map(a => a.toString()));
     this.state.sequence += 1;
     this.state.statusSequence = this.state.sequence;
     this.state.latestBlock = latestBlock;
-    const tier = this.state.ceremonyState === 'PRESELECTION' ? 2 : 3;
-    addresses.forEach(address => this.addNextParticipant(this.state, address, tier));
+    if (addresses.length) {
+      console.log(`Adding participants from block ${latestBlock}:`, addresses.map(a => a.toString()));
+      const tier = this.state.ceremonyState === 'PRESELECTION' ? 2 : 3;
+      addresses.forEach(address => this.addNextParticipant(this.state, address, tier));
+    }
     release();
   }
 
