@@ -36,5 +36,5 @@ fi
 
 # Restart with latest image.
 if aws ecs list-services --cluster setup | grep $1 > /dev/null; then
-  aws ecs update-service --cluster setup --service setup-mpc-server --force-new-deployment
+  aws ecs update-service --cluster setup --service $1 --force-new-deployment
 fi
