@@ -76,8 +76,16 @@ export class Downloader extends EventEmitter {
     });
 
     return new Promise((resolve, reject) => {
-      writeStream.on('close', () => resolve());
-      readStream.on('error', (err: Error) => reject(err));
+      readStream.on('error', reject);
+      progStream.on('error', reject);
+      writeStream.on('error', reject);
+      writeStream.on('finish', () => {
+        if (this.isDownloaded(transcript)) {
+          resolve();
+        } else {
+          reject(new Error('File not fully downloaded.'));
+        }
+      });
       readStream.pipe(progStream).pipe(writeStream);
     });
   }

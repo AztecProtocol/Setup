@@ -19,8 +19,13 @@ async function main() {
   app.start();
 
   process.stdout.on('resize', () => app.resize(process.stdout.columns!, process.stdout.rows!));
-  process.once('SIGINT', () => app.stop());
-  process.once('SIGTERM', () => app.stop());
+
+  const shutdown = () => {
+    app.stop();
+    process.exit(0);
+  };
+  process.once('SIGINT', shutdown);
+  process.once('SIGTERM', shutdown);
 }
 
 main().catch(console.error);

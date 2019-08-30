@@ -338,6 +338,7 @@ resource "aws_iam_role_policy_attachment" "ecs_task_execution_policy" {
 # Create our cluster.
 resource "aws_ecs_cluster" "setup" {
   name = "setup"
+  # container_insights = true
 }
 
 # Create our load balancer.

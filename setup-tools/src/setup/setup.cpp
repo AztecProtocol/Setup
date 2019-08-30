@@ -183,7 +183,8 @@ void compute_initial_transcripts(const std::string &dir, size_t total_g1_points,
     std::cout << "creating";
     for (size_t i = 0; i < total_transcripts; ++i)
     {
-        std::cout << " " << i << ":" << streaming::get_transcript_size(manifests[i]);
+        // We're going to bolt on the final g2^y point in transcript 0, so add 128 bytes.
+        std::cout << " " << i << ":" << streaming::get_transcript_size(manifests[i]) + (i == 0 ? 128 : 0);
     }
     std::cout << std::endl;
 

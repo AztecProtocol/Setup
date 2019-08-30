@@ -174,13 +174,16 @@ export function appFactory(
       await new Promise((resolve, reject) => {
         const writeStream = createWriteStream(transcriptPath);
         const meterStream = meter(maxUploadSize);
-        meterStream.on('error', (err: Error) => {
-          ctx.status = 429;
-          reject(err);
-        });
-        writeStream.on('close', resolve);
-        ctx.req.on('error', (err: Error) => reject(err));
-        ctx.req.pipe(meterStream).pipe(writeStream);
+        ctx.req
+          .on('error', reject)
+          .pipe(meterStream)
+          .on('error', (err: Error) => {
+            ctx.status = 429;
+            reject(err);
+          })
+          .pipe(writeStream)
+          .on('error', reject)
+          .on('finish', resolve);
       });
 
       const hash = await hashFiles([transcriptPath]);

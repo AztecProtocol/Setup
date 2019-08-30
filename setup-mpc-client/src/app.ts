@@ -116,6 +116,7 @@ export class App {
 
       this.compute.start().catch(err => {
         console.error(`Compute failed: `, err);
+        this.compute = undefined;
       });
     } else if (myRemoteState.state !== 'RUNNING' && this.compute) {
       this.compute.cancel();

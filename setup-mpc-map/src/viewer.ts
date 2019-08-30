@@ -34,6 +34,10 @@ export class Viewer extends EventEmitter {
       })
     );
 
+    if (screen.width < screen.height) {
+      Cesium.Camera.DEFAULT_VIEW_FACTOR = 0.7;
+    }
+
     this.viewer = new Cesium.Viewer('cesiumContainer', {
       imageryProviderViewModels,
       fullscreenButton: false,
