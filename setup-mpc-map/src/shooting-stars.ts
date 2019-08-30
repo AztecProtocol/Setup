@@ -8,6 +8,7 @@ export class ShootingStars {
     const baseTime = viewer.clock.startTime;
 
     if (locations.length > 1) {
+      locations = [...locations, locations[0]];
       viewer.clock.stopTime = Cesium.JulianDate.addSeconds(
         baseTime,
         3 * (locations.length - 1),
