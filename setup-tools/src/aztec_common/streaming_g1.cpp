@@ -64,6 +64,11 @@ G1 read_g1_element_from_buffer(char *buffer)
         element.X = Fq(x);
         element.Y = Fq(y);
         element.Z = Fq::one();
+
+        if (!element.is_well_formed())
+        {
+            throw std::runtime_error("G1 points are not on the curve!");
+        }
     }
     return element;
 }
