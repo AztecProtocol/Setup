@@ -19,27 +19,27 @@ output "ecs_cluster_name" {
 }
 
 output "subnet_az1_id" {
-  value = "${aws_subnet.setup.id}"
+  value = "${aws_subnet.public_az1.id}"
 }
 
 output "subnet_az2_id" {
-  value = "${aws_subnet.setup_az2.id}"
+  value = "${aws_subnet.public_az2.id}"
 }
 
 output "subnet_az1_private_id" {
-  value = "${aws_subnet.setup_az1_private.id}"
+  value = "${aws_subnet.private_az1.id}"
 }
 
 output "subnet_az2_private_id" {
-  value = "${aws_subnet.setup_az2_private.id}"
+  value = "${aws_subnet.private_az2.id}"
 }
 
 output "security_group_private_id" {
-  value = "${aws_security_group.setup.id}"
+  value = "${aws_security_group.private.id}"
 }
 
 output "security_group_public_id" {
-  value = "${aws_security_group.setup_public.id}"
+  value = "${aws_security_group.public.id}"
 }
 
 output "alb_listener_arn" {

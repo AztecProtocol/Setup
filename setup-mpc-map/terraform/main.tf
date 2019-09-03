@@ -89,11 +89,14 @@ resource "aws_ecs_service" "setup_mpc_map" {
   name          = "setup-mpc-map"
   cluster       = "${data.terraform_remote_state.setup_iac.outputs.ecs_cluster_id}"
   launch_type   = "FARGATE"
-  desired_count = "1"
+  desired_count = "2"
 
   network_configuration {
-    subnets         = ["${data.terraform_remote_state.setup_iac.outputs.subnet_az1_id}"]
-    security_groups = ["${data.terraform_remote_state.setup_iac.outputs.security_group_public_id}"]
+    subnets         = [
+      "${data.terraform_remote_state.setup_iac.outputs.subnet_az1_private_id}",
+      "${data.terraform_remote_state.setup_iac.outputs.subnet_az2_private_id}"
+    ]
+    security_groups = ["${data.terraform_remote_state.setup_iac.outputs.security_group_private_id}"]
   }
 
   load_balancer {

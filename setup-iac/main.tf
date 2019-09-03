@@ -23,7 +23,7 @@ resource "aws_vpc" "setup" {
 }
 
 # We create an addional CIDR block to expand beyond initial /16 limits.
-resource "aws_vpc_ipv4_cidr_block_association" "setup_cidr1" {
+resource "aws_vpc_ipv4_cidr_block_association" "cidr1" {
   vpc_id     = "${aws_vpc.setup.id}"
   cidr_block = "10.1.0.0/16"
 }
@@ -31,7 +31,7 @@ resource "aws_vpc_ipv4_cidr_block_association" "setup_cidr1" {
 ### PUBLIC NETWORK
 
 # Public subnets in each availability zone.
-resource "aws_subnet" "setup" {
+resource "aws_subnet" "public_az1" {
   vpc_id            = "${aws_vpc.setup.id}"
   cidr_block        = "10.0.0.0/17"
   availability_zone = "eu-west-2a"
@@ -41,7 +41,7 @@ resource "aws_subnet" "setup" {
   }
 }
 
-resource "aws_subnet" "setup_az2" {
+resource "aws_subnet" "public_az2" {
   vpc_id            = "${aws_vpc.setup.id}"
   cidr_block        = "10.0.128.0/17"
   availability_zone = "eu-west-2b"
@@ -61,14 +61,25 @@ resource "aws_internet_gateway" "gw" {
 }
 
 # NAT gateway.
-resource "aws_eip" "nat_eip" {
+resource "aws_eip" "nat_eip_az1" {
   vpc        = true
   depends_on = ["aws_internet_gateway.gw"]
 }
 
-resource "aws_nat_gateway" "gw" {
-  allocation_id = "${aws_eip.nat_eip.id}"
-  subnet_id     = "${aws_subnet.setup.id}"
+resource "aws_eip" "nat_eip_az2" {
+  vpc        = true
+  depends_on = ["aws_internet_gateway.gw"]
+}
+
+resource "aws_nat_gateway" "gw_az1" {
+  allocation_id = "${aws_eip.nat_eip_az1.id}"
+  subnet_id     = "${aws_subnet.public_az1.id}"
+  depends_on    = ["aws_internet_gateway.gw"]
+}
+
+resource "aws_nat_gateway" "gw_az2" {
+  allocation_id = "${aws_eip.nat_eip_az2.id}"
+  subnet_id     = "${aws_subnet.public_az2.id}"
   depends_on    = ["aws_internet_gateway.gw"]
 }
 
@@ -80,7 +91,7 @@ resource "aws_route" "internet_access" {
 }
 
 # Public security group and rules.
-resource "aws_security_group" "setup_public" {
+resource "aws_security_group" "public" {
   name   = "setup-public"
   vpc_id = "${aws_vpc.setup.id}"
 
@@ -89,13 +100,13 @@ resource "aws_security_group" "setup_public" {
   }
 }
 
-resource "aws_security_group_rule" "setup_public_allow_http" {
+resource "aws_security_group_rule" "public_allow_ssh" {
   type              = "ingress"
-  from_port         = 80
-  to_port           = 80
+  from_port         = 22
+  to_port           = 22
   protocol          = "tcp"
-  cidr_blocks       = ["0.0.0.0/0"]
-  security_group_id = "${aws_security_group.setup_public.id}"
+  cidr_blocks       = ["82.163.119.138/32", "217.169.11.246/32"]
+  security_group_id = "${aws_security_group.public.id}"
 }
 
 resource "aws_security_group_rule" "setup_public_allow_https" {
@@ -104,31 +115,33 @@ resource "aws_security_group_rule" "setup_public_allow_https" {
   to_port           = 443
   protocol          = "tcp"
   cidr_blocks       = ["0.0.0.0/0"]
-  security_group_id = "${aws_security_group.setup_public.id}"
+  security_group_id = "${aws_security_group.public.id}"
 }
 
+// Check this is needed. I think it is as it allows return traffic from private subnet.
 resource "aws_security_group_rule" "setup_public_allow_setup_private" {
   type                     = "ingress"
   from_port                = 0
   to_port                  = 0
   protocol                 = "-1"
-  source_security_group_id = "${aws_security_group.setup.id}"
-  security_group_id        = "${aws_security_group.setup_public.id}"
+  source_security_group_id = "${aws_security_group.private.id}"
+  security_group_id        = "${aws_security_group.public.id}"
 }
 
+// Check this is needed. I think it is as it allows the ALB to return traffic to internet.
 resource "aws_security_group_rule" "setup_public_allow_all_outgoing" {
   type              = "egress"
   from_port         = 0
   to_port           = 0
   protocol          = "-1"
   cidr_blocks       = ["0.0.0.0/0"]
-  security_group_id = "${aws_security_group.setup_public.id}"
+  security_group_id = "${aws_security_group.public.id}"
 }
 
 ### PRIVATE NETWORK
 
 # Private subnets in each avilability zone.
-resource "aws_subnet" "setup_az1_private" {
+resource "aws_subnet" "private_az1" {
   vpc_id            = "${aws_vpc.setup.id}"
   cidr_block        = "10.1.0.0/17"
   availability_zone = "eu-west-2a"
@@ -138,59 +151,59 @@ resource "aws_subnet" "setup_az1_private" {
   }
 }
 
-resource "aws_subnet" "setup_az2_private" {
+resource "aws_subnet" "private_az2" {
   vpc_id            = "${aws_vpc.setup.id}"
   cidr_block        = "10.1.128.0/17"
-  availability_zone = "eu-west-2a"
+  availability_zone = "eu-west-2b"
 
   tags = {
     Name = "setup-az2-private"
   }
 }
 
-# Private network routing table, rule to NAT gateway, and subnet associations.
-resource "aws_route_table" "setup_private" {
+# Private network routing tables, rules to NAT gateway, and subnet associations.
+resource "aws_route_table" "private_az1" {
   vpc_id = "${aws_vpc.setup.id}"
 
   tags = {
-    Name = "setup-private"
+    Name = "setup-private-az1"
   }
 }
 
-resource "aws_route" "private_route" {
-  route_table_id         = "${aws_route_table.setup_private.id}"
+resource "aws_route_table" "private_az2" {
+  vpc_id = "${aws_vpc.setup.id}"
+
+  tags = {
+    Name = "setup-private-az2"
+  }
+}
+
+resource "aws_route" "private_az1" {
+  route_table_id         = "${aws_route_table.private_az1.id}"
   destination_cidr_block = "0.0.0.0/0"
-  nat_gateway_id         = "${aws_nat_gateway.gw.id}"
+  nat_gateway_id         = "${aws_nat_gateway.gw_az1.id}"
 }
 
-resource "aws_route_table_association" "setup_az1_subnet_association" {
-  subnet_id      = "${aws_subnet.setup_az1_private.id}"
-  route_table_id = "${aws_route_table.setup_private.id}"
+resource "aws_route" "private_az2" {
+  route_table_id         = "${aws_route_table.private_az2.id}"
+  destination_cidr_block = "0.0.0.0/0"
+  nat_gateway_id         = "${aws_nat_gateway.gw_az2.id}"
 }
 
-resource "aws_route_table_association" "setup_az2_subnet_association" {
-  subnet_id      = "${aws_subnet.setup_az2_private.id}"
-  route_table_id = "${aws_route_table.setup_private.id}"
+resource "aws_route_table_association" "subnet_association_az1" {
+  subnet_id      = "${aws_subnet.private_az1.id}"
+  route_table_id = "${aws_route_table.private_az1.id}"
+}
+
+resource "aws_route_table_association" "subnet_association_az2" {
+  subnet_id      = "${aws_subnet.private_az2.id}"
+  route_table_id = "${aws_route_table.private_az2.id}"
 }
 
 # Private security group.
-resource "aws_security_group" "setup" {
-  name   = "setup"
+resource "aws_security_group" "private" {
+  name   = "setup-private"
   vpc_id = "${aws_vpc.setup.id}"
-
-  ingress {
-    protocol    = "tcp"
-    from_port   = 80
-    to_port     = 80
-    cidr_blocks = ["82.163.119.138/32", "217.169.11.246/32"]
-  }
-
-  ingress {
-    protocol    = "tcp"
-    from_port   = 22
-    to_port     = 22
-    cidr_blocks = ["82.163.119.138/32", "217.169.11.246/32"]
-  }
 
   ingress {
     protocol  = "-1"
@@ -200,10 +213,17 @@ resource "aws_security_group" "setup" {
   }
 
   ingress {
-    protocol        = "-1"
-    from_port       = 0
-    to_port         = 0
-    security_groups = ["${aws_security_group.setup_public.id}"]
+    protocol        = "tcp"
+    from_port       = 80
+    to_port         = 80
+    security_groups = ["${aws_security_group.public.id}"]
+  }
+
+  ingress {
+    protocol    = "tcp"
+    from_port   = 22
+    to_port     = 22
+    cidr_blocks = ["${aws_instance.bastion.private_ip}/32"]
   }
 
   egress {
@@ -214,7 +234,7 @@ resource "aws_security_group" "setup" {
   }
 
   tags = {
-    Name = "setup"
+    Name = "setup-private"
   }
 }
 
@@ -226,10 +246,10 @@ resource "aws_vpc_endpoint" "ecs_agent" {
   private_dns_enabled = true
 
   security_group_ids = [
-    "${aws_security_group.setup.id}",
+    "${aws_security_group.private.id}",
   ]
 
-  subnet_ids = ["${aws_subnet.setup.id}"]
+  subnet_ids = ["${aws_subnet.public_az1.id}"]
 }
 
 resource "aws_vpc_endpoint" "ecs_telemetry" {
@@ -239,10 +259,10 @@ resource "aws_vpc_endpoint" "ecs_telemetry" {
   private_dns_enabled = true
 
   security_group_ids = [
-    "${aws_security_group.setup.id}",
+    "${aws_security_group.private.id}",
   ]
 
-  subnet_ids = ["${aws_subnet.setup.id}"]
+  subnet_ids = ["${aws_subnet.public_az1.id}"]
 }
 
 resource "aws_vpc_endpoint" "ecs" {
@@ -252,10 +272,10 @@ resource "aws_vpc_endpoint" "ecs" {
   private_dns_enabled = true
 
   security_group_ids = [
-    "${aws_security_group.setup.id}",
+    "${aws_security_group.private.id}",
   ]
 
-  subnet_ids = ["${aws_subnet.setup.id}"]
+  subnet_ids = ["${aws_subnet.public_az1.id}"]
 }
 
 resource "aws_vpc_endpoint" "logs" {
@@ -265,10 +285,10 @@ resource "aws_vpc_endpoint" "logs" {
   private_dns_enabled = true
 
   security_group_ids = [
-    "${aws_security_group.setup.id}",
+    "${aws_security_group.private.id}",
   ]
 
-  subnet_ids = ["${aws_subnet.setup.id}"]
+  subnet_ids = ["${aws_subnet.public_az1.id}"]
 }
 
 resource "aws_vpc_endpoint" "ecr_api" {
@@ -278,10 +298,10 @@ resource "aws_vpc_endpoint" "ecr_api" {
   private_dns_enabled = true
 
   security_group_ids = [
-    "${aws_security_group.setup.id}",
+    "${aws_security_group.private.id}",
   ]
 
-  subnet_ids = ["${aws_subnet.setup.id}"]
+  subnet_ids = ["${aws_subnet.public_az1.id}"]
 }
 
 resource "aws_vpc_endpoint" "ecr_dkr" {
@@ -291,10 +311,10 @@ resource "aws_vpc_endpoint" "ecr_dkr" {
   private_dns_enabled = true
 
   security_group_ids = [
-    "${aws_security_group.setup.id}",
+    "${aws_security_group.private.id}",
   ]
 
-  subnet_ids = ["${aws_subnet.setup.id}"]
+  subnet_ids = ["${aws_subnet.public_az1.id}"]
 }
 
 resource "aws_vpc_endpoint" "s3" {
@@ -346,10 +366,10 @@ resource "aws_alb" "setup" {
   name               = "setup"
   internal           = false
   load_balancer_type = "application"
-  security_groups    = ["${aws_security_group.setup_public.id}"]
+  security_groups    = ["${aws_security_group.public.id}"]
   subnets = [
-    "${aws_subnet.setup.id}",
-    "${aws_subnet.setup_az2.id}"
+    "${aws_subnet.public_az1.id}",
+    "${aws_subnet.public_az2.id}"
   ]
 
   # TODO:
@@ -361,22 +381,6 @@ resource "aws_alb" "setup" {
 
   tags = {
     Name = "setup"
-  }
-}
-
-resource "aws_alb_listener" "alb_listener" {
-  load_balancer_arn = "${aws_alb.setup.arn}"
-  port              = "80"
-  protocol          = "HTTP"
-
-  default_action {
-    type = "redirect"
-
-    redirect {
-      port        = "443"
-      protocol    = "HTTPS"
-      status_code = "HTTP_301"
-    }
   }
 }
 
@@ -398,7 +402,7 @@ resource "aws_alb_listener" "https_listener" {
   }
 }
 
-# DNS entry.
+# ALB DNS entry.
 resource "aws_route53_record" "setup" {
   zone_id = "Z1XXO7GDQEVT6B"
   name    = "setup-staging"
@@ -406,6 +410,36 @@ resource "aws_route53_record" "setup" {
   alias {
     name                   = "${aws_alb.setup.dns_name}"
     zone_id                = "${aws_alb.setup.zone_id}"
+    evaluate_target_health = true
+  }
+}
+
+# QR Code DNS entry and redirection.
+resource "aws_s3_bucket" "qr_redirect" {
+  bucket = "qr.aztecprotocol.com"
+  acl    = "private"
+
+  website {
+    index_document = "index.html"
+    routing_rules  = <<EOF
+[{
+    "Redirect": {
+      "Protocol": "https",
+      "Hostname": "aztecprotocol.us7.list-manage.com",
+      "ReplaceKeyWith": "/subscribe?u=0f5fa2f22c3349ec01c3d1fdc&id=1b8d51cab0"
+    }
+}]
+EOF
+  }
+}
+
+resource "aws_route53_record" "qr" {
+  zone_id = "Z1XXO7GDQEVT6B"
+  name    = "qr"
+  type    = "A"
+  alias {
+    name                   = "${aws_s3_bucket.qr_redirect.website_domain}"
+    zone_id                = "${aws_s3_bucket.qr_redirect.hosted_zone_id}"
     evaluate_target_health = true
   }
 }
@@ -454,8 +488,8 @@ resource "aws_iam_role" "setup_ecs_instance" {
 }
 
 resource "aws_iam_instance_profile" "ecs" {
-  name  = "setup-ecs-instance"
-  roles = ["${aws_iam_role.setup_ecs_instance.name}"]
+  name = "setup-ecs-instance"
+  role = "${aws_iam_role.setup_ecs_instance.name}"
 }
 
 resource "aws_iam_policy_attachment" "ecs_instance" {
@@ -467,4 +501,28 @@ resource "aws_iam_policy_attachment" "ecs_instance" {
 resource "aws_key_pair" "instance_key_pair" {
   key_name   = "setup-instance-key-pair"
   public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDagCvr/+CA1jmFaJf+e9+Kw6iwfhvaKOpfbGEl5zLgB+rum5L4Kga6Jow1gLQeMnAHfqc2IgpsU4t04c8PYApAt8AWNDL+KxMiFytfjKfJ2DZJA73CYkFnkfnMtU+ki+JG9dAHd6m7ShtCSzE5n6EDO2yWCVWQfqE3dcnpwrymSWkJYrbxzeOixiNZ4f1nD9ddvFvTWGB4l+et5SWgeIaYgJYDqTI2teRt9ytJiDGrCWXs9olHsCZOL6TEJPUQmNekwBkjMAZ4TmbBMjwbUlIxOpW2UxzlONcNn7IlRcGQg0Gdbkpo/zOlCNXsvacvnphDk5vKKaQj+aQiG916LU5P charlie@aztecprotocol.com"
+}
+
+# Bastion
+resource "aws_instance" "bastion" {
+  ami                         = "ami-0d8e27447ec2c8410"
+  instance_type               = "t2.nano"
+  subnet_id                   = "${aws_subnet.public_az1.id}"
+  vpc_security_group_ids      = ["${aws_security_group.public.id}"]
+  iam_instance_profile        = "${aws_iam_instance_profile.ecs.name}"
+  associate_public_ip_address = true
+  key_name                    = "${aws_key_pair.instance_key_pair.key_name}"
+  availability_zone           = "eu-west-2a"
+
+  tags = {
+    Name = "bastion"
+  }
+}
+
+resource "aws_route53_record" "bastion" {
+  zone_id = "Z1XXO7GDQEVT6B"
+  name    = "bastion"
+  type    = "A"
+  ttl     = 300
+  records = ["${aws_instance.bastion.public_ip}"]
 }
