@@ -362,6 +362,23 @@ resource "aws_ecs_cluster" "setup" {
 }
 
 # Create our load balancer.
+data "aws_iam_policy_document" "alb_log_policy" {
+  statement {
+    actions   = ["s3:PutObject"]
+    resources = ["arn:aws:s3:::aztec-logs/setup-alb-logs/AWSLogs/*"]
+    principals {
+      type        = "AWS"
+      identifiers = ["652711504416"]
+    }
+  }
+}
+
+resource "aws_s3_bucket" "logs" {
+  bucket = "aztec-logs"
+  acl    = "private"
+  policy = "${data.aws_iam_policy_document.alb_log_policy.json}"
+}
+
 resource "aws_alb" "setup" {
   name               = "setup"
   internal           = false
@@ -372,12 +389,11 @@ resource "aws_alb" "setup" {
     "${aws_subnet.public_az2.id}"
   ]
 
-  # TODO:
-  # access_logs {
-  #   bucket  = "${aws_s3_bucket.lb_logs.bucket}"
-  #   prefix  = "test-lb"
-  #   enabled = true
-  # }
+  access_logs {
+    bucket  = "${aws_s3_bucket.logs.bucket}"
+    prefix  = "setup-alb-logs"
+    enabled = true
+  }
 
   tags = {
     Name = "setup"
