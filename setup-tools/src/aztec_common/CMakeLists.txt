@@ -32,6 +32,7 @@ target_include_directories(
     PUBLIC
         ${DEPENDS_DIR}/blake2/ref
         ${DEPENDS_DIR}/libff
+        ${GMP_INCLUDE_DIR}
 )
 
 install(

@@ -7,6 +7,8 @@
 #include "libff_types.hpp"
 #include "checksum.hpp"
 
+#define __bswap_64 __builtin_bswap64
+
 namespace streaming
 {
 constexpr bool USE_COMPRESSION = false;

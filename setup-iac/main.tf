@@ -425,7 +425,7 @@ resource "aws_s3_bucket" "qr_redirect" {
 [{
     "Redirect": {
       "Protocol": "https",
-      "Hostname": "aztecprotocol.us7.list-manage.com",
+      "HostName": "aztecprotocol.us7.list-manage.com",
       "ReplaceKeyWith": "/subscribe?u=0f5fa2f22c3349ec01c3d1fdc&id=1b8d51cab0"
     }
 }]

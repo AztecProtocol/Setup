@@ -2,11 +2,9 @@
  * Setup
  * Copyright Spilsbury Holdings 2019
  **/
-#include <string.h>
 #include <stdlib.h>
 #include <iostream>
 #include <stdio.h>
-#include <string.h>
 #include <thread>
 #include <atomic>
 #include <chrono>
@@ -74,7 +72,7 @@ void compute_job(std::vector<GroupT> &g_x, size_t start_from, size_t progress_to
     while (job_progress < g_x.size())
     {
         std::this_thread::sleep_for(std::chrono::seconds(1));
-        const double progress_percent = double(progress + (job_progress * weight)) / double(progress_total / 100);
+        const double progress_percent = double((progress + (job_progress * weight))) * 100 / double(progress_total);
         // Signals calling process the progress.
         std::cout << "progress " << progress_percent << std::endl;
     }
@@ -119,7 +117,7 @@ void compute_transcript(std::string const &dir, std::vector<G1> &g1_x, std::vect
     std::cout << "wrote " << manifest.transcript_number << std::endl;
 }
 
-size_t calculate_current_progress(streaming::Manifest const &manifest, size_t transcript_index)
+size_t calculate_current_progress(streaming::Manifest const &manifest)
 {
     size_t g1_points = std::min((size_t)manifest.total_g1_points, (size_t)manifest.start_from);
     size_t g2_points = std::min((size_t)manifest.total_g2_points, (size_t)manifest.start_from);
@@ -144,7 +142,7 @@ void compute_existing_transcript(std::string const &dir, size_t num, Fr &multipl
         manifest.num_g2_points -= 1;
     }
 
-    progress = calculate_current_progress(manifest, num);
+    progress = calculate_current_progress(manifest);
 
     std::cerr << "Will compute " << manifest.num_g1_points << " G1 points and " << manifest.num_g2_points << " G2 points on top of transcript " << manifest.transcript_number << std::endl;
 
@@ -210,7 +208,7 @@ public:
 
     ~Secret()
     {
-        explicit_bzero((void *)&t_, sizeof(T));
+        memset((void *)&t_, 0, sizeof(T));
     }
 
     operator T &()

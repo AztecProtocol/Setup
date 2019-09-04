@@ -172,7 +172,7 @@ resource "aws_ecs_service" "setup_mpc_server" {
   desired_count = "1"
 
   network_configuration {
-    subnets         = [
+    subnets = [
       "${data.terraform_remote_state.setup_iac.outputs.subnet_az1_private_id}",
       "${data.terraform_remote_state.setup_iac.outputs.subnet_az2_private_id}"
     ]

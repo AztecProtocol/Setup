@@ -37,6 +37,7 @@ find_library(GMP_LIBRARIES NAMES gmp libgmp)
 find_library(GMPXX_LIBRARIES NAMES gmpxx libgmpxx)
 
 add_compile_options(-fno-stack-protector)
+add_compile_options(-Wno-unused-const-variable)
 
 option(
     ENABLE_LIBFF_PROFILING

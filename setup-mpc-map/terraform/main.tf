@@ -92,7 +92,7 @@ resource "aws_ecs_service" "setup_mpc_map" {
   desired_count = "2"
 
   network_configuration {
-    subnets         = [
+    subnets = [
       "${data.terraform_remote_state.setup_iac.outputs.subnet_az1_private_id}",
       "${data.terraform_remote_state.setup_iac.outputs.subnet_az2_private_id}"
     ]
@@ -117,11 +117,13 @@ resource "aws_ecs_service" "setup_mpc_map" {
   }
 }
 
+# Logs
 resource "aws_cloudwatch_log_group" "setup_mpc_map_logs" {
   name              = "/fargate/service/setup-mpc-map"
   retention_in_days = "14"
 }
 
+# Configure ALB route.
 resource "aws_alb_target_group" "setup_mpc_map" {
   name        = "setup-mpc-map"
   port        = "80"
