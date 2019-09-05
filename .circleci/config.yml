@@ -31,5 +31,4 @@ jobs:
 workflows:
   build_and_push_images:
     jobs:
-      - build_and_test:
-          context: global
+      - build_and_test
