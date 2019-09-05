@@ -202,11 +202,12 @@ resource "aws_cloudwatch_log_group" "setup_mpc_server_logs" {
 
 # Configure ALB to route /api to server.
 resource "aws_alb_target_group" "setup_mpc_server" {
-  name        = "setup-mpc-server"
-  port        = "80"
-  protocol    = "HTTP"
-  target_type = "ip"
-  vpc_id      = "${data.terraform_remote_state.setup_iac.outputs.vpc_id}"
+  name                 = "setup-mpc-server"
+  port                 = "80"
+  protocol             = "HTTP"
+  target_type          = "ip"
+  vpc_id               = "${data.terraform_remote_state.setup_iac.outputs.vpc_id}"
+  deregistration_delay = 5
 
   health_check {
     path    = "/api"
