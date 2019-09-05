@@ -166,10 +166,12 @@ data "aws_ecs_task_definition" "setup_mpc_server" {
 }
 
 resource "aws_ecs_service" "setup_mpc_server" {
-  name          = "setup-mpc-server"
-  cluster       = "${data.terraform_remote_state.setup_iac.outputs.ecs_cluster_id}"
-  launch_type   = "EC2"
-  desired_count = "1"
+  name                               = "setup-mpc-server"
+  cluster                            = "${data.terraform_remote_state.setup_iac.outputs.ecs_cluster_id}"
+  launch_type                        = "EC2"
+  desired_count                      = "1"
+  deployment_maximum_percent         = 100
+  deployment_minimum_healthy_percent = 0
 
   network_configuration {
     subnets = [
