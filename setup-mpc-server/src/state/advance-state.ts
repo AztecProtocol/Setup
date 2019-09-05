@@ -1,5 +1,5 @@
 import moment, { Moment } from 'moment';
-import { MpcState } from 'setup-mpc-common';
+import { MpcState, Transcript } from 'setup-mpc-common';
 import { TranscriptStore } from '../transcript-store';
 import { Verifier } from '../verifier';
 import { orderWaitingParticipants } from './order-waiting-participants';
@@ -78,8 +78,37 @@ export async function advanceState(state: MpcState, store: TranscriptStore, veri
     waitingParticipant.sequence = nextSequence;
     waitingParticipant.startedAt = now;
     waitingParticipant.state = 'RUNNING';
+    waitingParticipant.transcripts = await getRunningParticipantsTranscripts(state, store);
     verifier.runningAddress = waitingParticipant.address;
   }
+}
+
+async function getRunningParticipantsTranscripts(state: MpcState, store: TranscriptStore): Promise<Transcript[]> {
+  const lastCompletedParticipant = state.participants
+    .slice()
+    .reverse()
+    .find(p => p.state === 'COMPLETE');
+
+  if (!lastCompletedParticipant) {
+    return Array(Math.ceil(Math.max(state.numG1Points, state.numG2Points) / state.pointsPerTranscript))
+      .fill(0)
+      .map((_, num) => ({
+        num,
+        size: 0,
+        downloaded: 0,
+        uploaded: 0,
+        complete: false,
+      }));
+  }
+
+  const transcripts = await store.getVerified(lastCompletedParticipant.address);
+  return transcripts.map(t => ({
+    ...t,
+    fromAddress: lastCompletedParticipant.address,
+    downloaded: 0,
+    uploaded: 0,
+    complete: false,
+  }));
 }
 
 function markIdleParticipantsOffline(state: MpcState, sequence: number, now: Moment) {

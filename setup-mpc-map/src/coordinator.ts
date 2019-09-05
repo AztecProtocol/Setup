@@ -74,24 +74,28 @@ export class Coordinator {
   }
 
   private setProgress(p: Participant) {
-    const totalData = p.transcripts.reduce((a, t) => a + t.size, 0);
-    const totalDownloaded = p.transcripts.reduce((a, t) => a + t.downloaded, 0);
-    const totalUploaded = p.transcripts.reduce((a, t) => a + t.uploaded, 0);
-    const downloadProgress = totalData ? (totalDownloaded / totalData) * 100 : 0;
-    const uploadProgress = totalData ? (totalUploaded / totalData) * 100 : 0;
-    const computeProgress = p.computeProgress;
-    const verifyProgress = p.verifyProgress;
-
     if (p.runningState === 'OFFLINE') {
       document.getElementById('overlay-progress-online-only')!.style.display = 'none';
     } else {
       document.getElementById('overlay-progress-online-only')!.style.display = 'inline';
     }
 
-    document.getElementById('overlay-progress-download')!.innerHTML = `${downloadProgress.toFixed(2)}%`;
-    document.getElementById('overlay-progress-compute')!.innerHTML = `${computeProgress.toFixed(2)}%`;
-    document.getElementById('overlay-progress-upload')!.innerHTML = `${uploadProgress.toFixed(2)}%`;
-    document.getElementById('overlay-progress-verify')!.innerHTML = `${verifyProgress.toFixed(2)}%`;
+    if (p.state === 'COMPLETE') {
+      document.getElementById('overlay-progress-download')!.innerHTML = '100%';
+      document.getElementById('overlay-progress-upload')!.innerHTML = '100%';
+      document.getElementById('overlay-progress-compute')!.innerHTML = '100%';
+      document.getElementById('overlay-progress-verify')!.innerHTML = '100%';
+    } else if (p.state === 'RUNNING') {
+      const totalData = p.transcripts.reduce((a, t) => a + t.size, 0);
+      const totalDownloaded = p.transcripts.reduce((a, t) => a + t.downloaded, 0);
+      const totalUploaded = p.transcripts.reduce((a, t) => a + t.uploaded, 0);
+      const downloadProgress = totalData ? (totalDownloaded / totalData) * 100 : 0;
+      const uploadProgress = totalData ? (totalUploaded / totalData) * 100 : 0;
+      document.getElementById('overlay-progress-download')!.innerHTML = `${downloadProgress.toFixed(2)}%`;
+      document.getElementById('overlay-progress-upload')!.innerHTML = `${uploadProgress.toFixed(2)}%`;
+      document.getElementById('overlay-progress-compute')!.innerHTML = `${p.computeProgress.toFixed(2)}%`;
+      document.getElementById('overlay-progress-verify')!.innerHTML = `${p.verifyProgress.toFixed(2)}%`;
+    }
   }
 
   private updateParticipantOverlay(p: Participant, state: MpcState) {

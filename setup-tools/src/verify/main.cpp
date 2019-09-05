@@ -6,14 +6,18 @@
 
 int main(int argc, char **argv)
 {
-    if (argc < 2)
+    if (argc < 6)
     {
-        std::cout << "usage: " << argv[0] << " <transcript path> [<transcript 0 path> <previous transcript path>]" << std::endl;
+        std::cout << "usage: " << argv[0] << " <total G1 points> <total G2 points> <points per transcript> <transcript num> <transcript path> [<transcript 0 path> <previous transcript path>]" << std::endl;
         return 1;
     }
-    std::string const transcript_path(argv[1]);
-    std::string const transcript0_path(argc == 2 ? argv[1] : argv[2]);
-    std::string const transcript_previous_path(argc > 3 ? argv[3] : "");
+    size_t const total_g1_points = strtol(argv[1], NULL, 0);
+    size_t const total_g2_points = strtol(argv[2], NULL, 0);
+    size_t const points_per_transcript = strtol(argv[3], NULL, 0);
+    size_t const transcript_num = strtol(argv[4], NULL, 0);
+    std::string const transcript_path(argv[5]);
+    std::string const transcript0_path(argc == 6 ? argv[5] : argv[6]);
+    std::string const transcript_previous_path(argc > 7 ? argv[7] : "");
 
     libff::alt_bn128_pp::init_public_params();
 
@@ -36,7 +40,6 @@ int main(int argc, char **argv)
     try
     {
         streaming::Manifest manifest;
-        streaming::Manifest previous_manifest;
         std::vector<G1> g1_x;
         std::vector<G2> g2_x;
         std::vector<G1> g1_0_0;
@@ -54,6 +57,7 @@ int main(int argc, char **argv)
         }
 
         streaming::read_transcript_manifest(manifest, transcript_path);
+        validate_manifest(manifest, total_g1_points, total_g2_points, points_per_transcript, transcript_num);
 
         if (manifest.transcript_number == 0)
         {
@@ -75,8 +79,8 @@ int main(int argc, char **argv)
         }
         else
         {
+            streaming::Manifest previous_manifest;
             streaming::read_transcript_manifest(previous_manifest, transcript_previous_path);
-            validate_manifest(previous_manifest, manifest);
 
             // If this transcript and previous transcript are 0, we are going to check this transcript was built
             // on top of the previous participants using the g2^y and previous g1_x points.

@@ -19,6 +19,7 @@ export class Verifier {
     private store: TranscriptStore,
     private numG1Points: number,
     private numG2Points: number,
+    private pointsPerTranscript: number,
     private cb: (address: Address, num: number, verified: boolean) => Promise<void>
   ) {}
 
@@ -72,13 +73,22 @@ export class Verifier {
   }
 
   private async verifyTranscript(address: Address, transcriptNumber: number, transcriptPath: string) {
-    // Argument 0 is the transcript to verify.
-    const args = [transcriptPath];
+    // Argument 0 is total number of G1 points in all transcripts.
+    // Argument 1 is total number of G2 points in all transcripts.
+    // Argument 2 is the total points per transcript.
+    // Argument 3 is the expected transcript number.
+    // Argument 4 is the transcript to verify.
+    // Argument 5 is the 0th transcript of the sequence.
+    const args = [
+      this.numG1Points.toString(),
+      this.numG2Points.toString(),
+      this.pointsPerTranscript.toString(),
+      transcriptNumber.toString(),
+      transcriptPath,
+      this.store.getUnverifiedTranscriptPath(address, 0),
+    ];
 
-    // Argument 1 is the 0th transcript of the sequence.
-    args.push(transcriptNumber === 0 ? transcriptPath : this.store.getUnverifiedTranscriptPath(address, 0));
-
-    // Argument 3 is...
+    // Argument 6 is...
     if (transcriptNumber === 0) {
       // The previous participants 0th transcript, or nothing if no previous participant.
       if (this.lastCompleteAddress) {
@@ -106,28 +116,6 @@ export class Verifier {
       verify.on('close', code => {
         this.proc = undefined;
         resolve(code === 0);
-      });
-    });
-  }
-
-  public async verifyTranscriptSet(address: Address) {
-    const transcriptPaths = await this.store.getUnverifiedTranscriptPaths(address);
-    const args = [this.numG1Points.toString(), this.numG2Points.toString(), ...transcriptPaths];
-
-    return new Promise<boolean>(resolve => {
-      const { VERIFY_PATH = '../setup-tools/verify_set' } = process.env;
-      const verify = spawn(VERIFY_PATH, args);
-
-      verify.stdout.on('data', data => {
-        console.error(data.toString());
-      });
-
-      verify.stderr.on('data', data => {
-        console.error(data.toString());
-      });
-
-      verify.on('close', code => {
-        resolve(code === 0 ? true : false);
       });
     });
   }

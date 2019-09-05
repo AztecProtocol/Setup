@@ -108,6 +108,7 @@ export class Server implements MpcServer {
       this.store,
       this.state.numG1Points,
       this.state.numG2Points,
+      this.state.pointsPerTranscript,
       this.verifierCallback.bind(this)
     );
     const lastCompleteParticipant = this.getLastCompleteParticipant();
@@ -218,11 +219,12 @@ export class Server implements MpcServer {
     try {
       const { transcripts, address, runningState, computeProgress } = participantData;
       const p = this.getAndAssertRunningParticipant(address);
-      // Complete flag is always controlled by the server. Don't allow client to overwrite.
-      p.transcripts = transcripts.map((t, i) => ({
-        ...t,
-        complete: p.transcripts[i] ? p.transcripts[i].complete : false,
-      }));
+      // Only update transcript fields that are permitted.
+      p.transcripts.forEach((t, i) => {
+        t.size = transcripts[i].size;
+        t.downloaded = transcripts[i].downloaded;
+        t.uploaded = transcripts[i].uploaded;
+      });
       p.runningState = runningState;
       p.computeProgress = computeProgress;
       p.lastUpdate = moment();
@@ -293,25 +295,16 @@ export class Server implements MpcServer {
     p.transcripts[transcriptNumber].complete = true;
 
     if (p.transcripts.every(t => t.complete)) {
-      // Every transcript in clients transcript list is verified. We still need to verify the set
-      // as a whole. This just checks the total number of G1 and G2 points is as expected.
-      const fullyVerified = await this.verifier.verifyTranscriptSet(p.address);
-
-      if (fullyVerified) {
-        await this.store.makeLive(address);
-        p.state = 'COMPLETE';
-        p.runningState = 'COMPLETE';
-        // We may not have yet received final state update from the client, and once we're no longer
-        // running we won't process the update. Force compute progress to 100%.
-        p.computeProgress = 100;
-        p.completedAt = moment();
-        this.verifier.lastCompleteAddress = p.address;
-      } else {
-        console.error(`Verification of set failed for ${p.address}...`);
-        p.state = 'INVALIDATED';
-        p.runningState = 'COMPLETE';
-        p.error = 'verify failed';
-      }
+      await this.store.makeLive(address);
+      p.state = 'COMPLETE';
+      p.runningState = 'COMPLETE';
+      // Don't need transcripts anymore. If we don't clear them, state size will increase over time.
+      p.transcripts = [];
+      // We may not have yet received final state update from the client, and once we're no longer
+      // running we won't process the update. Force compute progress to 100%.
+      p.computeProgress = 100;
+      p.completedAt = moment();
+      this.verifier.lastCompleteAddress = p.address;
     }
 
     p.verifyProgress = ((transcriptNumber + 1) / p.transcripts.length) * 100;
@@ -325,6 +318,7 @@ export class Server implements MpcServer {
     console.error(`Verification failed: ${address.toString()} ${transcriptNumber}...`);
     p.state = 'INVALIDATED';
     p.runningState = 'COMPLETE';
+    p.transcripts = [];
     p.error = 'verify failed';
     this.state.sequence += 1;
     p.sequence = this.state.sequence;

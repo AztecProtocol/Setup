@@ -1,7 +1,7 @@
 import { createReadStream, mkdirSync } from 'fs';
 import { Readable } from 'stream';
 import { Address } from 'web3x/address';
-import { existsAsync, mkdirAsync, readdirAsync, renameAsync, rmdirAsync, unlinkAsync } from './fs-async';
+import { existsAsync, mkdirAsync, readdirAsync, renameAsync, rmdirAsync, statAsync, unlinkAsync } from './fs-async';
 
 export interface TranscriptStore {
   save(address: Address, num: number, transcriptPath: string, signaturePath: string): Promise<void>;
@@ -10,8 +10,9 @@ export interface TranscriptStore {
   makeLive(address: Address): Promise<void>;
   loadTranscript(address: Address, num: number): Readable;
   getTranscriptPath(address: Address, num: number): string;
-  getTranscriptPaths(address: Address): Promise<string[]>;
+  getVerifiedTranscriptPaths(address: Address): Promise<string[]>;
   getUnverifiedTranscriptPaths(address: Address): Promise<string[]>;
+  getVerified(address: Address): Promise<{ size: number; num: number }[]>;
   getUnverified(address: Address): Promise<{ address: Address; num: number }[]>;
   erase(address: Address): Promise<void>;
 }
@@ -65,7 +66,7 @@ export class DiskTranscriptStore implements TranscriptStore {
     return `${this.getUnverifiedBasePath(address)}/transcript${num}.sig`;
   }
 
-  public async getTranscriptPaths(address: Address) {
+  public async getVerifiedTranscriptPaths(address: Address) {
     let num = 0;
     const paths: string[] = [];
     while (await existsAsync(this.getTranscriptPath(address, num))) {
@@ -83,6 +84,20 @@ export class DiskTranscriptStore implements TranscriptStore {
       ++num;
     }
     return paths;
+  }
+
+  public async getVerified(address: Address) {
+    let num = 0;
+    const transcripts: { size: number; num: number }[] = [];
+    while (await existsAsync(this.getTranscriptPath(address, num))) {
+      const stats = await statAsync(this.getTranscriptPath(address, num));
+      transcripts.push({
+        size: stats.size,
+        num,
+      });
+      ++num;
+    }
+    return transcripts;
   }
 
   public async getUnverified(address: Address) {

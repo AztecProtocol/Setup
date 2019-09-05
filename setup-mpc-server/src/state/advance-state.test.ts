@@ -21,8 +21,10 @@ describe('advance state', () => {
     state = defaultState(1234);
     state.startTime = moment(baseTime).add(5, 's');
     state.endTime = moment(baseTime).add(60, 's');
+    state.pointsPerTranscript = 500000;
     state.participants = addresses.map((a, i) => createParticipant(0, moment(baseTime), i + 1, 1, a));
     mockTranscriptStore.erase = jest.fn().mockResolvedValue(undefined);
+    mockTranscriptStore.getVerified = jest.fn();
   });
 
   it('should mark participants that have not pinged in 10s offline', async () => {
@@ -91,15 +93,67 @@ describe('advance state', () => {
     expect(state.sequence).toBe(1);
   });
 
-  it('should shift next waiting online participant to running state', async () => {
+  it('should shift first waiting online participant to running state', async () => {
     state.ceremonyState = 'RUNNING';
+    state.participants[0].online = true;
+
+    const now = moment(state.startTime).add(10, 's');
+    await advanceState(state, mockTranscriptStore as any, mockVerifier as any, now);
+
+    expect(mockTranscriptStore.getVerified).not.toHaveBeenCalled();
+    expect(state.sequence).toBe(1);
+    expect(state.participants[0].state).toBe('RUNNING');
+    expect(state.participants[0].startedAt).toEqual(now);
+    expect(state.participants[0].transcripts).toEqual([
+      {
+        num: 0,
+        size: 0,
+        downloaded: 0,
+        uploaded: 0,
+        complete: false,
+      },
+      {
+        num: 1,
+        size: 0,
+        downloaded: 0,
+        uploaded: 0,
+        complete: false,
+      },
+    ]);
+  });
+
+  it('should shift next waiting online participant to running state', async () => {
+    mockTranscriptStore.getVerified!.mockResolvedValue([{ num: 0, size: 1000 }, { num: 1, size: 1005 }]);
+
+    state.ceremonyState = 'RUNNING';
+    state.participants[0].state = 'COMPLETE';
     state.participants[1].online = true;
 
     const now = moment(state.startTime).add(10, 's');
     await advanceState(state, mockTranscriptStore as any, mockVerifier as any, now);
+
+    expect(mockTranscriptStore.getVerified).toHaveBeenCalledWith(state.participants[0].address);
     expect(state.sequence).toBe(1);
     expect(state.participants[1].state).toBe('RUNNING');
     expect(state.participants[1].startedAt).toEqual(now);
+    expect(state.participants[1].transcripts).toEqual([
+      {
+        fromAddress: state.participants[0].address,
+        num: 0,
+        size: 1000,
+        downloaded: 0,
+        uploaded: 0,
+        complete: false,
+      },
+      {
+        fromAddress: state.participants[0].address,
+        num: 1,
+        size: 1005,
+        downloaded: 0,
+        uploaded: 0,
+        complete: false,
+      },
+    ]);
   });
 
   it('should invalidate running tier 1 participant after timeout', async () => {
@@ -125,12 +179,12 @@ describe('advance state', () => {
     state.participants[0].tier = 2;
 
     // Within time limit.
-    await advanceState(state, mockTranscriptStore as any, mockVerifier as any, moment(state.startTime).add(18, 's'));
+    await advanceState(state, mockTranscriptStore as any, mockVerifier as any, moment(state.startTime).add(90, 's'));
     expect(state.sequence).toBe(0);
     expect(state.participants[0].state).toBe('RUNNING');
 
     // After time limit.
-    await advanceState(state, mockTranscriptStore as any, mockVerifier as any, moment(state.startTime).add(19, 's'));
+    await advanceState(state, mockTranscriptStore as any, mockVerifier as any, moment(state.startTime).add(91, 's'));
     expect(state.sequence).toBe(1);
     expect(state.participants[0].state).toBe('INVALIDATED');
   });
