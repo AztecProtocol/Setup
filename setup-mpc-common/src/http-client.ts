@@ -1,4 +1,5 @@
 import { createReadStream, existsSync, statSync } from 'fs';
+import https from 'https';
 import fetch from 'isomorphic-fetch';
 import { Moment } from 'moment';
 import progress from 'progress-stream';
@@ -11,6 +12,12 @@ import { MpcServer, MpcState, Participant } from './mpc-server';
 import { mpcStateFromJSON } from './mpc-state';
 
 export class HttpClient implements MpcServer {
+  private opts: any = {
+    keepalive: true,
+    agent: new https.Agent({
+      keepAlive: true,
+    }),
+  };
   constructor(private apiUrl: string, private account?: Account) {}
 
   public async resetState(
@@ -38,7 +45,7 @@ export class HttpClient implements MpcServer {
     if (sequence !== undefined) {
       url.searchParams.append('sequence', `${sequence}`);
     }
-    const response = await fetch(url.toString());
+    const response = await fetch(url.toString(), this.opts);
     if (response.status !== 200) {
       throw new Error(`Bad status code from server: ${response.status}`);
     }
@@ -53,6 +60,7 @@ export class HttpClient implements MpcServer {
     }
     const { signature } = this.account.sign('ping');
     const response = await fetch(`${this.apiUrl}/ping/${address.toString().toLowerCase()}`, {
+      ...this.opts,
       method: 'GET',
       headers: {
         'X-Signature': signature,
@@ -77,6 +85,7 @@ export class HttpClient implements MpcServer {
     });
     const { signature } = this.account.sign(body);
     const response = await fetch(`${this.apiUrl}/participant/${address.toString().toLowerCase()}`, {
+      ...this.opts,
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
@@ -90,7 +99,10 @@ export class HttpClient implements MpcServer {
   }
 
   public async downloadData(address: Address, transcriptNumber: number) {
-    const response = await fetch(`${this.apiUrl}/data/${address.toString().toLowerCase()}/${transcriptNumber}`);
+    const response = await fetch(
+      `${this.apiUrl}/data/${address.toString().toLowerCase()}/${transcriptNumber}`,
+      this.opts
+    );
     if (response.status !== 200) {
       throw new Error(`Download failed, bad status code: ${response.status}`);
     }
@@ -132,6 +144,7 @@ export class HttpClient implements MpcServer {
         transcriptStream.pipe(progStream);
 
         const response = await fetch(`${this.apiUrl}/data/${address.toString().toLowerCase()}/${transcriptNumber}`, {
+          ...this.opts,
           method: 'PUT',
           body: progStream as any,
           headers: {
