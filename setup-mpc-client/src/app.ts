@@ -111,7 +111,7 @@ export class App {
         remoteState,
         cloneParticipant(myRemoteState),
         this.server,
-        this.computeOffline && myRemoteState.tier === 1
+        this.computeOffline && myRemoteState.tier < 2
       );
 
       this.compute.start().catch(err => {

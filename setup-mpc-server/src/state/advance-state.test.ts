@@ -122,6 +122,16 @@ describe('advance state', () => {
     ]);
   });
 
+  it('should not shift first waiting participant to running state if not online', async () => {
+    state.ceremonyState = 'RUNNING';
+
+    const now = moment(state.startTime).add(10, 's');
+    await advanceState(state, mockTranscriptStore as any, mockVerifier as any, now);
+
+    expect(state.sequence).toBe(0);
+    expect(state.participants.some(p => p.state === 'RUNNING')).toBe(false);
+  });
+
   it('should shift next waiting online participant to running state', async () => {
     mockTranscriptStore.getVerified!.mockResolvedValue([{ num: 0, size: 1000 }, { num: 1, size: 1005 }]);
 

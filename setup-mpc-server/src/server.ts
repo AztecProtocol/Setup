@@ -74,7 +74,12 @@ export class Server implements MpcServer {
       pointsPerTranscript,
       participants: [],
     };
-    participants.forEach(address => this.addNextParticipant(state, address, 1));
+
+    if (participants.length) {
+      // First participant in the list is the honoured "tier 0" participant.
+      this.addNextParticipant(state, participants[0], 0);
+      participants.slice(1).forEach(address => this.addNextParticipant(state, address, 1));
+    }
 
     await this.resetWithState(state);
   }
@@ -316,6 +321,9 @@ export class Server implements MpcServer {
   private async onRejected(address: Address, transcriptNumber: number) {
     const p = this.getParticipant(address);
     console.error(`Verification failed: ${address.toString()} ${transcriptNumber}...`);
+    if (p.runningState === 'OFFLINE') {
+      return;
+    }
     p.state = 'INVALIDATED';
     p.runningState = 'COMPLETE';
     p.transcripts = [];

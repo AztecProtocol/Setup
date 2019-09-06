@@ -70,8 +70,8 @@ export async function advanceState(state: MpcState, store: TranscriptStore, veri
   }
 
   // Find next waiting, online participant and shift them to the running state.
-  const waitingParticipant = state.participants.find(p => p.state === 'WAITING' && p.online);
-  if (waitingParticipant && waitingParticipant.state === 'WAITING') {
+  const waitingParticipant = state.participants.find(p => p.state === 'WAITING');
+  if (waitingParticipant && waitingParticipant.online) {
     await store.erase(waitingParticipant.address);
     state.sequence = nextSequence;
     state.statusSequence = nextSequence;

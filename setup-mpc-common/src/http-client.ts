@@ -1,4 +1,5 @@
 import { createReadStream, existsSync, statSync } from 'fs';
+import http from 'http';
 import https from 'https';
 import fetch from 'isomorphic-fetch';
 import { Moment } from 'moment';
@@ -14,11 +15,12 @@ import { mpcStateFromJSON } from './mpc-state';
 export class HttpClient implements MpcServer {
   private opts: any = {
     keepalive: true,
-    agent: new https.Agent({
-      keepAlive: true,
-    }),
   };
-  constructor(private apiUrl: string, private account?: Account) {}
+  constructor(private apiUrl: string, private account?: Account) {
+    this.opts.agent = /^https/.test(apiUrl)
+      ? new https.Agent({ keepAlive: true })
+      : new http.Agent({ keepAlive: true });
+  }
 
   public async resetState(
     startTime: Moment,
