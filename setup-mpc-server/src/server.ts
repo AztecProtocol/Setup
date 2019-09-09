@@ -322,8 +322,10 @@ export class Server implements MpcServer {
     const p = this.getParticipant(address);
     console.error(`Verification failed: ${address.toString()} ${transcriptNumber}...`);
     if (p.runningState === 'OFFLINE') {
+      // If participant is computing offline, we'll be more lenient and give them a chance to retry.
       return;
     }
+    // Otherwise, *bang*, you're dead.
     p.state = 'INVALIDATED';
     p.runningState = 'COMPLETE';
     p.transcripts = [];

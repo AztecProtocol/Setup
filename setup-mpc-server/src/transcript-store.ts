@@ -14,7 +14,8 @@ export interface TranscriptStore {
   getUnverifiedTranscriptPaths(address: Address): Promise<string[]>;
   getVerified(address: Address): Promise<{ size: number; num: number }[]>;
   getUnverified(address: Address): Promise<{ address: Address; num: number }[]>;
-  erase(address: Address): Promise<void>;
+  eraseAll(address: Address): Promise<void>;
+  eraseUnverified(address: Address, num?: number): Promise<void>;
 }
 
 export class DiskTranscriptStore implements TranscriptStore {
@@ -111,7 +112,7 @@ export class DiskTranscriptStore implements TranscriptStore {
     });
   }
 
-  public async erase(address: Address) {
+  public async eraseAll(address: Address) {
     await this.eraseVerified(address);
     await this.eraseUnverified(address);
   }
@@ -132,17 +133,21 @@ export class DiskTranscriptStore implements TranscriptStore {
     }
   }
 
-  private async eraseUnverified(address: Address) {
+  public async eraseUnverified(address: Address, num?: number) {
     try {
       const dir = this.getUnverifiedBasePath(address);
       if (!(await existsAsync(dir))) {
         return;
       }
-      const files = await readdirAsync(dir);
-      for (const file of await files) {
-        await unlinkAsync(`${dir}/${file}`);
+      if (num) {
+        await unlinkAsync(this.getUnverifiedTranscriptPath(address, num));
+      } else {
+        const files = await readdirAsync(dir);
+        for (const file of await files) {
+          await unlinkAsync(`${dir}/${file}`);
+        }
+        await rmdirAsync(this.getUnverifiedBasePath(address));
       }
-      await rmdirAsync(this.getUnverifiedBasePath(address));
     } catch (err) {
       console.error(err);
     }

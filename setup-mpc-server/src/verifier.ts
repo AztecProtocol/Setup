@@ -49,6 +49,7 @@ export class Verifier {
 
           await this.cb(address, num, true);
         } else {
+          await this.store.eraseUnverified(address, num);
           if (!this.cancelled) {
             await this.cb(address, num, false);
           }
