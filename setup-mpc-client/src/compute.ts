@@ -177,13 +177,9 @@ export class Compute {
       case 'creating': {
         for (const transcriptDef of params) {
           const [num, size] = transcriptDef.split(':');
-          this.myState.transcripts[+num] = {
-            num: +num,
-            size: +size,
-            uploaded: 0,
-            downloaded: +size,
-            complete: false,
-          };
+          const transcript = this.myState.transcripts[+num];
+          transcript.size = +size;
+          transcript.downloaded = +size;
         }
         break;
       }

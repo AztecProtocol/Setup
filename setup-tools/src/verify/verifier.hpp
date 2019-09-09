@@ -30,4 +30,4 @@ bool validate_transcript(
     std::vector<G1> const &g1_x_previous,
     std::vector<G2> const &g2_y);
 
-bool validate_manifest(streaming::Manifest const &previous, streaming::Manifest const &current);
+bool validate_manifest(streaming::Manifest const &manifest, size_t total_g1_points, size_t total_g2_points, size_t points_per_transcript, size_t transcript_number);

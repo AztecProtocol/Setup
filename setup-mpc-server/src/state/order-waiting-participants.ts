@@ -4,6 +4,9 @@ export function orderWaitingParticipants(participants: Participant[], sequence: 
   const indexOfFirstWaiting = participants.findIndex(p => p.state === 'WAITING');
 
   const waiting = participants.slice(indexOfFirstWaiting).sort((a, b) => {
+    if (a.tier === 0 || b.tier === 0) {
+      return a.tier - b.tier;
+    }
     if (a.online !== b.online) {
       return a.online ? -1 : 1;
     }

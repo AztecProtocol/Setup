@@ -171,32 +171,53 @@ bool validate_transcript(
     }
 
     // Validate that the ratio between successive g2_x elements is defined by g1_x[0].
-    std::cout << "Checking " << g2_x.size() << " G2 points..." << std::endl;
-    if (g2_x.size() > 1 && !validate_polynomial_evaluation(g2_x, g1_0))
+    if (g2_x.size() > 1)
     {
-        throw std::runtime_error("G2 elements failed.");
+        std::cout << "Checking " << g2_x.size() << " G2 points..." << std::endl;
+        if (!validate_polynomial_evaluation(g2_x, g1_0))
+        {
+            throw std::runtime_error("G2 elements failed.");
+        }
     }
 
     return true;
 }
 
-bool validate_manifest(streaming::Manifest const &previous, streaming::Manifest const &current)
+bool validate_manifest(streaming::Manifest const &manifest, size_t total_g1_points, size_t total_g2_points, size_t points_per_transcript, size_t transcript_number)
 {
-    bool result = true;
-    result &= previous.total_transcripts == current.total_transcripts;
-    result &= previous.total_g1_points == current.total_g1_points;
-    result &= previous.total_g2_points == current.total_g2_points;
+    size_t max_points = std::max(total_g1_points, total_g2_points);
+    size_t total_transcripts = max_points / points_per_transcript + (max_points % points_per_transcript ? 1 : 0);
+    size_t start_from = transcript_number * points_per_transcript;
+    size_t num_g1_points = std::min(points_per_transcript, total_g1_points >= start_from ? (size_t)total_g1_points - start_from : 0);
+    size_t num_g2_points = std::min(points_per_transcript, total_g2_points >= start_from ? (size_t)total_g2_points - start_from : 0);
 
-    // Transcript must be the next in the sequence, or both 0.
-    result &= (current.transcript_number == 0 && previous.transcript_number == 0) || (current.transcript_number == previous.transcript_number + 1);
-
-    result &= current.num_g1_points <= previous.num_g1_points;
-    result &= current.num_g2_points <= previous.num_g2_points;
-    result &= current.start_from >= previous.start_from;
-
-    if (!result)
+    if (manifest.transcript_number != transcript_number)
     {
-        throw std::runtime_error("Transcript manifest failed validation.");
+        throw std::runtime_error("Unexpected transcript number.");
+    }
+    if (manifest.total_transcripts != total_transcripts)
+    {
+        throw std::runtime_error("Unexpected total transcripts.");
+    }
+    if (manifest.total_g1_points != total_g1_points)
+    {
+        throw std::runtime_error("Unexpected total G1 points.");
+    }
+    if (manifest.total_g2_points != total_g2_points)
+    {
+        throw std::runtime_error("Unexpected total G2 points.");
+    }
+    if (manifest.num_g1_points != num_g1_points)
+    {
+        throw std::runtime_error("Unexpected number of G1 points.");
+    }
+    if (manifest.num_g2_points != num_g2_points + (transcript_number == 0 ? 1 : 0))
+    {
+        throw std::runtime_error("Unexpected number of G2 points.");
+    }
+    if (manifest.start_from != start_from)
+    {
+        throw std::runtime_error("Unexpected start from index.");
     }
 
     return true;
