@@ -157,6 +157,10 @@ export class Coordinator {
           el.innerHTML = `RUNNING`;
         }
         break;
+      case 'SEALING':
+        el.className = 'yellow';
+        el.innerHTML = `SEALING (${state.sealingProgress.toFixed(2)}%)`
+        break;
       case 'COMPLETE':
         el.className = 'green';
         el.innerHTML = 'COMPLETE';

@@ -222,79 +222,113 @@ private:
     T t_;
 };
 
-void run_setup(std::string const &dir, size_t num_g1_points, size_t num_g2_points)
+void process_commands(std::string const &dir, Secret<Fr> &multiplicand)
+{
+    size_t progress = 0;
+    std::cerr << "Awaiting commands from stdin..." << std::endl;
+
+    for (std::string cmd_line; std::getline(std::cin, cmd_line);)
+    {
+        std::istringstream iss(cmd_line);
+        std::string cmd;
+
+        iss >> cmd;
+        if (cmd == "create")
+        {
+            size_t num_g1_points, num_g2_points, points_per_transcript;
+            iss >> num_g1_points >> num_g2_points >> points_per_transcript;
+            compute_initial_transcripts(dir, num_g1_points, num_g2_points, points_per_transcript, multiplicand, progress);
+        }
+        else if (cmd == "process")
+        {
+            size_t num;
+            iss >> num;
+            compute_existing_transcript(dir, num, multiplicand, progress);
+        }
+    }
+}
+
+void auto_run(std::string const &dir, Secret<Fr> &multiplicand, size_t num_g1_points, size_t num_g2_points)
 {
     size_t progress = 0;
 
-#ifdef SIMULATE_PARTICIPANT
+    if (num_g1_points > 0)
+    {
+        compute_initial_transcripts(dir, num_g1_points, num_g2_points, POINTS_PER_TRANSCRIPT, multiplicand, progress);
+    }
+    else
+    {
+        size_t num = 0;
+        std::string filename = getTranscriptInPath(dir, num);
+        while (streaming::is_file_exist(filename))
+        {
+            compute_existing_transcript(dir, num, multiplicand, progress);
+            filename = getTranscriptInPath(dir, ++num);
+        }
+
+        if (num == 0)
+        {
+            std::cerr << "No input files found." << std::endl;
+        }
+    }
+
+    std::cerr << "Done." << std::endl;
+}
+
+void run_setup(std::string const &dir, size_t num_g1_points, size_t num_g2_points)
+{
+    // Our toxic waste. Will be zeroed before going out of scope.
+    Secret<Fr> multiplicand(Fr::random_element());
+
+    if (!isatty(fileno(stdin)))
+    {
+        // Being controlled via commands over stdin.
+        process_commands(dir, multiplicand);
+    }
+    else
+    {
+        // Being manually run.
+        auto_run(dir, multiplicand, num_g1_points, num_g2_points);
+    }
+}
+
+#ifdef SEALING
+Fr generate_sealing_multiplicand(std::string const &dir)
+{
     std::vector<char> checksums;
-    std::cerr << "Running setup with simulated participant." << std::endl;
     size_t num = 0;
     std::string filename = getTranscriptInPath(dir, num);
     while (streaming::is_file_exist(filename))
     {
         std::vector<char> checksum = streaming::read_checksum(filename);
         checksums.insert(checksums.end(), checksum.begin(), checksum.end());
-        ++num;
-        filename = getTranscriptInPath(dir, num);
+        filename = getTranscriptInPath(dir, ++num);
     }
     char checksum_of_checksums[checksum::BLAKE2B_CHECKSUM_LENGTH] = {0};
     checksum::create_checksum(&checksums[0], checksums.size(), &checksum_of_checksums[0]);
-    Fr simulated_secret = utils::convert_buffer_to_field_element<Fr>(&checksum_of_checksums[0], checksum::BLAKE2B_CHECKSUM_LENGTH);
-    Secret<Fr> multiplicand(simulated_secret);
-#else
-    // Our toxic waste. Will be zeroed before going out of scope.
-    Secret<Fr> multiplicand(Fr::random_element());
-#endif
+    return utils::convert_buffer_to_field_element<Fr>(&checksum_of_checksums[0], checksum::BLAKE2B_CHECKSUM_LENGTH);
+}
 
-    if (!isatty(fileno(stdin)))
+void seal(std::string const &dir)
+{
+    std::cerr << "Running setup with SEALING enabled." << std::endl;
+
+    Fr multiplicand(generate_sealing_multiplicand(dir));
+    std::cerr << "Secret: ";
+    multiplicand.print();
+
+    size_t progress = 0;
+    size_t num = 0;
+    std::string filename = getTranscriptInPath(dir, num);
+    while (streaming::is_file_exist(filename))
     {
-        std::cerr << "Awaiting commands from stdin..." << std::endl;
-
-        // Being controlled via commands over stdin.
-        for (std::string cmd_line; std::getline(std::cin, cmd_line);)
-        {
-            std::istringstream iss(cmd_line);
-            std::string cmd;
-
-            iss >> cmd;
-            if (cmd == "create")
-            {
-                size_t num_g1_points, num_g2_points, points_per_transcript;
-                iss >> num_g1_points >> num_g2_points >> points_per_transcript;
-                compute_initial_transcripts(dir, num_g1_points, num_g2_points, points_per_transcript, multiplicand, progress);
-            }
-            else if (cmd == "process")
-            {
-                size_t num;
-                iss >> num;
-                compute_existing_transcript(dir, num, multiplicand, progress);
-            }
-        }
+        compute_existing_transcript(dir, num, multiplicand, progress);
+        filename = getTranscriptInPath(dir, ++num);
     }
-    else
+
+    if (num == 0)
     {
-        // Being manually run.
-        if (num_g1_points > 0)
-        {
-            compute_initial_transcripts(dir, num_g1_points, num_g2_points, POINTS_PER_TRANSCRIPT, multiplicand, progress);
-        }
-        else
-        {
-            size_t num = 0;
-            std::string filename = getTranscriptInPath(dir, num);
-            while (streaming::is_file_exist(filename))
-            {
-                compute_existing_transcript(dir, num, multiplicand, progress);
-                filename = getTranscriptInPath(dir, ++num);
-            }
-
-            if (num == 0)
-            {
-                std::cerr << "No input files found." << std::endl;
-            }
-        }
-
-        std::cerr << "Done." << std::endl;
+        std::cerr << "No input files found." << std::endl;
     }
 }
+#endif

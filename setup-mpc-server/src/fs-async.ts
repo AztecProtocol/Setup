@@ -1,4 +1,4 @@
-import { access, exists, mkdir, readdir, readFile, rename, rmdir, stat, unlink, writeFile } from 'fs';
+import { access, copyFile, exists, mkdir, readdir, readFile, rename, rmdir, stat, unlink, writeFile } from 'fs';
 import { promisify } from 'util';
 
 export const accessAsync = promisify(access);
@@ -11,3 +11,4 @@ export const readFileAsync = promisify(readFile);
 export const readdirAsync = promisify(readdir);
 export const rmdirAsync = promisify(rmdir);
 export const statAsync = promisify(stat);
+export const copyFileAsync = promisify(copyFile);

@@ -3,7 +3,7 @@ import moment from 'moment';
 import { MpcState, Participant } from 'setup-mpc-common';
 import { Account } from 'web3x/account';
 import { Address } from 'web3x/address';
-import { leftPad } from 'web3x/utils';
+import { leftPad, toHex } from 'web3x/utils';
 import { TerminalKit } from './terminal-kit';
 
 export class TerminalInterface {
@@ -64,9 +64,13 @@ export class TerminalInterface {
       const startedStr = `${startTime.utc().format('MMM Do YYYY HH:mm:ss')} UTC`;
       this.term.white(`The ceremony will begin at ${startedStr} in T-${startTime.diff(moment(), 's')}s.\n\n`);
     } else {
-      this.term.white(
-        `The ceremony is in progress and started at ${startTime.utc().format('MMM Do YYYY HH:mm:ss')} UTC.\n\n`
-      );
+      if (this.state.ceremonyState === 'SEALING') {
+        this.term.white(`The ceremony is in its final sealing phase: ${this.state.sealingProgress.toFixed(2)}%\n\n`);
+      } else {
+        this.term.white(
+          `The ceremony is in progress and started at ${startTime.utc().format('MMM Do YYYY HH:mm:ss')} UTC.\n\n`
+        );
+      }
     }
 
     this.bannerY = (await this.getCursorLocation()).y;

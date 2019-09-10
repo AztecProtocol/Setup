@@ -78,18 +78,6 @@ add_definitions(
 -DNO_PROCPS
 )
 
-# DEFAULT SIMULATE_PARTICIPANT OFF
-option(
-  SIMULATE_PARTICIPANT
-  "Setup toxic waste is hash of previous transcript"
-  OFF
-)
-if("${SIMULATE_PARTICIPANT}")
-  add_definitions(-DSIMULATE_PARTICIPANT)
-endif()
-
-message(STATUS "SIMULATE_PARTICIPANT: ${SIMULATE_PARTICIPANT}")
-
 add_subdirectory(depends)
 
 add_subdirectory(src)

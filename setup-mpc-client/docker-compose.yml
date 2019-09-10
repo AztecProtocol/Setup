@@ -34,7 +34,7 @@ services:
     expose:
       - 80
     ports:
-      - "80:80"
+      - '80:80'
     volumes:
       - ../setup-mpc-server:/usr/src/setup-mpc-server
       - ../setup-mpc-common:/usr/src/setup-mpc-server/node_modules/setup-mpc-common
@@ -49,7 +49,7 @@ services:
     expose:
       - 80
     ports:
-      - "8080:80"
+      - '8080:80'
     volumes:
       - ../setup-mpc-web:/usr/src/setup-mpc-web
 
@@ -63,6 +63,6 @@ services:
     expose:
       - 80
     ports:
-      - "8080:80"
+      - '8080:80'
     volumes:
       - ../setup-mpc-map:/usr/src/setup-mpc-map
