@@ -21,8 +21,8 @@ export async function advanceState(state: MpcState, store: TranscriptStore, veri
     return;
   }
 
-  // If we've not yet hit our selection block. Do nothing.
-  if (state.ceremonyState === 'PRESELECTION') {
+  // If we've not yet hit our selection block, or are sealing. Do nothing.
+  if (state.ceremonyState === 'PRESELECTION' || state.ceremonyState === 'SEALING') {
     return;
   }
 
@@ -33,14 +33,13 @@ export async function advanceState(state: MpcState, store: TranscriptStore, veri
     state.sequence = nextSequence;
   }
 
-  // If at least min participants reached and after end date, shift ceremony to complete state.
+  // If at least min participants reached and after end date, shift ceremony to sealing state.
   if (
     state.participants.reduce((a, p) => (p.state === 'COMPLETE' ? a + 1 : a), 0) >= state.minParticipants &&
     now.isSameOrAfter(state.endTime)
   ) {
     state.statusSequence = nextSequence;
-    state.ceremonyState = 'COMPLETE';
-    state.completedAt = now;
+    state.ceremonyState = 'SEALING';
     state.sequence = nextSequence;
     return;
   }

@@ -70,13 +70,9 @@ wrote 2
 Done.
 ```
 
-To run the setup with a simulated participant, where the toxic waste is set to the hash of the previous transcript, `setup` must be compiled with the SIMULATE_PARTICIPANT environment variable set to ON.
+### seal
 
-```
-cd build
-cmake .. -DSIMULATE_PARTICIPANT=ON
-cmake --build .
-```
+The same as `setup`, but compiled with `SEALING`, where the toxic waste is set to the hash of the previous transcript.
 
 ### verify
 
@@ -168,6 +164,6 @@ Once in the container you can build executables from your modified source code o
 ```
 mkdir build
 cd ./build
-cmake .. -DSIMULATE_PARTICIPANT=OFF
+cmake ..
 make [executable name]
 ```

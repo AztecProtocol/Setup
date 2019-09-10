@@ -140,6 +140,10 @@ resource "aws_ecs_task_definition" "setup_mpc_server" {
       {
         "name": "NODE_ENV",
         "value": "production"
+      },
+      {
+        "name": "INFURA_API_KEY",
+        "value": "${INFURA_API_KEY}"
       }
     ],
     "mountPoints": [

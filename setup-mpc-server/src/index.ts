@@ -6,9 +6,9 @@ import { mkdirAsync } from './fs-async';
 import { ParticipantSelectorFactory } from './participant-selector';
 import { Server } from './server';
 import { DiskStateStore } from './state-store';
-import { DiskTranscriptStore } from './transcript-store';
+import { DiskTranscriptStoreFactory } from './transcript-store';
 
-const { PORT = 80, STORE_PATH = './store' } = process.env;
+const { PORT = 80, STORE_PATH = './store', INFURA_API_KEY = '' } = process.env;
 
 async function main() {
   const shutdown = async () => process.exit(0);
@@ -16,13 +16,13 @@ async function main() {
   process.once('SIGTERM', shutdown);
 
   const adminAddress = Address.fromString('0x3a9b2101bff555793b85493b5171451fa00124c8');
-  const participantSelectorFactory = new ParticipantSelectorFactory('ropsten', adminAddress);
+  const participantSelectorFactory = new ParticipantSelectorFactory('ropsten', adminAddress, INFURA_API_KEY);
   const latestBlock = await participantSelectorFactory.getCurrentBlockHeight();
   const defaults = defaultState(latestBlock);
   const stateStore = new DiskStateStore(STORE_PATH + '/state', defaults);
-  const transcriptStore = new DiskTranscriptStore(STORE_PATH);
+  const transcriptStoreFactory = new DiskTranscriptStoreFactory(STORE_PATH);
 
-  const server = new Server(transcriptStore, stateStore, participantSelectorFactory);
+  const server = new Server(transcriptStoreFactory, stateStore, participantSelectorFactory);
   await server.start();
 
   const tmpPath = STORE_PATH + '/tmp';

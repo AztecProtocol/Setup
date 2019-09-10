@@ -2,7 +2,7 @@ import { Moment } from 'moment';
 import { Readable } from 'stream';
 import { Address } from 'web3x/address';
 
-export type CeremonyState = 'PRESELECTION' | 'SELECTED' | 'RUNNING' | 'COMPLETE';
+export type CeremonyState = 'PRESELECTION' | 'SELECTED' | 'RUNNING' | 'SEALING' | 'COMPLETE';
 export type ParticipantState = 'WAITING' | 'RUNNING' | 'COMPLETE' | 'INVALIDATED';
 export type ParticipantRunningState = 'OFFLINE' | 'WAITING' | 'RUNNING' | 'COMPLETE';
 
@@ -67,6 +67,7 @@ export interface MpcState {
   latestBlock: number;
   selectBlock: number;
   completedAt?: Moment;
+  sealingProgress: number;
   participants: Participant[];
 }
 

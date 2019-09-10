@@ -1,7 +1,18 @@
 import { createReadStream, mkdirSync } from 'fs';
+import moment = require('moment');
+import { Moment } from 'moment';
 import { Readable } from 'stream';
 import { Address } from 'web3x/address';
-import { existsAsync, mkdirAsync, readdirAsync, renameAsync, rmdirAsync, statAsync, unlinkAsync } from './fs-async';
+import {
+  copyFileAsync,
+  existsAsync,
+  mkdirAsync,
+  readdirAsync,
+  renameAsync,
+  rmdirAsync,
+  statAsync,
+  unlinkAsync,
+} from './fs-async';
 
 export interface TranscriptStore {
   save(address: Address, num: number, transcriptPath: string, signaturePath: string): Promise<void>;
@@ -16,21 +27,39 @@ export interface TranscriptStore {
   getUnverified(address: Address): Promise<{ address: Address; num: number }[]>;
   eraseAll(address: Address): Promise<void>;
   eraseUnverified(address: Address, num?: number): Promise<void>;
+  copyVerifiedTo(address: Address, path: string): Promise<void>;
+  getSealingPath(): string;
+}
+
+export interface TranscriptStoreFactory {
+  create(ceremonyStartTime: Moment): TranscriptStore;
+}
+
+export class DiskTranscriptStoreFactory implements TranscriptStoreFactory {
+  constructor(private storePath: string) {}
+
+  public create(ceremonyStartTime: Moment) {
+    return new DiskTranscriptStore(`${this.storePath}/${ceremonyStartTime.format('YYYYMMDD_HHmmss')}`);
+  }
 }
 
 export class DiskTranscriptStore implements TranscriptStore {
-  private unverified: string;
+  private unverifiedPath: string;
   private verifiedPath: string;
+  private sealingPath: string;
   private datFileRegex = /transcript(\d+).dat$/;
 
   constructor(storePath: string) {
     this.verifiedPath = storePath + '/verified';
-    this.unverified = storePath + '/unverified';
-    mkdirSync(this.unverified, { recursive: true });
+    this.unverifiedPath = storePath + '/unverified';
+    this.sealingPath = storePath + '/sealed';
+    mkdirSync(this.verifiedPath, { recursive: true });
+    mkdirSync(this.unverifiedPath, { recursive: true });
+    mkdirSync(this.sealingPath, { recursive: true });
   }
 
   public async save(address: Address, num: number, transcriptPath: string, signaturePath: string) {
-    await mkdirAsync(`${this.unverified}/${address.toString().toLowerCase()}`, { recursive: true });
+    await mkdirAsync(`${this.unverifiedPath}/${address.toString().toLowerCase()}`, { recursive: true });
     await renameAsync(transcriptPath, this.getUnverifiedTranscriptPath(address, num));
     await renameAsync(signaturePath, this.getUnverifiedSignaturePath(address, num));
   }
@@ -48,7 +77,7 @@ export class DiskTranscriptStore implements TranscriptStore {
   }
 
   private getUnverifiedBasePath(address: Address) {
-    return `${this.unverified}/${address.toString().toLowerCase()}`;
+    return `${this.unverifiedPath}/${address.toString().toLowerCase()}`;
   }
 
   public getTranscriptPath(address: Address, num: number) {
@@ -151,5 +180,17 @@ export class DiskTranscriptStore implements TranscriptStore {
     } catch (err) {
       console.error(err);
     }
+  }
+
+  public async copyVerifiedTo(address: Address, path: string) {
+    let num = 0;
+    while (await existsAsync(this.getTranscriptPath(address, num))) {
+      await copyFileAsync(this.getTranscriptPath(address, num), `${path}/transcript${num}.dat`);
+      ++num;
+    }
+  }
+
+  public getSealingPath() {
+    return this.sealingPath;
   }
 }

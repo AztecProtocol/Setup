@@ -19,6 +19,7 @@ RUN apt update && \
   apt install -y nodejs yarn && \
   apt clean
 COPY --from=0 /usr/src/setup-tools/verify /usr/src/setup-tools/verify
+COPY --from=0 /usr/src/setup-tools/seal /usr/src/setup-tools/seal
 WORKDIR /usr/src/setup-mpc-common
 COPY --from=1 /usr/src/setup-mpc-common .
 RUN yarn link

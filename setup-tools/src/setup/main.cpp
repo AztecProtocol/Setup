@@ -17,14 +17,18 @@ int main(int argc, char **argv)
     }
     std::string const dir = argv[1];
 
-    size_t num_g1_points = (argc >= 3) ? strtol(argv[2], NULL, 0) : 0;
-    size_t num_g2_points = (argc == 4) ? strtol(argv[3], NULL, 0) : 1;
-
     libff::alt_bn128_pp::init_public_params();
 
     try
     {
+#ifdef SEALING
+        seal(dir);
+#else
+        size_t num_g1_points = (argc >= 3) ? strtol(argv[2], NULL, 0) : 0;
+        size_t num_g2_points = (argc == 4) ? strtol(argv[3], NULL, 0) : 1;
+
         run_setup(dir, num_g1_points, num_g2_points);
+#endif
     }
     catch (std::exception const &err)
     {

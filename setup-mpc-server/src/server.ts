@@ -3,12 +3,13 @@ import moment, { Moment } from 'moment';
 import { cloneMpcState, MpcServer, MpcState, Participant } from 'setup-mpc-common';
 import { Address } from 'web3x/address';
 import { ParticipantSelector, ParticipantSelectorFactory } from './participant-selector';
+import { Sealer } from './sealer';
 import { StateStore } from './state-store';
 import { advanceState } from './state/advance-state';
 import { createParticipant } from './state/create-participant';
 import { orderWaitingParticipants } from './state/order-waiting-participants';
 import { selectParticipants } from './state/select-participants';
-import { TranscriptStore } from './transcript-store';
+import { TranscriptStore, TranscriptStoreFactory } from './transcript-store';
 import { Verifier } from './verifier';
 
 export class Server implements MpcServer {
@@ -18,9 +19,11 @@ export class Server implements MpcServer {
   private readState!: MpcState;
   private mutex = new Mutex();
   private participantSelector!: ParticipantSelector;
+  private sealer?: Sealer;
+  private store!: TranscriptStore;
 
   constructor(
-    private store: TranscriptStore,
+    private storeFactory: TranscriptStoreFactory,
     private stateStore: StateStore,
     private participantSelectorFactory: ParticipantSelectorFactory
   ) {}
@@ -33,6 +36,11 @@ export class Server implements MpcServer {
 
   public stop() {
     clearInterval(this.interval!);
+
+    if (this.sealer) {
+      this.sealer.cancel();
+      this.sealer = undefined;
+    }
 
     if (this.participantSelector) {
       this.participantSelector.stop();
@@ -72,6 +80,7 @@ export class Server implements MpcServer {
       minParticipants,
       invalidateAfter,
       pointsPerTranscript,
+      sealingProgress: 0,
       participants: [],
     };
 
@@ -91,6 +100,8 @@ export class Server implements MpcServer {
     this.state = state;
     this.readState = state;
     release();
+
+    this.store = this.storeFactory.create(state.startTime);
 
     this.verifier = await this.createVerifier();
     this.verifier.run();
@@ -188,6 +199,10 @@ export class Server implements MpcServer {
 
     try {
       await advanceState(this.state, this.store, this.verifier, moment());
+
+      if (this.state.ceremonyState === 'SEALING' && !this.sealer) {
+        this.launchSealer();
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -197,6 +212,30 @@ export class Server implements MpcServer {
     }
 
     this.scheduleAdvanceState();
+  }
+
+  private launchSealer() {
+    this.sealer = new Sealer(this.store);
+    this.sealer.on('progress', progress => {
+      this.state.sealingProgress = progress;
+      this.state.sequence += 1;
+      this.state.statusSequence = this.state.sequence;
+    });
+    this.sealer
+      .run(this.state)
+      .then(() => {
+        if (this.state.ceremonyState !== 'SEALING') {
+          // Server was reset.
+          return;
+        }
+        this.state.ceremonyState = 'COMPLETE';
+        this.state.completedAt = moment();
+        this.state.sequence += 1;
+      })
+      .catch(err => {
+        console.error('Sealer failed (will retry): ', err);
+        return new Promise(resolve => setTimeout(resolve, 1000)).then(() => this.launchSealer());
+      });
   }
 
   public async ping(address: Address) {

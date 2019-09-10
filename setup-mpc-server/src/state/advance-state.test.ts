@@ -66,7 +66,7 @@ describe('advance state', () => {
     expect(state.sequence).toBe(1);
   });
 
-  it('should shift ceremony to COMPLETED state when min participants and end time met.', async () => {
+  it('should shift ceremony to SEALING state when min participants and end time met.', async () => {
     state.ceremonyState = 'RUNNING';
     state.minParticipants = 5;
     state.endTime = moment(baseTime).add(2, 'h');
@@ -89,7 +89,7 @@ describe('advance state', () => {
     // After end time and after min participants.
     state.participants[4].state = 'COMPLETE';
     await advanceState(state, mockTranscriptStore as any, mockVerifier as any, moment(baseTime).add(3, 'h'));
-    expect(state.ceremonyState).toBe('COMPLETE');
+    expect(state.ceremonyState).toBe('SEALING');
     expect(state.sequence).toBe(1);
   });
 
