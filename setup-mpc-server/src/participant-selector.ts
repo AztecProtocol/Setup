@@ -52,7 +52,7 @@ export class ParticipantSelector extends EventEmitter {
         }
         currentBlock += 1;
       } catch (err) {
-        await new Promise<void>(resolve => setTimeout(resolve, 5000));
+        await new Promise<void>(resolve => setTimeout(resolve, 10000));
       }
     }
     console.log('Block processor complete.');

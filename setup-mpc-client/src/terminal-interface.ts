@@ -3,7 +3,7 @@ import moment from 'moment';
 import { MpcState, Participant } from 'setup-mpc-common';
 import { Account } from 'web3x/account';
 import { Address } from 'web3x/address';
-import { leftPad, toHex } from 'web3x/utils';
+import { leftPad } from 'web3x/utils';
 import { TerminalKit } from './terminal-kit';
 
 export class TerminalInterface {

@@ -8,6 +8,7 @@ import { TranscriptStore } from './transcript-store';
 export class Sealer extends EventEmitter {
   private sealingProc?: ChildProcess;
   private sealingPath: string;
+  private cancelled = false;
 
   constructor(private transcriptStore: TranscriptStore) {
     super();
@@ -26,11 +27,17 @@ export class Sealer extends EventEmitter {
 
     await mkdirAsync(this.sealingPath, { recursive: true });
     await this.transcriptStore.copyVerifiedTo(previousParticipant.address, this.sealingPath);
+
+    if (this.cancelled) {
+      return;
+    }
+
     await this.compute();
     await this.renameTranscripts();
   }
 
   public cancel() {
+    this.cancelled = true;
     this.removeAllListeners();
     if (this.sealingProc) {
       this.sealingProc.kill('SIGINT');
@@ -47,7 +54,7 @@ export class Sealer extends EventEmitter {
   }
 
   private async compute() {
-    return new Promise(async (resolve, reject) => {
+    return new Promise((resolve, reject) => {
       const { SETUP_PATH = '../setup-tools/seal' } = process.env;
       console.log(this.sealingPath);
       const sealingProc = (this.sealingProc = spawn(SETUP_PATH, [this.sealingPath]));
@@ -63,8 +70,8 @@ export class Sealer extends EventEmitter {
 
       sealingProc.on('close', code => {
         this.sealingProc = undefined;
-        if (code === 0) {
-          console.error(`Sealing complete.`);
+        if (code === 0 || this.cancelled) {
+          console.error(`Sealing complete or cancelled.`);
           resolve();
         } else {
           reject(new Error(`seal exited with code ${code}`));

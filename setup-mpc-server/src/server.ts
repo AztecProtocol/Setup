@@ -221,15 +221,21 @@ export class Server implements MpcServer {
       this.state.sequence += 1;
       this.state.statusSequence = this.state.sequence;
     });
-    this.sealer.run(this.state).then(() => {
-      if (this.sealer) {
-        this.sealer.removeAllListeners();
-        this.sealer = undefined;
-      }
-      this.state.ceremonyState = 'COMPLETE';
-      this.state.completedAt = moment();
-      this.state.sequence += 1;
-    });
+    this.sealer
+      .run(this.state)
+      .then(() => {
+        if (this.state.ceremonyState !== 'SEALING') {
+          // Server was reset.
+          return;
+        }
+        this.state.ceremonyState = 'COMPLETE';
+        this.state.completedAt = moment();
+        this.state.sequence += 1;
+      })
+      .catch(err => {
+        console.error('Sealer failed (will retry): ', err);
+        return new Promise(resolve => setTimeout(resolve, 1000)).then(() => this.launchSealer());
+      });
   }
 
   public async ping(address: Address) {
