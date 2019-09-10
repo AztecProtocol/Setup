@@ -104,6 +104,7 @@ resource "aws_efs_mount_target" "private_az2" {
 }
 
 # Define task definition and service.
+
 resource "aws_ecs_task_definition" "setup_mpc_server" {
   family                   = "setup-mpc-server"
   requires_compatibilities = ["EC2"]
@@ -143,7 +144,7 @@ resource "aws_ecs_task_definition" "setup_mpc_server" {
       },
       {
         "name": "INFURA_API_KEY",
-        "value": "${INFURA_API_KEY}"
+        "value": "${var.INFURA_API_KEY}"
       }
     ],
     "mountPoints": [
