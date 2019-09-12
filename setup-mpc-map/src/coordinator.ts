@@ -159,7 +159,11 @@ export class Coordinator {
         break;
       case 'SEALING':
         el.className = 'yellow';
-        el.innerHTML = `SEALING (${state.sealingProgress.toFixed(2)}%)`
+        el.innerHTML = `SEALING (${state.sealingProgress.toFixed(2)}%)`;
+        break;
+      case 'PUBLISHING':
+        el.className = 'yellow';
+        el.innerHTML = `PUBLISHING (${state.publishProgress.toFixed(2)}%)`;
         break;
       case 'COMPLETE':
         el.className = 'green';
@@ -250,6 +254,7 @@ export class Coordinator {
   private async processState(state: MpcState) {
     if (!this.state || this.state.startSequence !== state.startSequence) {
       // First time processing state. Update completed markers and go to standby.
+      this.running = undefined;
       this.viewer.updateCompletedEntities(this.getCompletedLocations(state));
       await this.viewer.standby();
     }

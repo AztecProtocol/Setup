@@ -3,6 +3,7 @@ import moment, { Moment } from 'moment';
 import { cloneMpcState, MpcServer, MpcState, Participant } from 'setup-mpc-common';
 import { Address } from 'web3x/address';
 import { ParticipantSelector, ParticipantSelectorFactory } from './participant-selector';
+import { Publisher } from './publisher';
 import { Sealer } from './sealer';
 import { StateStore } from './state-store';
 import { advanceState } from './state/advance-state';
@@ -20,6 +21,7 @@ export class Server implements MpcServer {
   private mutex = new Mutex();
   private participantSelector!: ParticipantSelector;
   private sealer?: Sealer;
+  private publisher?: Publisher;
   private store!: TranscriptStore;
 
   constructor(
@@ -81,6 +83,7 @@ export class Server implements MpcServer {
       invalidateAfter,
       pointsPerTranscript,
       sealingProgress: 0,
+      publishProgress: 0,
       participants: [],
     };
 
@@ -134,8 +137,9 @@ export class Server implements MpcServer {
 
     // Get any files awaiting verification and add to the queue.
     if (runningParticipant) {
-      const unverified = await this.store.getUnverified(runningParticipant.address);
-      unverified.forEach(item => verifier.put(item));
+      const { address } = runningParticipant;
+      const unverified = await this.store.getUnverified(address);
+      unverified.forEach(item => verifier.put({ address, ...item }));
     }
 
     return verifier;
@@ -203,6 +207,10 @@ export class Server implements MpcServer {
       if (this.state.ceremonyState === 'SEALING' && !this.sealer) {
         this.launchSealer();
       }
+
+      if (this.state.ceremonyState === 'PUBLISHING' && !this.publisher) {
+        this.launchPublisher();
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -221,21 +229,32 @@ export class Server implements MpcServer {
       this.state.sequence += 1;
       this.state.statusSequence = this.state.sequence;
     });
-    this.sealer
-      .run(this.state)
-      .then(() => {
-        if (this.state.ceremonyState !== 'SEALING') {
-          // Server was reset.
-          return;
-        }
-        this.state.ceremonyState = 'COMPLETE';
-        this.state.completedAt = moment();
-        this.state.sequence += 1;
-      })
-      .catch(err => {
-        console.error('Sealer failed (will retry): ', err);
-        return new Promise(resolve => setTimeout(resolve, 1000)).then(() => this.launchSealer());
-      });
+    this.sealer.run(this.state).then(() => {
+      if (this.state.ceremonyState !== 'SEALING') {
+        // Server was reset.
+        return;
+      }
+      this.state.ceremonyState = 'PUBLISHING';
+      this.state.sequence += 1;
+    });
+  }
+
+  private launchPublisher() {
+    this.publisher = new Publisher(this.store, this.state);
+    this.publisher.on('progress', progress => {
+      this.state.publishProgress = progress;
+      this.state.sequence += 1;
+      this.state.statusSequence = this.state.sequence;
+    });
+    this.publisher.run().then(() => {
+      if (this.state.ceremonyState !== 'PUBLISHING') {
+        // Server was reset.
+        return;
+      }
+      this.state.ceremonyState = 'COMPLETE';
+      this.state.completedAt = moment();
+      this.state.sequence += 1;
+    });
   }
 
   public async ping(address: Address) {

@@ -1,11 +1,11 @@
 import http from 'http';
 import { Address } from 'web3x/address';
 import { appFactory } from './app';
-import { defaultState } from './default-state';
 import { mkdirAsync } from './fs-async';
 import { ParticipantSelectorFactory } from './participant-selector';
 import { Server } from './server';
 import { DiskStateStore } from './state-store';
+import { defaultState } from './state/default-state';
 import { DiskTranscriptStoreFactory } from './transcript-store';
 
 const { PORT = 80, STORE_PATH = './store', INFURA_API_KEY = '' } = process.env;

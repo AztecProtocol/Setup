@@ -21,8 +21,12 @@ export async function advanceState(state: MpcState, store: TranscriptStore, veri
     return;
   }
 
-  // If we've not yet hit our selection block, or are sealing. Do nothing.
-  if (state.ceremonyState === 'PRESELECTION' || state.ceremonyState === 'SEALING') {
+  // If we've not yet hit our selection block, or are sealing/publishing. Do nothing.
+  if (
+    state.ceremonyState === 'PRESELECTION' ||
+    state.ceremonyState === 'SEALING' ||
+    state.ceremonyState === 'PUBLISHING'
+  ) {
     return;
   }
 
@@ -102,7 +106,8 @@ async function getRunningParticipantsTranscripts(state: MpcState, store: Transcr
 
   const transcripts = await store.getVerified(lastCompletedParticipant.address);
   return transcripts.map(t => ({
-    ...t,
+    num: t.num,
+    size: t.size,
     fromAddress: lastCompletedParticipant.address,
     downloaded: 0,
     uploaded: 0,

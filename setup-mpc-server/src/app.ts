@@ -9,9 +9,9 @@ import meter from 'stream-meter';
 import { isNumber, isString } from 'util';
 import { Address } from 'web3x/address';
 import { bufferToHex, randomBuffer, recover } from 'web3x/utils';
-import { defaultState } from './default-state';
 import { writeFileAsync } from './fs-async';
 import { ParticipantSelectorFactory } from './participant-selector';
+import { defaultState } from './state/default-state';
 
 const cors = require('@koa/cors');
 

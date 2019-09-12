@@ -38,6 +38,7 @@ services:
     volumes:
       - ../setup-mpc-server:/usr/src/setup-mpc-server
       - ../setup-mpc-common:/usr/src/setup-mpc-server/node_modules/setup-mpc-common
+      - ${HOME}/.aws:/root/.aws
 
   setup-mpc-web:
     build:

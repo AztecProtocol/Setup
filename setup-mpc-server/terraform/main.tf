@@ -104,12 +104,12 @@ resource "aws_efs_mount_target" "private_az2" {
 }
 
 # Define task definition and service.
-
 resource "aws_ecs_task_definition" "setup_mpc_server" {
   family                   = "setup-mpc-server"
   requires_compatibilities = ["EC2"]
   network_mode             = "awsvpc"
   execution_role_arn       = "${data.terraform_remote_state.setup_iac.outputs.ecs_task_execution_role_arn}"
+  task_role_arn            = "${aws_iam_role.setup_mpc_server_task_role.arn}"
 
   volume {
     name = "efs-data-store"
@@ -237,4 +237,45 @@ resource "aws_lb_listener_rule" "api" {
     field  = "path-pattern"
     values = ["/api/*"]
   }
+}
+
+# Create S3 bucket for publishing transcripts, and IAM role with write access to bucket.
+data "aws_iam_policy_document" "ecs_task" {
+  statement {
+    effect  = "Allow"
+    actions = ["sts:AssumeRole"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["ecs-tasks.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role" "setup_mpc_server_task_role" {
+  name               = "setup-mpc-server-task-role"
+  assume_role_policy = "${data.aws_iam_policy_document.ecs_task.json}"
+}
+
+data "aws_iam_policy_document" "aztec_ignition_bucket_write" {
+  statement {
+    effect    = "Allow"
+    actions   = ["s3:ListBucket"]
+    resources = ["${aws_s3_bucket.aztec_ignition.arn}"]
+  }
+  statement {
+    effect    = "Allow"
+    actions   = ["s3:*Object"]
+    resources = ["${aws_s3_bucket.aztec_ignition.arn}/*"]
+  }
+}
+
+resource "aws_iam_role_policy" "setup_mpc_server_task_policy" {
+  policy = "${data.aws_iam_policy_document.aztec_ignition_bucket_write.json}"
+  role   = "${aws_iam_role.setup_mpc_server_task_role.id}"
+}
+
+resource "aws_s3_bucket" "aztec_ignition" {
+  bucket = "aztec-ignition"
+  acl    = "public-read"
 }
