@@ -64,14 +64,18 @@ body,
   z-index: 101;
 }
 
-a.link {
-  color: var(--grey);
+a {
+  color: var(--blue);
   text-decoration: none;
 }
 
-a.link:hover {
+a:hover {
   color: var(--yellow);
   text-decoration: none;
+}
+
+#overlay-transcripts-link {
+  display: none;
 }
 
 #overlay-container {

@@ -170,6 +170,16 @@ export class Coordinator {
         el.innerHTML = 'COMPLETE';
         break;
     }
+
+    if (state.ceremonyState === 'COMPLETE') {
+      document.getElementById('overlay-transcripts-link')!.style.display = 'inline';
+      const linkEl = document.querySelector('#overlay-transcripts-link a')! as HTMLLinkElement;
+      linkEl.href = `https://aztec-ignition.s3.eu-west-2.amazonaws.com/index.html#${state.startTime
+        .utc()
+        .format('YYYYMMDD_HHmmss')}/`;
+    } else {
+      document.getElementById('overlay-transcripts-link')!.style.display = 'none';
+    }
   }
 
   private updateStatusOverlay(state: MpcState) {
