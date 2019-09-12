@@ -109,7 +109,7 @@ export class Publisher extends EventEmitter {
   }
 
   private async publishIndex() {
-    const key = `${this.state.startTime.format('YYYYMMDD_HHmmss')}/index.html`;
+    const key = `index.html`;
     const body = createReadStream('./s3-explorer/index.html');
     await this.upload(body, key, 0, 0, 'text/html');
   }
