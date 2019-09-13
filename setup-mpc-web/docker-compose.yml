@@ -1,7 +1,0 @@
-version: '3'
-services:
-  setup-mpc-web:
-    build:
-      context: ..
-      dockerfile: setup-mpc-web/Dockerfile
-    image: aztec/setup-mpc-web
