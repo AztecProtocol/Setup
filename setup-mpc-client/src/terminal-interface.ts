@@ -66,6 +66,8 @@ export class TerminalInterface {
     } else {
       if (this.state.ceremonyState === 'SEALING') {
         this.term.white(`The ceremony is in its final sealing phase: ${this.state.sealingProgress.toFixed(2)}%\n\n`);
+      } else if (this.state.ceremonyState === 'PUBLISHING') {
+        this.term.white(`Publishing transcripts to S3: ${this.state.publishProgress.toFixed(2)}%\n\n`);
       } else {
         this.term.white(
           `The ceremony is in progress and started at ${startTime.utc().format('MMM Do YYYY HH:mm:ss')} UTC.\n\n`
