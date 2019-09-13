@@ -125,6 +125,7 @@ export class Publisher extends EventEmitter {
   private async upload(body: S3.Body, key: string, size: number, totalSize: number, contentType?: string) {
     while (true) {
       try {
+        console.log(`Publisher uploading: ${key}`);
         await new Promise<S3.ManagedUpload.SendData>((resolve, reject) => {
           const managedUpload = this.s3.upload({
             Body: body,

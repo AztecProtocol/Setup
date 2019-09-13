@@ -44,6 +44,11 @@ export class Server implements MpcServer {
       this.sealer = undefined;
     }
 
+    if (this.publisher) {
+      this.publisher.cancel();
+      this.publisher = undefined;
+    }
+
     if (this.participantSelector) {
       this.participantSelector.stop();
     }
