@@ -12,28 +12,36 @@ export class Sealer extends EventEmitter {
 
   constructor(private transcriptStore: TranscriptStore) {
     super();
-    this.sealingPath = transcriptStore.getSealingPath();
+    this.sealingPath = transcriptStore.getSealedPath();
   }
 
   public async run(state: MpcState) {
-    const previousParticipant = state.participants
-      .slice()
-      .reverse()
-      .find(p => p.state === 'COMPLETE');
+    while (true) {
+      try {
+        const previousParticipant = state.participants
+          .slice()
+          .reverse()
+          .find(p => p.state === 'COMPLETE');
 
-    if (!previousParticipant) {
-      throw new Error('No previous participant to perform sealing step on.');
+        if (!previousParticipant) {
+          throw new Error('No previous participant to perform sealing step on.');
+        }
+
+        await mkdirAsync(this.sealingPath, { recursive: true });
+        await this.transcriptStore.copyVerifiedTo(previousParticipant.address, this.sealingPath);
+
+        if (this.cancelled) {
+          return;
+        }
+
+        await this.compute();
+        await this.renameTranscripts();
+        return;
+      } catch (err) {
+        console.error('Sealer failed (will retry): ', err);
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
     }
-
-    await mkdirAsync(this.sealingPath, { recursive: true });
-    await this.transcriptStore.copyVerifiedTo(previousParticipant.address, this.sealingPath);
-
-    if (this.cancelled) {
-      return;
-    }
-
-    await this.compute();
-    await this.renameTranscripts();
   }
 
   public cancel() {

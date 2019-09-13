@@ -93,7 +93,7 @@ export class Verifier {
     if (transcriptNumber === 0) {
       // The previous participants 0th transcript, or nothing if no previous participant.
       if (this.lastCompleteAddress) {
-        args.push(this.store.getTranscriptPath(this.lastCompleteAddress, 0));
+        args.push(this.store.getVerifiedTranscriptPath(this.lastCompleteAddress, 0));
       }
     } else {
       // The previous transcript in the sequence.

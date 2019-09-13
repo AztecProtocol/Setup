@@ -2,8 +2,8 @@ import moment from 'moment';
 import { MpcState } from 'setup-mpc-common';
 import { hexToBuffer } from 'web3x/utils';
 import { Wallet } from 'web3x/wallet';
-import { defaultState } from '../default-state';
 import { createParticipant } from './create-participant';
+import { defaultState } from './default-state';
 import { orderWaitingParticipants } from './order-waiting-participants';
 import { selectParticipants } from './select-participants';
 

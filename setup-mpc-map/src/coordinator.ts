@@ -159,12 +159,26 @@ export class Coordinator {
         break;
       case 'SEALING':
         el.className = 'yellow';
-        el.innerHTML = `SEALING (${state.sealingProgress.toFixed(2)}%)`
+        el.innerHTML = `SEALING (${state.sealingProgress.toFixed(2)}%)`;
+        break;
+      case 'PUBLISHING':
+        el.className = 'yellow';
+        el.innerHTML = `PUBLISHING (${state.publishProgress.toFixed(2)}%)`;
         break;
       case 'COMPLETE':
         el.className = 'green';
         el.innerHTML = 'COMPLETE';
         break;
+    }
+
+    if (state.ceremonyState === 'COMPLETE') {
+      document.getElementById('overlay-transcripts-link')!.style.display = 'inline';
+      const linkEl = document.querySelector('#overlay-transcripts-link a')! as HTMLLinkElement;
+      linkEl.href = `https://aztec-ignition.s3.eu-west-2.amazonaws.com/index.html#${state.startTime
+        .utc()
+        .format('YYYYMMDD_HHmmss')}/`;
+    } else {
+      document.getElementById('overlay-transcripts-link')!.style.display = 'none';
     }
   }
 
@@ -250,6 +264,7 @@ export class Coordinator {
   private async processState(state: MpcState) {
     if (!this.state || this.state.startSequence !== state.startSequence) {
       // First time processing state. Update completed markers and go to standby.
+      this.running = undefined;
       this.viewer.updateCompletedEntities(this.getCompletedLocations(state));
       await this.viewer.standby();
     }

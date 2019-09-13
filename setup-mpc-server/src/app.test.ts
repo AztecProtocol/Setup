@@ -5,8 +5,8 @@ import request from 'supertest';
 import { Account } from 'web3x/account';
 import { bufferToHex, hexToBuffer } from 'web3x/utils';
 import { appFactory } from './app';
-import { defaultState } from './default-state';
 import { createParticipant } from './state/create-participant';
+import { defaultState } from './state/default-state';
 
 type Mockify<T> = { [P in keyof T]: jest.Mock<any> };
 

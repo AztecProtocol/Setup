@@ -1,11 +1,11 @@
 import moment from 'moment';
 import { cloneMpcState, MpcState } from 'setup-mpc-common';
 import { Wallet } from 'web3x/wallet';
-import { defaultState } from '../default-state';
 import { TranscriptStore } from '../transcript-store';
 import { Verifier } from '../verifier';
 import { advanceState } from './advance-state';
 import { createParticipant } from './create-participant';
+import { defaultState } from './default-state';
 
 type Mockify<T> = { [P in keyof T]: jest.Mock<any> };
 

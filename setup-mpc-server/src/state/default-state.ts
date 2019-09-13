@@ -18,6 +18,7 @@ export function defaultState(latestBlock: number): MpcState {
     pointsPerTranscript: 100000,
     invalidateAfter: 180,
     sealingProgress: 0,
+    publishProgress: 0,
     participants: [],
   };
 }

@@ -14,21 +14,27 @@ import {
   unlinkAsync,
 } from './fs-async';
 
+export interface TranscriptStoreRecord {
+  num: number;
+  size: number;
+  path: string;
+}
+
 export interface TranscriptStore {
   save(address: Address, num: number, transcriptPath: string, signaturePath: string): Promise<void>;
+  loadTranscript(address: Address, num: number): Readable;
+  makeLive(address: Address): Promise<void>;
+  getVerifiedTranscriptPath(address: Address, num: number): string;
+  getVerifiedSignaturePath(address: Address, num: number): string;
   getUnverifiedTranscriptPath(address: Address, num: number): string;
   getUnverifiedSignaturePath(address: Address, num: number): string;
-  makeLive(address: Address): Promise<void>;
-  loadTranscript(address: Address, num: number): Readable;
-  getTranscriptPath(address: Address, num: number): string;
-  getVerifiedTranscriptPaths(address: Address): Promise<string[]>;
-  getUnverifiedTranscriptPaths(address: Address): Promise<string[]>;
-  getVerified(address: Address): Promise<{ size: number; num: number }[]>;
-  getUnverified(address: Address): Promise<{ address: Address; num: number }[]>;
+  getVerified(address: Address, includeSignatures?: boolean): Promise<TranscriptStoreRecord[]>;
+  getUnverified(address: Address, includeSignatures?: boolean): Promise<TranscriptStoreRecord[]>;
   eraseAll(address: Address): Promise<void>;
   eraseUnverified(address: Address, num?: number): Promise<void>;
   copyVerifiedTo(address: Address, path: string): Promise<void>;
-  getSealingPath(): string;
+  getSealedPath(): string;
+  getSealed(): Promise<TranscriptStoreRecord[]>;
 }
 
 export interface TranscriptStoreFactory {
@@ -47,7 +53,7 @@ export class DiskTranscriptStore implements TranscriptStore {
   private unverifiedPath: string;
   private verifiedPath: string;
   private sealingPath: string;
-  private datFileRegex = /transcript(\d+).dat$/;
+  private fileRegex = /transcript(\d+).(dat|sig)$/;
 
   constructor(storePath: string) {
     this.verifiedPath = storePath + '/verified';
@@ -69,7 +75,7 @@ export class DiskTranscriptStore implements TranscriptStore {
   }
 
   public loadTranscript(address: Address, num: number) {
-    return createReadStream(this.getTranscriptPath(address, num));
+    return createReadStream(this.getVerifiedTranscriptPath(address, num));
   }
 
   private getVerifiedBasePath(address: Address) {
@@ -80,11 +86,11 @@ export class DiskTranscriptStore implements TranscriptStore {
     return `${this.unverifiedPath}/${address.toString().toLowerCase()}`;
   }
 
-  public getTranscriptPath(address: Address, num: number) {
+  public getVerifiedTranscriptPath(address: Address, num: number) {
     return `${this.getVerifiedBasePath(address)}/transcript${num}.dat`;
   }
 
-  public getSignaturePath(address: Address, num: number) {
+  public getVerifiedSignaturePath(address: Address, num: number) {
     return `${this.getVerifiedBasePath(address)}/transcript${num}.sig`;
   }
 
@@ -96,49 +102,35 @@ export class DiskTranscriptStore implements TranscriptStore {
     return `${this.getUnverifiedBasePath(address)}/transcript${num}.sig`;
   }
 
-  public async getVerifiedTranscriptPaths(address: Address) {
-    let num = 0;
-    const paths: string[] = [];
-    while (await existsAsync(this.getTranscriptPath(address, num))) {
-      paths.push(this.getTranscriptPath(address, num));
-      ++num;
+  private async getDirRecords(dir: string, includeSignatures: boolean) {
+    if (!(await existsAsync(dir))) {
+      return [];
     }
-    return paths;
+    let files = await readdirAsync(dir);
+    if (!includeSignatures) {
+      files = files.filter(path => path.endsWith('.dat'));
+    }
+    const results = await Promise.all(
+      files.map(async file => {
+        const path = `${dir}/${file}`;
+        const match = file.match(this.fileRegex)!;
+        const stats = await statAsync(path);
+        return {
+          path,
+          size: stats.size,
+          num: +match[1],
+        };
+      })
+    );
+    return results.sort((a, b) => a.num - b.num);
   }
 
-  public async getUnverifiedTranscriptPaths(address: Address) {
-    let num = 0;
-    const paths: string[] = [];
-    while (await existsAsync(this.getUnverifiedTranscriptPath(address, num))) {
-      paths.push(this.getUnverifiedTranscriptPath(address, num));
-      ++num;
-    }
-    return paths;
+  public async getVerified(address: Address, includeSignatures?: boolean) {
+    return this.getDirRecords(this.getVerifiedBasePath(address), !!includeSignatures);
   }
 
-  public async getVerified(address: Address) {
-    let num = 0;
-    const transcripts: { size: number; num: number }[] = [];
-    while (await existsAsync(this.getTranscriptPath(address, num))) {
-      const stats = await statAsync(this.getTranscriptPath(address, num));
-      transcripts.push({
-        size: stats.size,
-        num,
-      });
-      ++num;
-    }
-    return transcripts;
-  }
-
-  public async getUnverified(address: Address) {
-    const files = await this.getUnverifiedTranscriptPaths(address);
-    return files.map(f => {
-      const [, num] = f.match(this.datFileRegex)!;
-      return {
-        address,
-        num: +num,
-      };
-    });
+  public async getUnverified(address: Address, includeSignatures?: boolean) {
+    return this.getDirRecords(this.getUnverifiedBasePath(address), !!includeSignatures);
   }
 
   public async eraseAll(address: Address) {
@@ -184,13 +176,17 @@ export class DiskTranscriptStore implements TranscriptStore {
 
   public async copyVerifiedTo(address: Address, path: string) {
     let num = 0;
-    while (await existsAsync(this.getTranscriptPath(address, num))) {
-      await copyFileAsync(this.getTranscriptPath(address, num), `${path}/transcript${num}.dat`);
+    while (await existsAsync(this.getVerifiedTranscriptPath(address, num))) {
+      await copyFileAsync(this.getVerifiedTranscriptPath(address, num), `${path}/transcript${num}.dat`);
       ++num;
     }
   }
 
-  public getSealingPath() {
+  public getSealedPath() {
     return this.sealingPath;
+  }
+
+  public async getSealed() {
+    return this.getDirRecords(this.sealingPath, false);
   }
 }
