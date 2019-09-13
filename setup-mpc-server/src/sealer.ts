@@ -40,6 +40,9 @@ export class Sealer extends EventEmitter {
       } catch (err) {
         console.error('Sealer failed (will retry): ', err);
         await new Promise(resolve => setTimeout(resolve, 1000));
+        if (this.cancelled) {
+          return;
+        }
       }
     }
   }

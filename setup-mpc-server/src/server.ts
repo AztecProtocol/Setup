@@ -356,6 +356,7 @@ export class Server implements MpcServer {
 
     p.lastVerified = moment();
     p.transcripts[transcriptNumber].complete = true;
+    p.verifyProgress = ((transcriptNumber + 1) / p.transcripts.length) * 100;
 
     if (p.transcripts.every(t => t.complete)) {
       await this.store.makeLive(address);
@@ -370,7 +371,6 @@ export class Server implements MpcServer {
       this.verifier.lastCompleteAddress = p.address;
     }
 
-    p.verifyProgress = ((transcriptNumber + 1) / p.transcripts.length) * 100;
     p.lastUpdate = moment();
     this.state.sequence += 1;
     p.sequence = this.state.sequence;

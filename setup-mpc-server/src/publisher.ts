@@ -1,8 +1,8 @@
 import { S3 } from 'aws-sdk';
 import { EventEmitter } from 'events';
 import { createReadStream } from 'fs';
-import { Moment } from 'moment';
 import moment = require('moment');
+import { extname } from 'path';
 import { MpcState, Participant } from 'setup-mpc-common';
 import { TranscriptStore } from './transcript-store';
 
@@ -10,6 +10,7 @@ export class Publisher extends EventEmitter {
   private cancelled = false;
   private s3: S3;
   private progressAccumulator = 0;
+  private progressInFlight: { [key: string]: number } = {};
 
   constructor(private transcriptStore: TranscriptStore, private state: MpcState) {
     super();
@@ -19,6 +20,7 @@ export class Publisher extends EventEmitter {
   public async run() {
     while (true) {
       try {
+        this.progressAccumulator = 0;
         const participants = this.state.participants.filter(p => p.state === 'COMPLETE');
 
         const totalSize = await this.getTotalSize(participants);
@@ -43,6 +45,9 @@ export class Publisher extends EventEmitter {
       } catch (err) {
         console.error('Publisher failed (will retry): ', err);
         await new Promise(resolve => setTimeout(resolve, 1000));
+        if (this.cancelled) {
+          return;
+        }
       }
     }
   }
@@ -52,39 +57,40 @@ export class Publisher extends EventEmitter {
   }
 
   private async getTotalSize(participants: Participant[]) {
-    const sizeOfOne = (await this.transcriptStore.getVerified(participants[0]!.address)).reduce(
-      (a, p) => a + p.size,
-      0
-    );
+    if (!participants.length) {
+      return 0;
+    }
+    const sizeOfOne = (await this.transcriptStore.getVerified(participants[0].address)).reduce((a, p) => a + p.size, 0);
     return sizeOfOne * (participants.length + 1);
   }
 
   private async publishParticipant(participant: Participant, totalSize: number) {
     const { address, position } = participant;
     const records = await this.transcriptStore.getVerified(address, true);
-    for (const { path, size, num } of records) {
-      const folder = `${position.toString().padStart(3, '0')}_${address.toString().toLowerCase()}`;
-      const filename = `transcript${num.toString().padStart(2, '0')}.${path.split('.')[1]}`;
-      const key = `${this.state.startTime.format('YYYYMMDD_HHmmss')}/${folder}/${filename}`;
-      const body = createReadStream(path);
-      await this.upload(body, key, size, totalSize);
-      if (this.cancelled) {
-        break;
-      }
-    }
+    await Promise.all(
+      records.map(async ({ path, size, num }) => {
+        const folder = `${position.toString().padStart(3, '0')}_${address.toString().toLowerCase()}`;
+        const filename = `transcript${num.toString().padStart(2, '0')}${extname(path)}`;
+        const key = `${this.state.startTime.format('YYYYMMDD_HHmmss')}/${folder}/${filename}`;
+        const body = createReadStream(path);
+        await this.upload(body, key, size, totalSize);
+      })
+    );
   }
 
   private async publishSealedTranscripts(totalSize: number) {
     const records = await this.transcriptStore.getSealed();
-    for (const { path, size, num } of records) {
-      const filename = `transcript${num.toString().padStart(2, '0')}.dat`;
-      const key = `${this.state.startTime.format('YYYYMMDD_HHmmss')}/sealed/${filename}`;
-      const body = createReadStream(path);
-      await this.upload(body, key, size, totalSize);
-      if (this.cancelled) {
-        return;
-      }
-    }
+    await Promise.all(
+      records.map(async ({ path, size, num }) => {
+        const filename = `transcript${num.toString().padStart(2, '0')}.dat`;
+        const key = `${this.state.startTime.format('YYYYMMDD_HHmmss')}/sealed/${filename}`;
+        const body = createReadStream(path);
+        await this.upload(body, key, size, totalSize);
+        if (this.cancelled) {
+          return;
+        }
+      })
+    );
   }
 
   private async publishCeremonyManifest() {
@@ -115,28 +121,46 @@ export class Publisher extends EventEmitter {
   }
 
   private async upload(body: S3.Body, key: string, size: number, totalSize: number, contentType?: string) {
-    await new Promise<S3.ManagedUpload.SendData>((resolve, reject) => {
-      const managedUpload = this.s3.upload({
-        Body: body,
-        Bucket: 'aztec-ignition',
-        Key: key,
-        ACL: 'public-read',
-        ContentType: contentType,
-      });
+    while (true) {
+      try {
+        await new Promise<S3.ManagedUpload.SendData>((resolve, reject) => {
+          const managedUpload = this.s3.upload({
+            Body: body,
+            Bucket: 'aztec-ignition',
+            Key: key,
+            ACL: 'public-read',
+            ContentType: contentType,
+          });
 
-      if (totalSize) {
-        managedUpload.on('httpUploadProgress', progress => {
-          this.emit('progress', ((this.progressAccumulator + progress.loaded) * 100) / totalSize);
+          if (totalSize) {
+            managedUpload.on('httpUploadProgress', progress => {
+              this.progressInFlight[key] = progress.loaded;
+              const inFlight = Object.values(this.progressInFlight).reduce((a, b) => a + b, 0);
+              this.emit('progress', ((this.progressAccumulator + inFlight) * 100) / totalSize);
+            });
+          }
+
+          managedUpload.send((err, data) => {
+            if (err) {
+              return reject(err);
+            }
+            if (totalSize) {
+              delete this.progressInFlight[key];
+              this.progressAccumulator += size;
+              this.emit('progress', (this.progressAccumulator * 100) / totalSize);
+            }
+            return resolve(data);
+          });
         });
-      }
 
-      managedUpload.send((err, data) => {
-        if (err) {
-          return reject(err);
+        return;
+      } catch (err) {
+        console.error(`Upload of ${key} failed. Will retry.`);
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        if (this.cancelled) {
+          return;
         }
-        this.progressAccumulator += size;
-        return resolve(data);
-      });
-    });
+      }
+    }
   }
 }

@@ -265,7 +265,7 @@ data "aws_iam_policy_document" "aztec_ignition_bucket_write" {
   }
   statement {
     effect    = "Allow"
-    actions   = ["s3:*Object"]
+    actions   = ["s3:*"]
     resources = ["${aws_s3_bucket.aztec_ignition.arn}/*"]
   }
 }
