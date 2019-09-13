@@ -60,8 +60,10 @@ export class Publisher extends EventEmitter {
     if (!participants.length) {
       return 0;
     }
-    const sizeOfOne = (await this.transcriptStore.getVerified(participants[0].address)).reduce((a, p) => a + p.size, 0);
-    return sizeOfOne * (participants.length + 1);
+    const records = await this.transcriptStore.getVerified(participants[0].address, true);
+    const sizeOfOne = records.reduce((a, p) => a + p.size, 0);
+    const sizeOfSealed = records.filter(r => r.path.endsWith('.dat')).reduce((a, p) => a + p.size, 0);
+    return sizeOfOne * participants.length + sizeOfSealed;
   }
 
   private async publishParticipant(participant: Participant, totalSize: number) {
@@ -136,18 +138,18 @@ export class Publisher extends EventEmitter {
             managedUpload.on('httpUploadProgress', progress => {
               this.progressInFlight[key] = progress.loaded;
               const inFlight = Object.values(this.progressInFlight).reduce((a, b) => a + b, 0);
-              this.emit('progress', ((this.progressAccumulator + inFlight) * 100) / totalSize);
+              const percent = ((this.progressAccumulator + inFlight) * 100) / totalSize;
+              this.emit('progress', percent);
             });
           }
 
           managedUpload.send((err, data) => {
+            delete this.progressInFlight[key];
             if (err) {
               return reject(err);
             }
             if (totalSize) {
-              delete this.progressInFlight[key];
               this.progressAccumulator += size;
-              this.emit('progress', (this.progressAccumulator * 100) / totalSize);
             }
             return resolve(data);
           });
