@@ -287,12 +287,14 @@ export class Server implements MpcServer {
     try {
       const { transcripts, address, runningState, computeProgress } = participantData;
       const p = this.getAndAssertRunningParticipant(address);
-      // Only update transcript fields that are permitted.
-      p.transcripts.forEach((t, i) => {
-        t.size = transcripts[i].size;
-        t.downloaded = transcripts[i].downloaded;
-        t.uploaded = transcripts[i].uploaded;
-      });
+      if (transcripts) {
+        // Only update transcript fields that are permitted.
+        p.transcripts.forEach((t, i) => {
+          t.size = transcripts[i].size;
+          t.downloaded = transcripts[i].downloaded;
+          t.uploaded = transcripts[i].uploaded;
+        });
+      }
       p.runningState = runningState;
       p.computeProgress = computeProgress;
       p.lastUpdate = moment();
