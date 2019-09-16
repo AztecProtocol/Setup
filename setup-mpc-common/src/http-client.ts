@@ -38,7 +38,7 @@ export class HttpClient implements MpcServer {
     throw new Error('Not implemented.');
   }
 
-  public async patchState(state: PatchState) {
+  public async patchState(state: PatchState): Promise<MpcState> {
     throw new Error('Not implemented.');
   }
 
