@@ -72,6 +72,18 @@ export interface MpcState {
   participants: Participant[];
 }
 
+export interface PatchState {
+  startTime?: Moment;
+  endTime?: Moment;
+  selectBlock?: number;
+  maxTier2?: number;
+  minParticipants?: number;
+  numG1Points?: number;
+  numG2Points?: number;
+  pointsPerTranscript?: number;
+  invalidateAfter?: number;
+}
+
 export interface MpcServer {
   resetState(
     startTime: Moment,
@@ -86,6 +98,7 @@ export interface MpcServer {
     invalidateAfter: number,
     participants: Address[]
   ): Promise<void>;
+  patchState(state: PatchState): Promise<MpcState>;
   getState(sequence?: number): Promise<MpcState>;
   ping(address: Address): Promise<void>;
   addParticipant(address: Address, tier: number): Promise<void>;

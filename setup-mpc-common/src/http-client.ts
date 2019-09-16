@@ -9,7 +9,7 @@ import { Account } from 'web3x/account';
 import { Address } from 'web3x/address';
 import { bufferToHex } from 'web3x/utils';
 import { hashFiles } from './hash-files';
-import { MpcServer, MpcState, Participant } from './mpc-server';
+import { MpcServer, MpcState, Participant, PatchState } from './mpc-server';
 import { mpcStateFromJSON } from './mpc-state';
 
 export class HttpClient implements MpcServer {
@@ -35,6 +35,10 @@ export class HttpClient implements MpcServer {
     invalidateAfter: number,
     participants: Address[]
   ) {
+    throw new Error('Not implemented.');
+  }
+
+  public async patchState(state: PatchState) {
     throw new Error('Not implemented.');
   }
 
