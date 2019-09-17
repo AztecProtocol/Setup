@@ -45,19 +45,22 @@ export function appFactory(
   tmpDir: string = '/tmp',
   maxUploadSize: number = MAX_UPLOAD_SIZE
 ) {
+  const adminAuth = async (ctx: Koa.Context, next: any) => {
+    const signature = ctx.get('X-Signature');
+    if (!adminAddress.equals(recover('SignMeWithYourPrivateKey', signature))) {
+      ctx.status = 401;
+      return;
+    }
+    await next(ctx);
+  };
+
   const router = new Router({ prefix });
 
   router.get('/', async (ctx: Koa.Context) => {
     ctx.body = 'OK\n';
   });
 
-  router.post('/reset', koaBody(), async (ctx: Koa.Context) => {
-    const signature = ctx.get('X-Signature');
-    if (!adminAddress.equals(recover('SignMeWithYourPrivateKey', signature))) {
-      ctx.status = 401;
-      return;
-    }
-
+  router.post('/reset', adminAuth, koaBody(), async (ctx: Koa.Context) => {
     const latestBlock = await participantSelectorFactory.getCurrentBlockHeight();
     const settings = {
       ...defaultState(latestBlock),
@@ -85,6 +88,11 @@ export function appFactory(
     ctx.body = await server.getState(ctx.query.sequence);
   });
 
+  router.patch('/state', adminAuth, koaBody(), async (ctx: Koa.Context) => {
+    normaliseSettings(ctx.request.body);
+    ctx.body = await server.patchState(ctx.request.body);
+  });
+
   router.get('/ping/:address', koaBody(), async (ctx: Koa.Context) => {
     const signature = ctx.get('X-Signature');
     const address = Address.fromString(ctx.params.address.toLowerCase());
@@ -96,12 +104,7 @@ export function appFactory(
     ctx.status = 200;
   });
 
-  router.put('/participant/:address', async (ctx: Koa.Context) => {
-    const signature = ctx.get('X-Signature');
-    if (!adminAddress.equals(recover('SignMeWithYourPrivateKey', signature))) {
-      ctx.status = 401;
-      return;
-    }
+  router.put('/participant/:address', adminAuth, async (ctx: Koa.Context) => {
     const address = Address.fromString(ctx.params.address.toLowerCase());
     server.addParticipant(address, 2);
     ctx.status = 204;

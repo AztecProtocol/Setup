@@ -1,6 +1,6 @@
 import { Mutex } from 'async-mutex';
 import moment, { Moment } from 'moment';
-import { cloneMpcState, MpcServer, MpcState, Participant } from 'setup-mpc-common';
+import { cloneMpcState, hashFiles, MpcServer, MpcState, Participant, PatchState } from 'setup-mpc-common';
 import { Address } from 'web3x/address';
 import { ParticipantSelector, ParticipantSelectorFactory } from './participant-selector';
 import { Publisher } from './publisher';
@@ -101,12 +101,39 @@ export class Server implements MpcServer {
     await this.resetWithState(state);
   }
 
+  public async patchState(state: PatchState) {
+    const release = await this.mutex.acquire();
+    switch (this.state.ceremonyState) {
+      case 'COMPLETE':
+      case 'PUBLISHING':
+      case 'SEALING':
+        delete state.endTime;
+        delete state.invalidateAfter;
+        delete state.minParticipants;
+      case 'RUNNING':
+        delete state.startTime;
+        delete state.numG1Points;
+        delete state.numG2Points;
+        delete state.pointsPerTranscript;
+      case 'SELECTED':
+        delete state.selectBlock;
+        delete state.maxTier2;
+    }
+    this.state = {
+      ...this.state,
+      ...state,
+    };
+    this.readState = cloneMpcState(this.state)
+    release();
+    return this.readState;
+  }
+
   private async resetWithState(state: MpcState) {
     this.stop();
 
     const release = await this.mutex.acquire();
     this.state = state;
-    this.readState = state;
+    this.readState = cloneMpcState(state);
     release();
 
     this.store = this.storeFactory.create(state.startTime);
