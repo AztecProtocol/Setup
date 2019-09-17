@@ -134,7 +134,8 @@ export class HttpClient implements MpcServer {
 
         const hash = await hashFiles([transcriptPath]);
 
-        const { signature } = this.account.sign(bufferToHex(hash));
+        const { signature: pingSig } = this.account.sign('ping');
+        const { signature: dataSig } = this.account.sign(bufferToHex(hash));
 
         const transcriptStream = createReadStream(transcriptPath);
         transcriptStream.on('error', error => {
@@ -154,7 +155,7 @@ export class HttpClient implements MpcServer {
           method: 'PUT',
           body: progStream as any,
           headers: {
-            'X-Signature': signature,
+            'X-Signature': `${pingSig},${dataSig}`,
             'Content-Type': 'application/octet-stream',
             'Content-Length': `${stats.size}`,
           },

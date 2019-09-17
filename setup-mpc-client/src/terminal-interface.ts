@@ -93,7 +93,7 @@ export class TerminalInterface {
       this.banner = true;
       this.renderYourStatus();
     } else if (!banner && (this.banner || force)) {
-      const { participants, latestBlock, selectBlock } = this.state!;
+      const { participants } = this.state!;
       this.term.moveTo(0, this.bannerY);
       this.term.eraseLine();
       this.banner = false;
@@ -104,18 +104,12 @@ export class TerminalInterface {
         .green(`${online}`)
         .white(`) (offline: `)
         .red(`${offline}`)
-        .white(`)`);
-      const selectCountdown = selectBlock - latestBlock;
-      if (selectCountdown > 0) {
-        this.term.white(` (selection: B-${selectCountdown})\n`);
-      } else {
-        this.term.white('\n');
-      }
+        .white(`)\n`);
     }
   }
 
   private renderYourStatus() {
-    const { participants, selectBlock, ceremonyState } = this.state!;
+    const { participants, selectBlock, ceremonyState, latestBlock } = this.state!;
 
     this.term.eraseLine();
 
@@ -129,7 +123,10 @@ export class TerminalInterface {
         case 'WAITING':
           const position = myIndex - selectedIndex;
           if (ceremonyState === 'PRESELECTION') {
-            this.term.white(`Your position in the queue will determined at block number ${selectBlock}.\n`);
+            const selectCountdown = selectBlock - latestBlock;
+            this.term.white(
+              `Your position in the queue will determined at block number ${selectBlock} (B-${selectCountdown}).\n`
+            );
           } else {
             this.term.white(`You are ${position ? `number ${myIndex - selectedIndex}` : 'first'} in the queue.\n`);
           }

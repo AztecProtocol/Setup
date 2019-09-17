@@ -45,6 +45,8 @@ export function appFactory(
   tmpDir: string = '/tmp',
   maxUploadSize: number = MAX_UPLOAD_SIZE
 ) {
+  let lockUpload = false;
+
   const adminAuth = async (ctx: Koa.Context, next: any) => {
     const signature = ctx.get('X-Signature');
     if (!adminAddress.equals(recover('SignMeWithYourPrivateKey', signature))) {
@@ -135,15 +137,29 @@ export function appFactory(
 
   router.put('/data/:address/:num', async (ctx: Koa.Context) => {
     const address = Address.fromString(ctx.params.address.toLowerCase());
-    const signature = ctx.get('X-Signature');
+    const [pingSig, dataSig] = ctx.get('X-Signature').split(',');
 
     // 500, unless we explicitly set it to 200 or something else.
     ctx.status = 500;
 
-    if (!signature) {
+    if (lockUpload) {
       ctx.body = {
-        error: 'No X-Signature header.',
+        error: 'Can only upload 1 file at a time.',
       };
+      ctx.status = 401;
+      return;
+    }
+
+    if (!pingSig || !dataSig) {
+      ctx.body = {
+        error: 'X-Signature header incomplete.',
+      };
+      ctx.status = 401;
+      return;
+    }
+
+    // Before reading body, pre-authenticate user.
+    if (!address.equals(recover('ping', pingSig))) {
       ctx.status = 401;
       return;
     }
@@ -166,14 +182,13 @@ export function appFactory(
       return;
     }
 
-    // Nonce to prevent collison if attacker attempts to upload at same time as valid user.
-    // TODO: Probably better to check a signed fixed token to assert user is who they say they are prior to ingesting body.
-    // Can lock server to only allow a single upload at a time.
     const nonce = randomBuffer(8).toString('hex');
     const transcriptPath = `${tmpDir}/transcript_${ctx.params.address}_${ctx.params.num}_${nonce}.dat`;
     const signaturePath = `${tmpDir}/transcript_${ctx.params.address}_${ctx.params.num}_${nonce}.sig`;
 
     try {
+      lockUpload = true;
+
       await new Promise((resolve, reject) => {
         const writeStream = createWriteStream(transcriptPath);
         const meterStream = meter(maxUploadSize);
@@ -190,12 +205,12 @@ export function appFactory(
       });
 
       const hash = await hashFiles([transcriptPath]);
-      if (!address.equals(recover(bufferToHex(hash), signature))) {
+      if (!address.equals(recover(bufferToHex(hash), dataSig))) {
         ctx.status = 401;
         throw new Error('Body signature does not match X-Signature.');
       }
 
-      await writeFileAsync(signaturePath, signature);
+      await writeFileAsync(signaturePath, dataSig);
 
       await server.uploadData(address, +ctx.params.num, transcriptPath, signaturePath);
 
@@ -205,6 +220,8 @@ export function appFactory(
       unlink(transcriptPath, () => {});
       unlink(signaturePath, () => {});
       return;
+    } finally {
+      lockUpload = false;
     }
   });
 
