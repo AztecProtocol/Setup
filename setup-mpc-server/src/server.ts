@@ -123,7 +123,7 @@ export class Server implements MpcServer {
       ...this.state,
       ...state,
     };
-    this.readState = cloneMpcState(this.state)
+    this.readState = cloneMpcState(this.state);
     release();
     return this.readState;
   }
@@ -261,11 +261,12 @@ export class Server implements MpcServer {
       this.state.sequence += 1;
       this.state.statusSequence = this.state.sequence;
     });
-    this.sealer.run(this.state).then(() => {
+    this.sealer.run(this.state).then(crs => {
       if (this.state.ceremonyState !== 'SEALING') {
         // Server was reset.
         return;
       }
+      this.state.crs = crs;
       this.state.ceremonyState = 'PUBLISHING';
       this.state.sequence += 1;
     });

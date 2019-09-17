@@ -17,6 +17,8 @@ export interface Transcript {
   uploaded: number;
 }
 
+export type CRS = [string, string, string, string];
+
 export interface Participant {
   // Server controlled data.
   sequence: number;
@@ -70,6 +72,7 @@ export interface MpcState {
   sealingProgress: number;
   publishProgress: number;
   participants: Participant[];
+  crs?: CRS;
 }
 
 export interface PatchState {

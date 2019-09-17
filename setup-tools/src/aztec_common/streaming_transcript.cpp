@@ -31,9 +31,9 @@ void read_manifest(std::vector<char> &buffer, Manifest &manifest)
 
 std::vector<char> read_checksum(std::string const &path)
 {
-    auto buffer = read_file_into_buffer(path);
-    std::vector<char> checksum = validate_checksum(buffer);
-    return checksum;
+  auto buffer = read_file_into_buffer(path);
+  std::vector<char> checksum = validate_checksum(buffer);
+  return checksum;
 }
 
 void read_transcript(std::vector<G1> &g1_x, std::vector<G2> &g2_x, Manifest &manifest, std::string const &path)
@@ -65,10 +65,13 @@ void read_transcript_g1_points(std::vector<G1> &g1_x, std::string const &path, i
   read_transcript_manifest(manifest, path);
 
   offset = offset < 0 ? manifest.num_g1_points + offset : offset;
-  num = std::min((size_t)manifest.num_g1_points - offset, num);
 
-  auto g1_0_buffer = read_file_into_buffer(path, manifest_size + (g1_size * offset), g1_size * num);
-  read_g1_elements_from_buffer(g1_x, &g1_0_buffer[0], g1_size * num);
+  if ((uint32_t)offset < manifest.num_g1_points)
+  {
+    num = std::min((size_t)manifest.num_g1_points - offset, num);
+    auto g1_0_buffer = read_file_into_buffer(path, manifest_size + (g1_size * offset), g1_size * num);
+    read_g1_elements_from_buffer(g1_x, &g1_0_buffer[0], g1_size * num);
+  }
 }
 
 void read_transcript_g2_points(std::vector<G2> &g2_x, std::string const &path, int offset, size_t num)
@@ -81,10 +84,13 @@ void read_transcript_g2_points(std::vector<G2> &g2_x, std::string const &path, i
   read_transcript_manifest(manifest, path);
 
   offset = offset < 0 ? manifest.num_g2_points + offset : offset;
-  num = std::min((size_t)manifest.num_g2_points - offset, num);
 
-  auto g2_0_buffer = read_file_into_buffer(path, manifest_size + (g1_size * manifest.num_g1_points) + (g2_size * offset), g2_size * num);
-  read_g2_elements_from_buffer(g2_x, &g2_0_buffer[0], g2_size * num);
+  if ((uint32_t)offset < manifest.num_g2_points)
+  {
+    num = std::min((size_t)manifest.num_g2_points - offset, num);
+    auto g2_0_buffer = read_file_into_buffer(path, manifest_size + (g1_size * manifest.num_g1_points) + (g2_size * offset), g2_size * num);
+    read_g2_elements_from_buffer(g2_x, &g2_0_buffer[0], g2_size * num);
+  }
 }
 
 void write_transcript(std::vector<G1> const &g1_x, std::vector<G2> const &g2_x, Manifest const &manifest, std::string const &path)

@@ -8,4 +8,5 @@ COPY --from=0 \
   /usr/src/setup-tools/build/compute_generator_polynomial \
   /usr/src/setup-tools/build/prep_range_data \
   /usr/src/setup-tools/build/compute_range_polynomial \
+  /usr/src/setup-tools/build/print_point \
   ./

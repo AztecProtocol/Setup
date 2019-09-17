@@ -96,7 +96,7 @@ export class Publisher extends EventEmitter {
   }
 
   private async publishCeremonyManifest() {
-    const { numG1Points, numG2Points, pointsPerTranscript, startTime, participants } = this.state;
+    const { numG1Points, numG2Points, pointsPerTranscript, startTime, participants, crs } = this.state;
     const manifest = {
       numG1Points,
       numG2Points,
@@ -111,6 +111,7 @@ export class Publisher extends EventEmitter {
           startedAt,
           completedAt,
         })),
+      crs,
     };
     const key = `${startTime.format('YYYYMMDD_HHmmss')}/manifest.json`;
     await this.upload(JSON.stringify(manifest, undefined, 2), key, 0, 0, 'application/json');
