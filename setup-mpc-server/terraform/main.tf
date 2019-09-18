@@ -219,6 +219,7 @@ resource "aws_alb_target_group" "setup_mpc_server" {
     matcher           = "200"
     interval          = 5
     healthy_threshold = 2
+    timeout           = 3
   }
 
   tags = {
