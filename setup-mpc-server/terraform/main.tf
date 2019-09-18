@@ -279,3 +279,44 @@ resource "aws_s3_bucket" "aztec_ignition" {
   bucket = "aztec-ignition"
   acl    = "public-read"
 }
+
+# WAF rules for DDOS protection.
+resource "aws_wafregional_ipset" "ipset" {
+  name = "setup-ipset"
+}
+
+resource "aws_wafregional_rate_based_rule" "wafrule" {
+  depends_on  = ["aws_wafregional_ipset.ipset"]
+  name        = "rate-limit"
+  metric_name = "rateLimit"
+
+  rate_key   = "IP"
+  rate_limit = 3000
+
+  predicate {
+    data_id = "${aws_wafregional_ipset.ipset.id}"
+    negated = false
+    type    = "IPMatch"
+  }
+}
+
+resource "aws_wafregional_web_acl" "acl" {
+  name        = "setup-acl"
+  metric_name = "setupAcl"
+  default_action {
+    type = "ALLOW"
+  }
+  rule {
+    type = "RATE_BASED"
+    action {
+      type = "BLOCK"
+    }
+    priority = 1
+    rule_id  = "${aws_wafregional_rate_based_rule.wafrule.id}"
+  }
+}
+
+resource "aws_wafregional_web_acl_association" "acl_association" {
+  resource_arn = "${data.terraform_remote_state.setup_iac.outputs.alb_arn}"
+  web_acl_id   = "${aws_wafregional_web_acl.acl.id}"
+}

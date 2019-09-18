@@ -42,6 +42,10 @@ output "security_group_public_id" {
   value = "${aws_security_group.public.id}"
 }
 
+output "alb_arn" {
+  value = "${aws_alb.setup.arn}"
+}
+
 output "alb_listener_arn" {
   value = "${aws_alb_listener.https_listener.arn}"
 }

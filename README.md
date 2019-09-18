@@ -23,7 +23,7 @@ Brief technical overview of particpating in the MPC. Further information availab
 The simplest way to participate is to run [setup-mpc-client](/setup-mpc-client). The only input required to the application is the private key of the address used to register.
 The application will then display the current ceremony status, and will automatically handle your computation when your turn comes around.
 
-For participants the did not sign up with AZTEC personally (i.e. you registered by sending 1 wei to the registration address). This is the only recommended option.
+For participants that did not sign up with AZTEC personally (i.e. you registered by sending 1 wei to the registration address). This is the only recommended option.
 While it's possible to perform the computation the hard way, additional time constraints are applied that institutional participants are not subject to, and you will need
 to ensure you are meeting the targeted verification rate throughout the process.
 
