@@ -14,6 +14,7 @@ describe('app', () => {
   const account = Account.fromPrivate(
     hexToBuffer('0xf94ac892bbe482ca01cc43cce0f467d63baef67e37428209f8193fdc0e6d9013')
   );
+  const { signature: pingSig } = account.sign('ping');
   let app: any;
   let mockServer: Mockify<MpcServer>;
 
@@ -25,6 +26,7 @@ describe('app', () => {
       addParticipant: jest.fn(),
       updateParticipant: jest.fn(),
       downloadData: jest.fn(),
+      downloadSignature: jest.fn(),
       uploadData: jest.fn(),
       ping: jest.fn(),
     };
@@ -62,7 +64,7 @@ describe('app', () => {
     it('should return 401 with transcript number out of range', async () => {
       const response = await request(app.callback())
         .put(`/data/${account.address}/30`)
-        .set('X-Signature', 'placeholder')
+        .set('X-Signature', `${pingSig},placeholder2`)
         .send();
       expect(response.status).toBe(401);
       expect(response.body.error).toMatch(/out of range/);
@@ -70,8 +72,7 @@ describe('app', () => {
 
     it('should return 401 with bad signature', async () => {
       const body = 'hello world';
-      const badSig =
-        '0x76195abb935b441f1553b2f6c60d272de5a56391dfcca8cf22399c4cb600dd26188a4f003176ccdf7f314cbe08740bf7414fadef0e74cb42e94745a836e9dd311d';
+      const badSig = `${pingSig},0x76195abb935b441f1553b2f6c60d272de5a56391dfcca8cf22399c4cb600dd26188a4f003176ccdf7f314cbe08740bf7414fadef0e74cb42e94745a836e9dd311d`;
 
       const response = await request(app.callback())
         .put(`/data/${account.address}/0`)
@@ -86,7 +87,7 @@ describe('app', () => {
 
       const response = await request(app.callback())
         .put(`/data/${account.address}/0`)
-        .set('X-Signature', 'placeholder')
+        .set('X-Signature', `${pingSig},placeholder2`)
         .send(body);
       expect(response.status).toBe(429);
       expect(response.body.error).toMatch(/Stream exceeded/);
@@ -97,11 +98,11 @@ describe('app', () => {
       const hash = createHash('sha256')
         .update(body)
         .digest();
-      const sig = account.sign(bufferToHex(hash));
+      const { signature: dataSig } = account.sign(bufferToHex(hash));
 
       const response = await request(app.callback())
         .put(`/data/${account.address}/0`)
-        .set('X-Signature', sig.signature)
+        .set('X-Signature', `${pingSig},${dataSig}`)
         .send(body);
       expect(response.status).toBe(200);
     });
