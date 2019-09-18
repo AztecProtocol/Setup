@@ -115,6 +115,17 @@ export class HttpClient implements MpcServer {
     return (response.body! as any) as Readable;
   }
 
+  public async downloadSignature(address: Address, transcriptNumber: number) {
+    const response = await fetch(
+      `${this.apiUrl}/signature/${address.toString().toLowerCase()}/${transcriptNumber}`,
+      this.opts
+    );
+    if (response.status !== 200) {
+      throw new Error(`Download failed, bad status code: ${response.status}`);
+    }
+    return (response.body! as any) as string;
+  }
+
   public async uploadData(
     address: Address,
     transcriptNumber: number,

@@ -1,8 +1,8 @@
 import 'cesium/Widgets/widgets.css';
-import './css/main.css';
 import { HttpClient } from 'setup-mpc-common';
-import { Viewer } from './viewer';
 import { Coordinator } from './coordinator';
+import './css/main.css';
+import { Viewer } from './viewer';
 
 async function main() {
   const shutdown = () => process.exit(0);

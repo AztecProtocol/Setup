@@ -338,6 +338,10 @@ export class Server implements MpcServer {
     return this.store.loadTranscript(address, num);
   }
 
+  public async downloadSignature(address: Address, num: number) {
+    return this.store.getTranscriptSignature(address, num);
+  }
+
   public async uploadData(address: Address, transcriptNumber: number, transcriptPath: string, signaturePath: string) {
     this.getAndAssertRunningParticipant(address);
     await this.store.save(address, transcriptNumber, transcriptPath, signaturePath);

@@ -8,5 +8,6 @@ set -e
 : ${TRANSCRIPT_POSTFIX=_out}
 
 echo Uploading transcript $ADDRESS/$TRANSCRIPT...
-SIGNATURE=$(curl -s -S -X POST --data "{\"jsonrpc\":\"2.0\",\"method\":\"eth_sign\",\"params\":[\"$ADDRESS\", \"$(shasum -a 256 $SETUP_DIR/transcript${TRANSCRIPT}${TRANSCRIPT_POSTFIX}.dat)\"],\"id\":1}" $ETH_URL | jq -j .result)
-curl -s -S $API_URL/api/data/$ADDRESS/$TRANSCRIPT --upload-file $SETUP_DIR/transcript${TRANSCRIPT}${TRANSCRIPT_POSTFIX}.dat -H "X-Signature: $SIGNATURE" > /dev/null
+PING_SIG=$(curl -s -S -X POST --data "{\"jsonrpc\":\"2.0\",\"method\":\"eth_sign\",\"params\":[\"$ADDRESS\", \"ping\"],\"id\":1}" $ETH_URL | jq -j .result)
+DATA_SIG=$(curl -s -S -X POST --data "{\"jsonrpc\":\"2.0\",\"method\":\"eth_sign\",\"params\":[\"$ADDRESS\", \"$(shasum -a 256 $SETUP_DIR/transcript${TRANSCRIPT}${TRANSCRIPT_POSTFIX}.dat)\"],\"id\":1}" $ETH_URL | jq -j .result)
+curl -s -S $API_URL/api/data/$ADDRESS/$TRANSCRIPT --upload-file $SETUP_DIR/transcript${TRANSCRIPT}${TRANSCRIPT_POSTFIX}.dat -H "X-Signature: $PING_SIG,$DATA_SIG" > /dev/null

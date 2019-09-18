@@ -130,6 +130,11 @@ export function appFactory(
     ctx.status = 200;
   });
 
+  router.get('/signature/:address/:num', async (ctx: Koa.Context) => {
+    const { address, num } = ctx.params;
+    ctx.body = await server.downloadSignature(Address.fromString(address.toLowerCase()), num);
+  });
+
   router.get('/data/:address/:num', async (ctx: Koa.Context) => {
     const { address, num } = ctx.params;
     ctx.body = await server.downloadData(Address.fromString(address.toLowerCase()), num);

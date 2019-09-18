@@ -107,6 +107,7 @@ export interface MpcServer {
   addParticipant(address: Address, tier: number): Promise<void>;
   updateParticipant(participant: Participant): Promise<void>;
   downloadData(address: Address, transcriptNumber: number): Promise<Readable>;
+  downloadSignature(address: Address, num: number): Promise<string>;
   uploadData(
     address: Address,
     transcriptNumber: number,

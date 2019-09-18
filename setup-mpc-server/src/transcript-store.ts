@@ -8,6 +8,7 @@ import {
   existsAsync,
   mkdirAsync,
   readdirAsync,
+  readFileAsync,
   renameAsync,
   rmdirAsync,
   statAsync,
@@ -23,6 +24,7 @@ export interface TranscriptStoreRecord {
 export interface TranscriptStore {
   save(address: Address, num: number, transcriptPath: string, signaturePath: string): Promise<void>;
   loadTranscript(address: Address, num: number): Readable;
+  getTranscriptSignature(address: Address, num: number): Promise<string>;
   makeLive(address: Address): Promise<void>;
   getVerifiedTranscriptPath(address: Address, num: number): string;
   getVerifiedSignaturePath(address: Address, num: number): string;
@@ -76,6 +78,10 @@ export class DiskTranscriptStore implements TranscriptStore {
 
   public loadTranscript(address: Address, num: number) {
     return createReadStream(this.getVerifiedTranscriptPath(address, num));
+  }
+
+  public async getTranscriptSignature(address: Address, num: number) {
+    return (await readFileAsync(this.getVerifiedSignaturePath(address, num))).toString();
   }
 
   private getVerifiedBasePath(address: Address) {

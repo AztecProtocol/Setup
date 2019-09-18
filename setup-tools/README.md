@@ -6,7 +6,6 @@ This repo contains compiles several C++ executables that run the AZTEC trusted s
 
 - **setup** will perform one round of the trusted setup MPC.
 - **verify** verifies a transcript files points have been correctly processed relative to a previous transcript file.
-- **verify_set** verifies a set of transcript files contain the expected number of points.
 - **compute_generator_polynomial** will compute the polynomial coefficients required to construct the AZTEC generator point `h`, from the results of _setup_.
 - **prep_range_data** prepares a set of transcripts for post processing by _compute_range_polynomials_.
 - **compute_range_polynomials** will compute the AZTEC signature points `mu_k`, from the results of _setup_ and _compute_generator_polynomial_.
@@ -97,21 +96,6 @@ The following checks that the initial transcript of a new sequence of transcript
 $ ./verify ../setup_db/transcript0_out.dat ../setup_db/transcript0_out.dat ../setup_db/transcript0.dat
 Verifying...
 Transcript valid.
-```
-
-### verify_set
-
-_verify_set_ will check that the given set of transcript files contains the full number of expected points. This needs to be performed separately to the above, as _verify_ checks each transcript independently, and thus has no knowledge of the number of points in the full set.
-
-```
-usage: ./verify_set <num g1 points> <num g2 points> <transcript 0 path> ... <transcript n path>
-```
-
-Example:
-
-```
-./verify_set 250000 1 ../setup_db/transcript0_out.dat ../setup_db/transcript1_out.dat ../setup_db/transcript2_out.dat
-Transcripts valid.
 ```
 
 ### compute_generator_polynomial
