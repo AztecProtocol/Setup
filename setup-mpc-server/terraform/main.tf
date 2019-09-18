@@ -215,8 +215,10 @@ resource "aws_alb_target_group" "setup_mpc_server" {
   deregistration_delay = 5
 
   health_check {
-    path    = "/api"
-    matcher = "200"
+    path              = "/api"
+    matcher           = "200"
+    interval          = 5
+    healthy_threshold = 2
   }
 
   tags = {
