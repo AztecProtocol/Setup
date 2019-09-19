@@ -301,7 +301,7 @@ export class Server implements MpcServer {
       if (p.online === false) {
         this.state.sequence += 1;
         this.state.statusSequence = this.state.sequence;
-        if (ip) {
+        if (ip && p.state === 'WAITING') {
           p.location = getGeoData(ip);
         }
         p.sequence = this.state.sequence;
