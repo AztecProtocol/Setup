@@ -103,7 +103,7 @@ export interface MpcServer {
   ): Promise<void>;
   patchState(state: PatchState): Promise<MpcState>;
   getState(sequence?: number): Promise<MpcState>;
-  ping(address: Address): Promise<void>;
+  ping(address: Address, ip?: string): Promise<void>;
   addParticipant(address: Address, tier: number): Promise<void>;
   updateParticipant(participant: Participant): Promise<void>;
   downloadData(address: Address, transcriptNumber: number): Promise<Readable>;

@@ -2,6 +2,7 @@ import { Mutex } from 'async-mutex';
 import moment, { Moment } from 'moment';
 import { cloneMpcState, hashFiles, MpcServer, MpcState, Participant, PatchState } from 'setup-mpc-common';
 import { Address } from 'web3x/address';
+import { getGeoData } from './maxmind';
 import { ParticipantSelector, ParticipantSelectorFactory } from './participant-selector';
 import { Publisher } from './publisher';
 import { Sealer } from './sealer';
@@ -290,7 +291,7 @@ export class Server implements MpcServer {
     });
   }
 
-  public async ping(address: Address) {
+  public async ping(address: Address, ip?: string) {
     const release = await this.mutex.acquire();
     try {
       const p = this.getParticipant(address);
@@ -300,6 +301,9 @@ export class Server implements MpcServer {
       if (p.online === false) {
         this.state.sequence += 1;
         this.state.statusSequence = this.state.sequence;
+        if (ip) {
+          p.location = getGeoData(ip);
+        }
         p.sequence = this.state.sequence;
         p.online = true;
 

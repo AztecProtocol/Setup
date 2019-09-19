@@ -102,7 +102,7 @@ export function appFactory(
       ctx.status = 401;
       return;
     }
-    await server.ping(address);
+    await server.ping(address, ctx.request.ip);
     ctx.status = 200;
   });
 
@@ -231,6 +231,7 @@ export function appFactory(
   });
 
   const app = new Koa();
+  app.proxy = true;
   app.use(compress());
   app.use(cors());
   app.use(router.routes());

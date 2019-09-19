@@ -5,6 +5,7 @@
 This repo contains compiles several C++ executables that run the AZTEC trusted setup ceremony.
 
 - **setup** will perform one round of the trusted setup MPC.
+- **seal** the same as `setup`, but uses a hash of the previous participants transcripts as the secret.
 - **verify** verifies a transcript files points have been correctly processed relative to a previous transcript file.
 - **compute_generator_polynomial** will compute the polynomial coefficients required to construct the AZTEC generator point `h`, from the results of _setup_.
 - **prep_range_data** prepares a set of transcripts for post processing by _compute_range_polynomials_.
@@ -79,21 +80,21 @@ _verify_ will check that the points in a given transcript have been computed cor
 For a subsequent participant, we also check that the initial point is an exponentiation of the previous participants initial point.
 
 ```
-usage: ./verify <transcript path> [<transcript 0 path> <previous transcript path>]
+usage: ./verify <total G1 points> <total G2 points> <points per transcript> <transcript num> <transcript path> [<transcript 0 path> <previous transcript path>]
 ```
 
-Verification of a transcript file, always requires the initial point to be available. The second parameter should always point to transcript 0 in a sequence of transcripts. The following validates that transcript 2 follows from transcript 1.
+Verification of a transcript file, always requires the initial point to be available. The second transcript path should always point to transcript 0 in a sequence of transcripts. The following validates that transcript 2 follows from transcript 1.
 
 ```
-$ ./verify ../setup_db/transcript2_out.dat ../setup_db/transcript0_out.dat ../setup_db/transcript1_out.dat
+$ ./verify 1000000 1 50000 2 ../setup_db/transcript2_out.dat ../setup_db/transcript0_out.dat ../setup_db/transcript1_out.dat
 Verifying...
 Transcript valid.
 ```
 
-The following checks that the initial transcript of a new sequence of transcripts, was built on top of the previous participants transcripts. Note how the 3rd argument is the input transcript that was fed to _setup_.
+The following checks that the initial transcript of a new sequence of transcripts, was built on top of the previous participants transcripts. Note how the 3rd transcript path is the input transcript that was fed to _setup_.
 
 ```
-$ ./verify ../setup_db/transcript0_out.dat ../setup_db/transcript0_out.dat ../setup_db/transcript0.dat
+$ ./verify 1000000 1 50000 0 ../setup_db/transcript0_out.dat ../setup_db/transcript0_out.dat ../setup_db/transcript0.dat
 Verifying...
 Transcript valid.
 ```
