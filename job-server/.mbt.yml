@@ -7,3 +7,5 @@ build:
 # commands:
 #   deploy:
 #     cmd: ../ci-scripts/deploy.sh
+#     args:
+#       - job-server

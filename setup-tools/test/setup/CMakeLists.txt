@@ -11,6 +11,7 @@ add_executable(
     test_setup.cpp
     test_compute_range_polynomial.cpp
     ../../src/verify/verifier.cpp
+    ../../src/range/range_multi_exp.cpp
 )
 target_link_libraries(
     setup_tests

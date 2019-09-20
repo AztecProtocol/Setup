@@ -6,7 +6,7 @@ include(CableCompilerSettings)
 include(CableToolchains)
 include(GNUInstallDirs)
 
-cable_configure_toolchain(DEFAULT cxx17-pic)
+cable_configure_toolchain(DEFAULT cxx11-pic)
 
 include(HunterConfig)
 

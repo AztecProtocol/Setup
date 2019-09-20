@@ -8,6 +8,7 @@ find_package (Threads)
 add_executable(
     compute_range_polynomial
     range_multi_exp.hpp
+    range_multi_exp.cpp
     main.cpp
 )
 

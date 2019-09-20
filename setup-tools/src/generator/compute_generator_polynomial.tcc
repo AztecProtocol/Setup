@@ -40,7 +40,7 @@ std::vector<FieldT> compute_generator_polynomial(size_t polynomial_degree)
 
     size_t num_rounds = log2_polynomial_degree;
 
-    std::vector<std::vector<FieldT> > coefficients;
+    std::vector<std::vector<FieldT>> coefficients;
 
     FieldT work_var = FieldT::zero();
 
@@ -66,13 +66,13 @@ std::vector<FieldT> compute_generator_polynomial(size_t polynomial_degree)
 
     for (size_t i = 0; i < num_rounds; ++i)
     {
-        std::vector<std::vector<FieldT> > work_vector;
+        std::vector<std::vector<FieldT>> work_vector;
         for (size_t j = 0; j < coefficients.size(); j += 2)
         {
             std::vector<FieldT> c(1, FieldT::zero());
-            libfqfft::_polynomial_multiplication<FieldT>(c, coefficients[j], coefficients[j+1]);
+            libfqfft::_polynomial_multiplication<FieldT>(c, coefficients[j], coefficients[j + 1]);
             c.emplace_back(FieldT::zero());
-            work_vector.emplace_back(c); 
+            work_vector.emplace_back(c);
         }
         work_vector.swap(coefficients);
     }
