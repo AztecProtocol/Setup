@@ -18,6 +18,9 @@ int main(int argc, char **argv)
     printf("initializing libff \n");
     libff::alt_bn128_pp::init_public_params();
     printf("calling compute generator poly \n");
-    generator::compute_generator_polynomial<libff::Fr<libff::alt_bn128_pp>>(polynomial_degree);
+    std::vector<libff::alt_bn128_Fr> coefficients = generator::compute_generator_polynomial<libff::Fr<libff::alt_bn128_pp>>(polynomial_degree);
+    printf("computed polynomial coefficients, writing to disk...\n");
+    streaming::write_field_elements_to_file(coefficients, "../setup_db/generator.dat");
+
     return 0;
 }

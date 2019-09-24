@@ -98,12 +98,24 @@ void compute_range_polynomials(int range_index, size_t polynomial_degree)
 
     size_t batch_num = 4;
     size_t batch_size = polynomial_degree / batch_num;
+
+    // there's a chance that the polynomial degree won't evenly divide the batch number, keep track of the remainder
+    size_t leftovers = polynomial_degree - (batch_num * batch_size);
     std::vector<int> batches(batch_num);
     std::iota(batches.begin(), batches.end(), 0);
     FieldT fa = FieldT::zero();
 
     auto batch_process = [&](int i) {
-        return process_range(range_index, fa, g1_x, generator_polynomial, batch_size * i, batch_size);
+        size_t batch_size_inner = 0;
+        if ((size_t)i == batch_num - 1)
+        {
+            batch_size_inner = (batch_size + leftovers);
+        }
+        else
+        {
+            batch_size_inner = batch_size;
+        }
+        return process_range(range_index, fa, g1_x, generator_polynomial, batch_size * i, batch_size_inner);
     };
 
     Timer compute_timer;
