@@ -38,6 +38,10 @@ template <typename GroupT>
 VerificationKey<GroupT> same_ratio_preprocess(std::vector<GroupT> const &g_x)
 {
     Fq challenge = Fq::random_element();
+    if (challenge.is_zero() || challenge == Fq::one())
+    {
+        throw std::runtime_error("Challenge is 0 or 1.");
+    }
 
     std::vector<Fq> scalars(g_x.size());
     scalars[0] = challenge;

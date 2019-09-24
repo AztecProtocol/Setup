@@ -19,12 +19,12 @@ constexpr size_t G2_WEIGHT = 9;
 constexpr size_t TOTAL_WEIGHT = G1_WEIGHT + G2_WEIGHT;
 constexpr size_t WNAF_WINDOW_SIZE = 5;
 
-auto getTranscriptInPath(std::string const &dir, size_t num)
+std::string getTranscriptInPath(std::string const &dir, size_t num)
 {
     return dir + "/transcript" + std::to_string(num) + ".dat";
 };
 
-auto getTranscriptOutPath(std::string const &dir, size_t num)
+std::string getTranscriptOutPath(std::string const &dir, size_t num)
 {
     return dir + "/transcript" + std::to_string(num) + "_out.dat";
 };
@@ -211,6 +211,11 @@ public:
         memset((void *)&t_, 0, sizeof(T));
     }
 
+    T &get()
+    {
+        return t_;
+    }
+
     operator T &()
     {
         return t_;
@@ -279,6 +284,10 @@ void run_setup(std::string const &dir, size_t num_g1_points, size_t num_g2_point
 {
     // Our toxic waste. Will be zeroed before going out of scope.
     Secret<Fr> multiplicand(Fr::random_element());
+    if (multiplicand.get().is_zero() || multiplicand.get() == Fr::one())
+    {
+        throw std::runtime_error("Secret is 0 or 1.");
+    }
 
     if (!isatty(fileno(stdin)))
     {
@@ -306,7 +315,12 @@ Fr generate_sealing_multiplicand(std::string const &dir)
     }
     char checksum_of_checksums[checksum::BLAKE2B_CHECKSUM_LENGTH] = {0};
     checksum::create_checksum(&checksums[0], checksums.size(), &checksum_of_checksums[0]);
-    return utils::convert_buffer_to_field_element<Fr>(&checksum_of_checksums[0], checksum::BLAKE2B_CHECKSUM_LENGTH);
+    Fr multiplicand = utils::convert_buffer_to_field_element<Fr>(&checksum_of_checksums[0], checksum::BLAKE2B_CHECKSUM_LENGTH);
+    if (multiplicand.is_zero() || multiplicand == Fr::one())
+    {
+        throw std::runtime_error("Sealing multiplicand is 0 or 1.");
+    }
+    return multiplicand;
 }
 
 void seal(std::string const &dir)
