@@ -163,6 +163,22 @@ bool validate_transcript(
         }
     }
 
+    for (size_t i = 0; i < g1_x.size(); ++i)
+    {
+        if (!g1_x[i].is_well_formed() || g1_x[i].is_zero())
+        {
+            throw std::runtime_error("G1 element not on curve.");
+        }
+    }
+    
+    for (size_t i = 0; i < g2_x.size(); ++i)
+    {
+        if (!g2_x[i].is_well_formed() || g2_x[i].is_zero())
+        {
+            throw std::runtime_error("G2 element not on curve.");
+        }
+    }
+    
     // Validate that the ratio between successive g1_x elements is defined by g2_x[0].
     std::cout << "Checking " << g1_x.size() << " G1 points..." << std::endl;
     if (!validate_polynomial_evaluation(g1_x, g2_0))
