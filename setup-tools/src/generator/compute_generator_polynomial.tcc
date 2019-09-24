@@ -31,10 +31,20 @@ template <typename FieldT>
 void compute_generator_polynomial(size_t polynomial_degree)
 {
     std::vector<std::vector<std::vector<FieldT>>> subproduct_tree;
+    size_t log2_polynomial_degree = log2(polynomial_degree);
+    size_t acc = 1;
+    for (size_t i = 0; i < log2_polynomial_degree; ++i)
+    {
+        acc = acc * acc;
+    }
+    if (acc < polynomial_degree)
+    {
+        ++log2_polynomial_degree;
+    }
     printf("computing the subproduct tree for %zu...\n", polynomial_degree);
-    libfqfft::compute_subproduct_tree(log2(polynomial_degree), subproduct_tree);
+    libfqfft::compute_subproduct_tree(log2_polynomial_degree, subproduct_tree);
 
-    std::vector<FieldT> result = subproduct_tree[log2(polynomial_degree)][0];
+    std::vector<FieldT> result = subproduct_tree[log2_polynomial_degree][0];
     printf("result size = %d\n", (int)result.size());
     printf("computed polynomial coefficients, writing to disk...\n");
     streaming::write_field_elements_to_file(result, "../setup_db/generator.dat");
