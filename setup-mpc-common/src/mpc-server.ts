@@ -74,6 +74,7 @@ export interface MpcState {
   publishProgress: number;
   participants: Participant[];
   crs?: CRS;
+  publishPath?: string;
 }
 
 export interface PatchState {

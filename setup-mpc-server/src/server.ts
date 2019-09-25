@@ -296,12 +296,13 @@ export class Server implements MpcServer {
       this.state.sequence += 1;
       this.state.statusSequence = this.state.sequence;
     });
-    this.publisher.run().then(() => {
+    this.publisher.run().then(publishPath => {
       if (this.state.ceremonyState !== 'PUBLISHING') {
         // Server was reset.
         return;
       }
       this.state.ceremonyState = 'COMPLETE';
+      this.state.publishPath = publishPath;
       this.state.completedAt = moment();
       this.state.sequence += 1;
     });

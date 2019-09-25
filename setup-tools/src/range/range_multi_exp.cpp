@@ -94,7 +94,7 @@ void compute_range_polynomials(std::string const &setup_db_path, int range_index
     std::iota(batches.begin(), batches.end(), 0);
     Fr fa = Fr::zero();
 
-    auto batch_process = [&](int i) {
+    auto batch_process = [&](size_t i) {
         batch_size += (i == batch_num - 1) ? leftovers : 0;
         return process_range(range_index, fa, g1_x, generator_polynomial, batch_size * i, batch_size);
     };

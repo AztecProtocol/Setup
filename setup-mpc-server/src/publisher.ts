@@ -41,7 +41,7 @@ export class Publisher extends EventEmitter {
         await this.publishCeremonyManifest();
         await this.publishIndex();
 
-        return;
+        return `https://aztec-ignition.s3.eu-west-2.amazonaws.com/${this.state.startTime.format('YYYYMMDD_HHmmss')}`;
       } catch (err) {
         console.error('Publisher failed (will retry): ', err);
         await new Promise(resolve => setTimeout(resolve, 1000));
