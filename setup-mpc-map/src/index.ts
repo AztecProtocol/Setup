@@ -5,10 +5,6 @@ import './css/main.css';
 import { Viewer } from './viewer';
 
 async function main() {
-  const shutdown = () => process.exit(0);
-  process.once('SIGINT', shutdown);
-  process.once('SIGTERM', shutdown);
-
   const viewer = new Viewer();
   const url = window.location;
   const apiUrl = `${url.protocol}//${url.hostname}:${url.port}/api`;

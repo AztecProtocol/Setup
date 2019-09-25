@@ -4,8 +4,8 @@ build:
     cmd: ../ci-scripts/build.sh
     args:
       - job-server
-# commands:
-#   deploy:
-#     cmd: ../ci-scripts/deploy.sh
-#     args:
-#       - job-server
+commands:
+  deploy:
+    cmd: ../ci-scripts/deploy.sh
+    args:
+      - job-server

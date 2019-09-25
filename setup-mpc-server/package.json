@@ -4,9 +4,9 @@
   "main": "dest/index.js",
   "license": "MIT",
   "scripts": {
-    "build": "tsc && ln -f ./src/maxmind/GeoLite2-City.mmdb ./dest/maxmind/GeoLite2-City.mmdb",
+    "build": "tsc -p tsconfig.prod.json && ln -f ./src/maxmind/GeoLite2-City.mmdb ./dest/maxmind/GeoLite2-City.mmdb",
     "start": "node ./dest",
-    "start:dev": "tsc-watch --onSuccess 'yarn start'",
+    "start:dev": "tsc-watch -p tsconfig.prod.json --onSuccess 'yarn start'",
     "test": "jest --silent",
     "postinstall": "yarn link setup-mpc-common"
   },
@@ -27,9 +27,11 @@
   },
   "dependencies": {
     "@koa/cors": "^3.0.0",
+    "@types/bn.js": "^4.11.5",
     "@types/node": "^12.6.8",
     "async-mutex": "^0.1.3",
     "aws-sdk": "^2.526.0",
+    "bn.js": "^5.0.0",
     "form-data": "^2.5.0",
     "isomorphic-fetch": "^2.2.1",
     "koa": "^2.7.0",

@@ -1,0 +1,51 @@
+version: '3'
+services:
+  setup-mpc-server:
+    build: ./setup-mpc-server
+    image: 278380418400.dkr.ecr.eu-west-2.amazonaws.com/setup-mpc-server
+    environment:
+      INFURA_API_KEY: $INFURA_API_KEY
+      STORE_PATH: './store'
+      TMP_PATH: './store/tmp'
+    ports:
+      - '8081:80'
+    volumes:
+      - ./setup-mpc-server:/usr/src/setup-mpc-server
+      - ./setup-mpc-common:/usr/src/setup-mpc-server/node_modules/setup-mpc-common
+      - ${HOME}/.aws:/root/.aws
+
+  setup-mpc-map:
+    build: ./setup-mpc-map
+    image: 278380418400.dkr.ecr.eu-west-2.amazonaws.com/setup-mpc-map
+    ports:
+      - '8080:80'
+    volumes:
+      - ./setup-mpc-map:/usr/src/setup-mpc-map
+    depends_on:
+      - setup-mpc-server
+
+  job-server:
+    build: ./job-server
+    image: 278380418400.dkr.ecr.eu-west-2.amazonaws.com/job-server
+    environment:
+      NODE_ENV: production
+      REDIS_URL: redis://redis
+    ports:
+      - '8082:80'
+    volumes:
+      - ./job-server:/usr/src/job-server
+    depends_on:
+      - redis
+
+  redis:
+    image: redis
+
+  setup-post-process:
+    build: .
+    image: 278380418400.dkr.ecr.eu-west-2.amazonaws.com/setup-post-process
+    environment:
+      JOB_SERVER_HOST: job-server
+    volumes:
+      - ./setup-post-process:/usr/src/setup-post-process
+    depends_on:
+      - job-server

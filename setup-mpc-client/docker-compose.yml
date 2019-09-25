@@ -39,20 +39,6 @@ services:
       - ../setup-mpc-common:/usr/src/setup-mpc-server/node_modules/setup-mpc-common
       - ${HOME}/.aws:/root/.aws
 
-  setup-mpc-web:
-    build:
-      context: ..
-      dockerfile: setup-mpc-web/Dockerfile
-    image: 278380418400.dkr.ecr.eu-west-2.amazonaws.com/setup-mpc-web
-    environment:
-      PORT: '80'
-    expose:
-      - 80
-    ports:
-      - '8080:80'
-    volumes:
-      - ../setup-mpc-web:/usr/src/setup-mpc-web
-
   setup-mpc-map:
     build:
       context: ..

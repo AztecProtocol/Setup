@@ -77,14 +77,14 @@ G1 process_range(int range_index, Fr &fa, G1 *const powers_of_x, Fr *const gener
                : process_range_single(range_index, fa, powers_of_x, generator_coefficients, start, num);
 }
 
-void compute_range_polynomials(int range_index, size_t polynomial_degree)
+void compute_range_polynomials(std::string const &setup_db_path, int range_index, size_t polynomial_degree)
 {
     Timer total_timer;
 
     std::cerr << "Loading data..." << std::endl;
     Timer data_timer;
-    Fr *generator_polynomial = (Fr *)map_file("../setup_db/generator_prep.dat");
-    G1 *g1_x = (G1 *)map_file("../setup_db/g1_x_prep.dat");
+    Fr *generator_polynomial = (Fr *)map_file(setup_db_path + "/generator_prep.dat");
+    G1 *g1_x = (G1 *)map_file(setup_db_path + "/g1_x_prep.dat");
     std::cerr << "Loaded in " << data_timer.toString() << "s" << std::endl;
 
     size_t batch_num = 4;

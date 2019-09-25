@@ -1,10 +1,13 @@
+import BN from 'bn.js';
 import { createWriteStream, unlink } from 'fs';
 import Koa from 'koa';
 import koaBody from 'koa-body';
 import compress from 'koa-compress';
 import Router from 'koa-router';
 import moment from 'moment';
+import readline from 'readline';
 import { hashFiles, MpcServer } from 'setup-mpc-common';
+import { PassThrough, Readable } from 'stream';
 import meter from 'stream-meter';
 import { isNumber, isString } from 'util';
 import { Address } from 'web3x/address';
@@ -239,6 +242,42 @@ export function appFactory(
     } finally {
       lockUpload = false;
     }
+  });
+
+  router.get('/bb-sigs', async (ctx: Koa.Context) => {
+    const { from = 0, num = 1024 } = ctx.query;
+    const response = await fetch(`http://job-server/result?from=${from}&num=${num}`);
+    if (response.status === 404) {
+      ctx.status = 404;
+      return;
+    }
+    if (response.status !== 200 || response.body == null) {
+      throw new Error('Error from job server.');
+    }
+    const compressionMask = new BN('8000000000000000000000000000000000000000000000000000000000000000', 16);
+    const responseStream = new PassThrough();
+
+    readline
+      .createInterface({
+        input: response.body as any,
+        terminal: false,
+      })
+      .on('line', line => {
+        const [, xstr, ystr] = line.match(/\((\d+) , (\d+)\)/)!;
+        const x = new BN(xstr);
+        const y = new BN(ystr);
+        let compressed = x;
+        if (y.testn(0)) {
+          compressed = compressed.or(compressionMask);
+        }
+        const buf = compressed.toBuffer('be', 32);
+        responseStream.write(buf);
+      })
+      .on('close', () => {
+        responseStream.end();
+      });
+
+    ctx.body = responseStream;
   });
 
   const app = new Koa();

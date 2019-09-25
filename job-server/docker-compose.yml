@@ -2,15 +2,15 @@ version: '3'
 services:
   job-server:
     build: .
-    image: aztec/job-server
+    image: 278380418400.dkr.ecr.eu-west-2.amazonaws.com/job-server
     command: yarn start:dev
     environment:
       NODE_ENV: production
       REDIS_URL: redis://redis
     ports:
-      - "8080:80"
+      - '8082:80'
     volumes:
-      - .:/usr/src/app
+      - .:/usr/src/job-server
 
   redis:
     image: redis

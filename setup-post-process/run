@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# Download generator coefficients.
+
+# Download final set of transcripts.
+
+# Transform data in prep for memory mapping.
+
 # Wait for other docker-composed stuff to startup. Ugh.
 until curl --output /dev/null --silent --head --fail http://$JOB_SERVER_HOST; do
   echo "Waiting for job server to start..."

@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "koa": "^2.5.2",
+    "koa-proxy": "^1.0.0-alpha.3",
     "koa-static": "^5.0.0"
   },
   "devDependencies": {
