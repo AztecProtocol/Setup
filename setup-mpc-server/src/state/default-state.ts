@@ -20,6 +20,8 @@ export function defaultState(latestBlock: number): MpcState {
     invalidateAfter: 180,
     sealingProgress: 0,
     publishProgress: 0,
+    rangeProofSize: 100000,
+    rangeProofProgress: 0,
     participants: [],
   };
 }

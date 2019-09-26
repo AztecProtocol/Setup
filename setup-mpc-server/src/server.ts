@@ -1,6 +1,6 @@
 import { Mutex } from 'async-mutex';
 import moment, { Moment } from 'moment';
-import { cloneMpcState, hashFiles, MpcServer, MpcState, Participant, PatchState } from 'setup-mpc-common';
+import { cloneMpcState, MpcServer, MpcState, Participant, PatchState } from 'setup-mpc-common';
 import { Address } from 'web3x/address';
 import { getGeoData } from './maxmind';
 import { ParticipantSelector, ParticipantSelectorFactory } from './participant-selector';
@@ -70,6 +70,7 @@ export class Server implements MpcServer {
     numG1Points: number,
     numG2Points: number,
     pointsPerTranscript: number,
+    rangeProofSize: number,
     invalidateAfter: number,
     participants0: Address[],
     participants1: Address[]
@@ -99,6 +100,8 @@ export class Server implements MpcServer {
       pointsPerTranscript,
       sealingProgress: 0,
       publishProgress: 0,
+      rangeProofSize,
+      rangeProofProgress: 0,
       participants: [],
     };
 

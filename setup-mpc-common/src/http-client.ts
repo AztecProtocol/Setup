@@ -33,6 +33,7 @@ export class HttpClient implements MpcServer {
     numG1Points: number,
     numG2Points: number,
     pointsPerTranscript: number,
+    rangeProofSize: number,
     invalidateAfter: number,
     participants0: Address[],
     participants1: Address[]

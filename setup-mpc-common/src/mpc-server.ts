@@ -2,7 +2,14 @@ import { Moment } from 'moment';
 import { Readable } from 'stream';
 import { Address } from 'web3x/address';
 
-export type CeremonyState = 'PRESELECTION' | 'SELECTED' | 'RUNNING' | 'SEALING' | 'PUBLISHING' | 'COMPLETE';
+export type CeremonyState =
+  | 'PRESELECTION'
+  | 'SELECTED'
+  | 'RUNNING'
+  | 'SEALING'
+  | 'PUBLISHING'
+  | 'RANGE_PROOFS'
+  | 'COMPLETE';
 export type ParticipantState = 'WAITING' | 'RUNNING' | 'COMPLETE' | 'INVALIDATED';
 export type ParticipantRunningState = 'OFFLINE' | 'WAITING' | 'RUNNING' | 'COMPLETE';
 
@@ -72,9 +79,11 @@ export interface MpcState {
   completedAt?: Moment;
   sealingProgress: number;
   publishProgress: number;
-  participants: Participant[];
+  rangeProofSize: number;
+  rangeProofProgress: number;
   crs?: CRS;
   publishPath?: string;
+  participants: Participant[];
 }
 
 export interface PatchState {
@@ -101,6 +110,7 @@ export interface MpcServer {
     numG1Points: number,
     numG2Points: number,
     pointsPerTranscript: number,
+    rangeProofSize: number,
     invalidateAfter: number,
     participants0: Address[],
     participants1: Address[]
