@@ -5,6 +5,8 @@
 #include <libff/algebra/curves/alt_bn128/alt_bn128_pp.hpp>
 
 #include <stdio.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #include "setup.hpp"
 
@@ -21,6 +23,12 @@ int main(int argc, char **argv)
 
     try
     {
+        struct stat info;
+        if (stat(dir.c_str(), &info) != 0)
+        {
+            throw std::runtime_error("Transcript directory not found.");
+        }
+
 #ifdef SEALING
         seal(dir);
 #else

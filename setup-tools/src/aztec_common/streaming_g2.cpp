@@ -78,6 +78,10 @@ G2 read_g2_element_from_buffer(char *buffer)
         element.Y.c1 = Fq(y1);
         element.Z.c0 = Fq::one();
         element.Z.c1 = Fq::zero();
+        if (!element.is_well_formed())
+        {
+            throw std::runtime_error("G2 points are not on the curve!");
+        }
     }
     return element;
 }
