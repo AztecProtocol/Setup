@@ -74,7 +74,6 @@ module.exports = [
       }),
     ],
 
-    // Maybe this is wrong?
     optimization: {
       runtimeChunk: 'single',
       splitChunks: {
@@ -91,6 +90,9 @@ module.exports = [
     // development server options
     devServer: {
       contentBase: path.join(__dirname, 'dist'),
+      proxy: {
+        '/api': 'http://localhost:8081',
+      },
     },
   },
 ];

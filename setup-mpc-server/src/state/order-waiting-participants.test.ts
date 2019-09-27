@@ -27,13 +27,15 @@ describe('order waiting participants', () => {
     expect(result[2].address).toEqual(addresses[0]);
   });
 
-  it('should correctly order participant 0', () => {
+  it('should correctly order iter 0 participants', () => {
     participants[3].tier = 0;
+    participants[8].tier = 0;
     participants[7].online = true;
     const result = orderWaitingParticipants(participants, 0);
     expect(result[0].address).toEqual(addresses[3]);
-    expect(result[1].address).toEqual(addresses[7]);
-    expect(result[2].address).toEqual(addresses[0]);
+    expect(result[1].address).toEqual(addresses[8]);
+    expect(result[2].address).toEqual(addresses[7]);
+    expect(result[3].address).toEqual(addresses[0]);
   });
 
   it('should correctly order tiered participants', () => {

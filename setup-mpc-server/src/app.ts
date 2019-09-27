@@ -81,7 +81,8 @@ export function appFactory(
       settings.numG2Points,
       settings.pointsPerTranscript,
       settings.invalidateAfter,
-      settings.participants.map(Address.fromString)
+      settings.participants0.map(Address.fromString),
+      settings.participants1.map(Address.fromString)
     );
     ctx.body = 'OK\n';
   });

@@ -11,7 +11,7 @@ async function main() {
 
   const viewer = new Viewer();
   const url = window.location;
-  const apiUrl = `${url.protocol}//${url.hostname}/api`;
+  const apiUrl = `${url.protocol}//${url.hostname}:${url.port}/api`;
   const httpClient = new HttpClient(apiUrl);
   const coordinator = new Coordinator(viewer, httpClient);
   coordinator.start();

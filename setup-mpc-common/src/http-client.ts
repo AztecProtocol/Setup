@@ -33,7 +33,8 @@ export class HttpClient implements MpcServer {
     numG2Points: number,
     pointsPerTranscript: number,
     invalidateAfter: number,
-    participants: Address[]
+    participants0: Address[],
+    participants1: Address[]
   ) {
     throw new Error('Not implemented.');
   }

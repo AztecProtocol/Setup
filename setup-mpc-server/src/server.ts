@@ -70,7 +70,8 @@ export class Server implements MpcServer {
     numG2Points: number,
     pointsPerTranscript: number,
     invalidateAfter: number,
-    participants: Address[]
+    participants0: Address[],
+    participants1: Address[]
   ) {
     const nextSequence = this.state.sequence + 1;
     const state: MpcState = {
@@ -93,10 +94,11 @@ export class Server implements MpcServer {
       participants: [],
     };
 
-    if (participants.length) {
-      // First participant in the list is the honoured "tier 0" participant.
-      this.addNextParticipant(state, participants[0], 0);
-      participants.slice(1).forEach(address => this.addNextParticipant(state, address, 1));
+    if (participants0.length) {
+      participants0.forEach(address => this.addNextParticipant(state, address, 0));
+    }
+    if (participants1.length) {
+      participants1.forEach(address => this.addNextParticipant(state, address, 1));
     }
 
     await this.resetWithState(state);

@@ -99,7 +99,8 @@ export interface MpcServer {
     numG2Points: number,
     pointsPerTranscript: number,
     invalidateAfter: number,
-    participants: Address[]
+    participants0: Address[],
+    participants1: Address[]
   ): Promise<void>;
   patchState(state: PatchState): Promise<MpcState>;
   getState(sequence?: number): Promise<MpcState>;
