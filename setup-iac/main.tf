@@ -430,6 +430,17 @@ resource "aws_route53_record" "setup" {
   }
 }
 
+resource "aws_route53_record" "ignition" {
+  zone_id = "Z1XXO7GDQEVT6B"
+  name    = "ignition"
+  type    = "A"
+  alias {
+    name                   = "${aws_alb.setup.dns_name}"
+    zone_id                = "${aws_alb.setup.zone_id}"
+    evaluate_target_health = true
+  }
+}
+
 # QR Code DNS entry and redirection.
 resource "aws_s3_bucket" "qr_redirect" {
   bucket = "qr.aztecprotocol.com"

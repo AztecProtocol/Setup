@@ -28,13 +28,12 @@ services:
       dockerfile: setup-mpc-server/Dockerfile
     image: 278380418400.dkr.ecr.eu-west-2.amazonaws.com/setup-mpc-server
     environment:
-      YOU_INDICIES: '0,1'
       STORE_PATH: './store'
       TMP_PATH: './store/tmp'
     expose:
       - 80
     ports:
-      - '80:80'
+      - '8081:80'
     volumes:
       - ../setup-mpc-server:/usr/src/setup-mpc-server
       - ../setup-mpc-common:/usr/src/setup-mpc-server/node_modules/setup-mpc-common
