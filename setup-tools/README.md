@@ -137,6 +137,12 @@ usage: ./print_point <transcript path> <g1 || g2> <point num>
 
 ## Development
 
+Ensure that at the top level of the repo you have run:
+
+```
+git submodule init && git submodule update
+```
+
 To ease development you can create an image with necessary build environment, with your current source code mounted into the conatiner.
 
 ```
@@ -144,7 +150,13 @@ docker-compose build build-env
 docker-compose run build-env
 ```
 
-Once in the container you can build executables from your modified source code on the host:
+If not using the docker container, the following installs the required packages on the latest Ubuntu:
+
+```
+sudo apt-get update && sudo apt-get install build-essential git cmake libgmp-dev libssl-dev
+```
+
+Once in the container (or your own build environment) you can build executables from your modified source code on the host:
 
 ```
 mkdir build
