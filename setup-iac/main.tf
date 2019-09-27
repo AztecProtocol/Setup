@@ -109,6 +109,15 @@ resource "aws_security_group_rule" "public_allow_ssh" {
   security_group_id = "${aws_security_group.public.id}"
 }
 
+resource "aws_security_group_rule" "setup_public_allow_http" {
+  type              = "ingress"
+  from_port         = 80
+  to_port           = 80
+  protocol          = "tcp"
+  cidr_blocks       = ["0.0.0.0/0"]
+  security_group_id = "${aws_security_group.public.id}"
+}
+
 resource "aws_security_group_rule" "setup_public_allow_https" {
   type              = "ingress"
   from_port         = 443
@@ -397,6 +406,22 @@ resource "aws_alb" "setup" {
 
   tags = {
     Name = "setup"
+  }
+}
+
+resource "aws_alb_listener" "http_listener" {
+  load_balancer_arn = "${aws_alb.setup.arn}"
+  port              = "80"
+  protocol          = "HTTP"
+
+  default_action {
+    type = "redirect"
+
+    redirect {
+      port        = "443"
+      protocol    = "HTTPS"
+      status_code = "HTTP_301"
+    }
   }
 }
 
