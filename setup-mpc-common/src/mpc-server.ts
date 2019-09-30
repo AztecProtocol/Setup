@@ -54,6 +54,7 @@ export interface ParticipantLocation {
 }
 
 export interface MpcState {
+  name: string;
   sequence: number;
   startSequence: number;
   statusSequence: number;
@@ -89,6 +90,7 @@ export interface PatchState {
 
 export interface MpcServer {
   resetState(
+    name: string,
     startTime: Moment,
     endTime: Moment,
     latestBlock: number,
@@ -102,6 +104,7 @@ export interface MpcServer {
     participants0: Address[],
     participants1: Address[]
   ): Promise<void>;
+  loadState(name: string): Promise<void>;
   patchState(state: PatchState): Promise<MpcState>;
   getState(sequence?: number): Promise<MpcState>;
   ping(address: Address, ip?: string): Promise<void>;

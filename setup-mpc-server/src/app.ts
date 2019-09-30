@@ -70,25 +70,35 @@ export function appFactory(
     };
     normaliseSettings(settings);
 
-    await server.resetState(
-      settings.startTime,
-      settings.endTime,
-      settings.latestBlock,
-      settings.selectBlock,
-      settings.maxTier2,
-      settings.minParticipants,
-      settings.numG1Points,
-      settings.numG2Points,
-      settings.pointsPerTranscript,
-      settings.invalidateAfter,
-      settings.participants0.map(Address.fromString),
-      settings.participants1.map(Address.fromString)
-    );
-    ctx.body = 'OK\n';
+    try {
+      await server.resetState(
+        settings.name,
+        settings.startTime,
+        settings.endTime,
+        settings.latestBlock,
+        settings.selectBlock,
+        settings.maxTier2,
+        settings.minParticipants,
+        settings.numG1Points,
+        settings.numG2Points,
+        settings.pointsPerTranscript,
+        settings.invalidateAfter,
+        settings.participants0.map(Address.fromString),
+        settings.participants1.map(Address.fromString)
+      );
+      ctx.status = 200;
+    } catch (err) {
+      ctx.body = { error: err.message };
+      ctx.status = 400;
+    }
   });
 
   router.get('/state', async (ctx: Koa.Context) => {
     ctx.body = await server.getState(ctx.query.sequence);
+  });
+
+  router.get('/state/load/:name', async (ctx: Koa.Context) => {
+    ctx.body = await server.loadState(ctx.params.name);
   });
 
   router.patch('/state', adminAuth, koaBody(), async (ctx: Koa.Context) => {

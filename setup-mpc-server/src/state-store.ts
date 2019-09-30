@@ -1,13 +1,16 @@
 import { existsSync, mkdirSync, readFileSync } from 'fs';
 import { MpcState, mpcStateFromJSON } from 'setup-mpc-common';
-import { renameAsync, writeFileAsync } from './fs-async';
+import { existsAsync, renameAsync, writeFileAsync } from './fs-async';
 
 export interface StateStore {
   setState(state: MpcState): Promise<void>;
   getState(): Promise<MpcState>;
+  saveState(): Promise<void>;
+  restoreState(name: string): Promise<MpcState>;
+  exists(name: string): Promise<boolean>;
 }
 
-export class MemoryStateStore {
+export class MemoryStateStore implements StateStore {
   private state!: MpcState;
 
   public async setState(state: MpcState) {
@@ -17,13 +20,23 @@ export class MemoryStateStore {
   public async getState(): Promise<MpcState> {
     return this.state;
   }
+
+  public async saveState() {}
+
+  public async restoreState(name: string): Promise<MpcState> {
+    return this.state;
+  }
+
+  public async exists(name: string) {
+    return false;
+  }
 }
 
-export class DiskStateStore {
+export class DiskStateStore implements StateStore {
   private state: MpcState;
   private storeFile: string;
 
-  constructor(storePath: string, defaultState: MpcState) {
+  constructor(private storePath: string, defaultState: MpcState) {
     this.storeFile = `${storePath}/state.json`;
     mkdirSync(storePath, { recursive: true });
 
@@ -50,4 +63,26 @@ export class DiskStateStore {
   public async getState(): Promise<MpcState> {
     return this.state;
   }
+
+  public async saveState() {
+    const id = this.state.name || this.state.startTime.format('YYYYMMDDHHmmss');
+    await writeFileAsync(this.getStatePath(id), JSON.stringify(this.state));
+  }
+
+  public async restoreState(name: string): Promise<MpcState> {
+    const buffer = readFileSync(this.getStatePath(name));
+    this.state = mpcStateFromJSON(JSON.parse(buffer.toString()));
+    this.state.startSequence = this.state.sequence;
+    return this.state;
+  }
+
+  public async exists(name: string) {
+    return await existsAsync(this.getStatePath(name));
+  }
+
+  private getStatePath = (id: string) =>
+    `${this.storePath}/state_${id
+      .replace(/[^A-Za-z0-9 ]/g, '')
+      .replace(/ +/g, '_')
+      .toLowerCase()}.json`;
 }

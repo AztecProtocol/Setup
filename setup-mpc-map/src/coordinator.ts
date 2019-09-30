@@ -183,6 +183,8 @@ export class Coordinator {
   }
 
   private updateStatusOverlay(state: MpcState) {
+    document.getElementById('overlay-title')!.innerHTML = `Coordination Server Status (${state.name})`;
+
     document.getElementById('overlay-participants')!.innerHTML = `${state.participants.length}`;
     const online = state.participants.reduce((a, p) => (p.online ? a + 1 : a), 0);
     const offline = state.participants.reduce((a, p) => (!p.online ? a + 1 : a), 0);
@@ -217,9 +219,10 @@ export class Coordinator {
   }
 
   private updateQueueOverlay(state: MpcState) {
+    const QUEUE_SIZE = 5;
     const focusIndex = state.participants.findIndex(p => p.state === 'RUNNING' || p.state === 'WAITING');
-    const startIndex = Math.min(Math.max(0, focusIndex - 2), state.participants.length - 5);
-    const queue = state.participants.slice(startIndex, startIndex + 5);
+    const startIndex = Math.min(Math.max(0, focusIndex - 2), state.participants.length - QUEUE_SIZE);
+    const queue = state.participants.slice(startIndex, startIndex + QUEUE_SIZE);
     queue.forEach((p, i) => {
       document.getElementById(`queue-overlay-online${i + 1}`)!.className = p.online ? 'green' : 'red';
       document.getElementById(`queue-overlay-position${i + 1}`)!.innerHTML = `${p.position

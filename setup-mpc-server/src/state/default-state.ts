@@ -3,6 +3,7 @@ import { MpcState } from 'setup-mpc-common';
 
 export function defaultState(latestBlock: number): MpcState {
   return {
+    name: 'default',
     sequence: 0,
     statusSequence: 0,
     startSequence: 0,

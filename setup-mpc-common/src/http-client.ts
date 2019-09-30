@@ -23,6 +23,7 @@ export class HttpClient implements MpcServer {
   }
 
   public async resetState(
+    name: string,
     startTime: Moment,
     endTime: Moment,
     startBlock: number,
@@ -38,6 +39,8 @@ export class HttpClient implements MpcServer {
   ) {
     throw new Error('Not implemented.');
   }
+
+  public async loadState(name: string) {}
 
   public async patchState(state: PatchState): Promise<MpcState> {
     throw new Error('Not implemented.');

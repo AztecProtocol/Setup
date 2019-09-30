@@ -60,6 +60,7 @@ export class Server implements MpcServer {
   }
 
   public async resetState(
+    name: string,
     startTime: Moment,
     endTime: Moment,
     latestBlock: number,
@@ -73,8 +74,15 @@ export class Server implements MpcServer {
     participants0: Address[],
     participants1: Address[]
   ) {
+    await this.stateStore.saveState();
+
+    if (await this.stateStore.exists(name)) {
+      name += `_${startTime.format('YYYYMMDDHHmmss')}`;
+    }
+
     const nextSequence = this.state.sequence + 1;
     const state: MpcState = {
+      name,
       sequence: nextSequence,
       statusSequence: nextSequence,
       startSequence: nextSequence,
@@ -101,6 +109,12 @@ export class Server implements MpcServer {
       participants1.forEach(address => this.addNextParticipant(state, address, 1));
     }
 
+    await this.resetWithState(state);
+  }
+
+  public async loadState(name: string) {
+    await this.stateStore.saveState();
+    const state = await this.stateStore.restoreState(name);
     await this.resetWithState(state);
   }
 
