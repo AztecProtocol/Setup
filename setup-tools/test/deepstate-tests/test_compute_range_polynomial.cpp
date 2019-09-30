@@ -30,17 +30,16 @@ TEST(Range, GeneratorPolynomial)
 
 	libff::alt_bn128_pp::init_public_params();
 
-	std::vector<libff::alt_bn128_Fr> res1;
-	std::vector<libff::alt_bn128_Fr> res2;
+	std::vector<Fr> res1;
+	std::vector<Fr> res2;
 
 	// compute generator polynomial and store coefficients
-	std::vector<std::vector<std::vector<libff::alt_bn128_Fr>>> subproduct_tree;
+	std::vector<std::vector<std::vector<Fr>>> subproduct_tree;
 	libfqfft::compute_subproduct_tree(log2(DEGREE), subproduct_tree);
 	res1 = subproduct_tree[log2(DEGREE)][0];
 
 	// call generator function, and read stored coefficients from transcript file
-	generator::compute_generator_polynomial<libff::Fr<libff::alt_bn128_pp>>(DEGREE);
-	streaming::read_field_elements_from_file(res2, "../setup_db/generator.dat", DEGREE);
+	res2 = generator::compute_generator_polynomial<Fr>(DEGREE);
 
 	// check each indiidual element, res2 may have larger buffer size
 	for (size_t i = 0; i < res1.size(); i++) {
@@ -63,19 +62,18 @@ TEST(Range, RangePolynomials)
 
 	libff::alt_bn128_pp::init_public_params();
 
-	// generate coeffs for generator polynomial
-	generator::compute_generator_polynomial<libff::Fr<libff::alt_bn128_pp>>(DEGREE);
-
-	// run setup to produce an initial transcript
-	run_setup("../setup_db", range_index, 1);
-
 	// produce output for memory mapping within compute_range_polynomials
 	std::vector<Fr> generator_polynomial;
 	std::vector<G1> g1_x(DEGREE);
 	std::vector<G2> g2_x(DEGREE);
 	streaming::Manifest manifest;
 
-	streaming::read_field_elements_from_file(generator_polynomial, "../setup_db/generator.dat", DEGREE + 1);
+	// generate coeffs for generator polynomial
+	generator_polynomial = generator::compute_generator_polynomial<libff::Fr<libff::alt_bn128_pp>>(DEGREE);
+
+	// run setup to produce an initial transcript
+	run_setup("../setup_db", range_index, 1);
+
 	streaming::read_transcript(g1_x, g2_x, manifest, "../setup_db/transcript0_out.dat");
 	g1_x.insert(g1_x.begin(), G1::one());
 

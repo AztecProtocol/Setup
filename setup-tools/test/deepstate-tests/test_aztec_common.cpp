@@ -130,49 +130,6 @@ TEST(Streaming, ReadG1ElemsToBuffer)
 }
 
 
-/* Streaming_BoringReadG1ElemsFromBufferFile
- *
- * 		Concrete test vector for testing reading empty
- *		transcript file to G1 element, writing to output buffer
- *		and comparing
-TEST(Streaming, DISABLED_BoringReadG1ElemsFromBufferFile)
-{
-	// transcript file to tests should actually exist
-	std::string transcript_path("./transcript/transcript00.dat");
-	if (!streaming::is_file_exist(transcript_path)) {
-		LOG(ERROR) << "Transcript path: " << transcript_path << " should be \
-		manually initialized with empty transcript file";
-	}
-
-	constexpr size_t buffer_size = sizeof(Fq) * 2;
-
-	libff::init_alt_bn128_params();
-
-	std::vector<G1> result;
-	std::vector<G1> elems;
-
-	char buffer[buffer_size];
-	char out_buffer[buffer_size];
-
-	// read to std::vec<char>, convert to char * buffer with std::copy
-	auto _buffer = streaming::read_file_into_buffer(transcript_path);
-	LOG(TRACE) << "Input buffer size: " << _buffer.size();
-	LOG(TRACE) << "Expected buffer size: " << buffer_size;
-
-	std::copy(_buffer.begin(), _buffer.end(), buffer);
-
-	// read contents from file to G1 element
-	streaming::read_g1_elements_from_buffer(elems, buffer, buffer_size);
-	elems[0].to_affine_coordinates();
-	result.emplace_back(elems[0]);
-
-	// write back to output buffer and compare
-	streaming::write_g1_elements_to_buffer(result, out_buffer);
-	ASSERT(memcmp(buffer, out_buffer, buffer_size))
-		<< "out_buffer contents: " << out_buffer;
-}
- */
-
 /* Streaming_BoringWriteG1ElemsToBuffer
  *
  * 		Concrete test vector for writing random G1 elements to
@@ -241,50 +198,6 @@ TEST(Streaming, WriteG1ElemToBuffer)
 
 	test_utils::validate_g1_point<num_limbs>(result[0], expected[0]);
 }
-
-
-/* Streaming_BoringReadG2ElemsFromBufferFile
- *
- * 		Concrete test vector for testing reading empty
- *		transcript file to G2 element, writing to output buffer
- *		and comparing.
-TEST(Streaming, DISABLED_BoringReadG2ElemsFromBufferFile)
-{
-	// transcript file to tests hould actually exist
-	std::string transcript_path("./transcript/transcript00.dat");
-	if (!streaming::is_file_exist(transcript_path)) {
-		LOG(ERROR) << "Transcript path: " << transcript_path << " should be \
-		manually initialized with empty transcript file";
-	}
-
-	constexpr size_t buffer_size = sizeof(Fqe) * 2;
-
-	libff::init_alt_bn128_params();
-
-	std::vector<G2> result;
-	std::vector<G2> elems;
-
-	char buffer[buffer_size];
-	char out_buffer[buffer_size];
-
-	// read to std::vec<char>, convert to char * buffer with std::copy
-	auto _buffer = streaming::read_file_into_buffer(transcript_path);
-	LOG(TRACE) << "Input buffer size: " << _buffer.size();
-	LOG(TRACE) << "Expected buffer size: " << buffer_size;
-
-	std::copy(_buffer.begin(), _buffer.end(), buffer);
-
-	// read contents from file to G1 element
-	streaming::read_g2_elements_from_buffer(elems, buffer, buffer_size);
-	elems[0].to_affine_coordinates();
-	result.emplace_back(elems[0]);
-
-	// write back to output buffer and compare
-	streaming::write_g2_elements_to_buffer(result, out_buffer);
-	ASSERT(memcmp(buffer, out_buffer, buffer_size))
-		<< "out_buffer contents: " << out_buffer;
-}
-*/
 
 
 /* Streaming_ReadG2ElemsToBuffer
