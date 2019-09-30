@@ -85,6 +85,7 @@ export function appFactory(
         settings.numG1Points,
         settings.numG2Points,
         settings.pointsPerTranscript,
+        settings.rangeProofSize,
         settings.invalidateAfter,
         settings.participants0.map(Address.fromString),
         settings.participants1.map(Address.fromString)

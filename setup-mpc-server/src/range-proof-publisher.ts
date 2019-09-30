@@ -1,8 +1,9 @@
 import { S3 } from 'aws-sdk';
 import BN from 'bn.js';
-import readline from 'readline';
 import { EventEmitter } from 'events';
+import readline from 'readline';
 import { MpcState } from 'setup-mpc-common';
+import { PassThrough } from 'stream';
 
 export class RangeProofPublisher extends EventEmitter {
   private cancelled = false;
