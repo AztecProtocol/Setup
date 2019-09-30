@@ -1,5 +1,4 @@
 import { existsSync, mkdirSync, readFileSync } from 'fs';
-import { Moment } from 'moment';
 import { MpcState, mpcStateFromJSON } from 'setup-mpc-common';
 import { existsAsync, renameAsync, writeFileAsync } from './fs-async';
 
@@ -75,6 +74,10 @@ export class DiskStateStore implements StateStore {
     this.state = mpcStateFromJSON(JSON.parse(buffer.toString()));
     this.state.startSequence = this.state.sequence;
     return this.state;
+  }
+
+  public async exists(name: string) {
+    return await existsAsync(this.getStatePath(name));
   }
 
   private getStatePath = (id: string) =>
