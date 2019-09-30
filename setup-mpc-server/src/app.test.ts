@@ -22,6 +22,7 @@ describe('app', () => {
     mockServer = {
       getState: jest.fn(),
       resetState: jest.fn(),
+      loadState: jest.fn(),
       patchState: jest.fn(),
       addParticipant: jest.fn(),
       updateParticipant: jest.fn(),
