@@ -97,6 +97,8 @@ export interface PatchState {
   numG2Points?: number;
   pointsPerTranscript?: number;
   invalidateAfter?: number;
+  rangeProofSize: number;
+  rangeProofsPerFile: number;
 }
 
 export interface MpcServer {
