@@ -25,7 +25,7 @@ export class Coordinator {
   }
 
   private onTick(currentTime: Date) {
-    document.getElementById('overlay-time')!.innerHTML = formatMoment(moment(currentTime));
+    document.getElementById('overlay-time')!.innerHTML = formatMoment(moment());
   }
 
   private async updateState() {
