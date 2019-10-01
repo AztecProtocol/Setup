@@ -35,6 +35,7 @@ if [ -d ./terraform ]; then
 fi
 
 # Restart with latest image.
-if aws ecs list-services --cluster setup | grep $1 > /dev/null; then
-  aws ecs update-service --cluster setup --service $1 --force-new-deployment
+SERVICE_NAME=${2:-$1}
+if aws ecs list-services --cluster setup | grep $SERVICE_NAME > /dev/null; then
+  aws ecs update-service --cluster setup --service $SERVICE_NAME --force-new-deployment
 fi

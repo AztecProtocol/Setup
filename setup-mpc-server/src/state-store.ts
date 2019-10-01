@@ -42,7 +42,11 @@ export class DiskStateStore implements StateStore {
 
     if (existsSync(this.storeFile)) {
       const buffer = readFileSync(this.storeFile);
-      this.state = mpcStateFromJSON(JSON.parse(buffer.toString()));
+      // In the event that new state is added, we merge in the defaults.
+      this.state = {
+        ...defaultState,
+        ...mpcStateFromJSON(JSON.parse(buffer.toString())),
+      };
       this.state.startSequence = this.state.sequence;
     } else {
       this.state = defaultState;

@@ -9,3 +9,4 @@ commands:
     cmd: ../ci-scripts/deploy.sh
     args:
       - job-server
+      - setup-job-server
