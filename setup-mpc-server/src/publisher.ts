@@ -102,6 +102,7 @@ export class Publisher extends EventEmitter {
       pointsPerTranscript,
       rangeProofSize,
       rangeProofsPerFile,
+      selectBlock,
       startTime,
       participants,
       crs,
@@ -112,6 +113,7 @@ export class Publisher extends EventEmitter {
       pointsPerTranscript,
       rangeProofSize,
       rangeProofsPerFile,
+      selectBlock,
       startTime,
       completedAt: moment(),
       participants: participants
