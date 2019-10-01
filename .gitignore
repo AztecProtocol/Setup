@@ -5,3 +5,4 @@ node_modules
 *.ignore
 dest
 dist
+.env

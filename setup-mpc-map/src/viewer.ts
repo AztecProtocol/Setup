@@ -26,7 +26,7 @@ export class Viewer extends EventEmitter {
     imageryProviderViewModels.push(
       new Cesium.ProviderViewModel({
         name: 'Earth at Night',
-        iconUrl: Cesium.buildModuleUrl('Widgets/Images/ImageryProviders/blackMarble.png'),
+        iconUrl: Cesium.buildModuleUrl('Widgets/Images/ImageryProviders/earthAtNight.png'),
         tooltip: '',
         creationFunction: () => {
           return new Cesium.IonImageryProvider({ assetId: 3812 });

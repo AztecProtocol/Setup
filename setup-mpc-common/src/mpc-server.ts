@@ -2,7 +2,14 @@ import { Moment } from 'moment';
 import { Readable } from 'stream';
 import { Address } from 'web3x/address';
 
-export type CeremonyState = 'PRESELECTION' | 'SELECTED' | 'RUNNING' | 'SEALING' | 'PUBLISHING' | 'COMPLETE';
+export type CeremonyState =
+  | 'PRESELECTION'
+  | 'SELECTED'
+  | 'RUNNING'
+  | 'SEALING'
+  | 'PUBLISHING'
+  | 'RANGE_PROOFS'
+  | 'COMPLETE';
 export type ParticipantState = 'WAITING' | 'RUNNING' | 'COMPLETE' | 'INVALIDATED';
 export type ParticipantRunningState = 'OFFLINE' | 'WAITING' | 'RUNNING' | 'COMPLETE';
 
@@ -53,6 +60,8 @@ export interface ParticipantLocation {
   longitude?: number;
 }
 
+export type EthNet = 'mainnet' | 'ropsten';
+
 export interface MpcState {
   name: string;
   sequence: number;
@@ -67,13 +76,18 @@ export interface MpcState {
   invalidateAfter: number;
   startTime: Moment;
   endTime: Moment;
+  network: EthNet;
   latestBlock: number;
   selectBlock: number;
   completedAt?: Moment;
   sealingProgress: number;
   publishProgress: number;
-  participants: Participant[];
+  rangeProofSize: number;
+  rangeProofProgress: number;
+  rangeProofsPerFile: number;
   crs?: CRS;
+  publishPath?: string;
+  participants: Participant[];
 }
 
 export interface PatchState {
@@ -86,6 +100,8 @@ export interface PatchState {
   numG2Points?: number;
   pointsPerTranscript?: number;
   invalidateAfter?: number;
+  rangeProofSize: number;
+  rangeProofsPerFile: number;
 }
 
 export interface MpcServer {
@@ -93,6 +109,7 @@ export interface MpcServer {
     name: string,
     startTime: Moment,
     endTime: Moment,
+    network: EthNet,
     latestBlock: number,
     selectBlock: number,
     maxTier2: number,
@@ -100,6 +117,8 @@ export interface MpcServer {
     numG1Points: number,
     numG2Points: number,
     pointsPerTranscript: number,
+    rangeProofSize: number,
+    rangeProofsPerFile: number,
     invalidateAfter: number,
     participants0: Address[],
     participants1: Address[]

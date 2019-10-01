@@ -10,6 +10,7 @@ export function defaultState(latestBlock: number): MpcState {
     ceremonyState: 'PRESELECTION',
     startTime: moment().add(20, 'seconds'),
     endTime: moment().add(1, 'hour'),
+    network: 'ropsten',
     latestBlock,
     selectBlock: latestBlock + 1,
     maxTier2: 0,
@@ -20,6 +21,9 @@ export function defaultState(latestBlock: number): MpcState {
     invalidateAfter: 180,
     sealingProgress: 0,
     publishProgress: 0,
+    rangeProofSize: 100000,
+    rangeProofProgress: 0,
+    rangeProofsPerFile: 1024,
     participants: [],
   };
 }

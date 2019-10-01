@@ -118,4 +118,33 @@ void write_transcript(std::vector<G1> const &g1_x, std::vector<G2> const &g2_x, 
   write_buffer_to_file(path, buffer);
 }
 
+std::string getTranscriptInPath(std::string const &dir, size_t num)
+{
+  return dir + "/transcript" + std::to_string(num) + ".dat";
+};
+
+void read_transcripts_g1_points(std::vector<G1> &g1_x, std::string const &dir)
+{
+  streaming::Manifest manifest;
+
+  size_t num = 0;
+  std::string filename = getTranscriptInPath(dir, num);
+
+  // Reserve additional space to store all the points.
+  streaming::read_transcript_manifest(manifest, filename);
+  g1_x.reserve(g1_x.size() + manifest.total_g1_points);
+
+  while (streaming::is_file_exist(filename))
+  {
+    streaming::read_transcript_manifest(manifest, filename);
+    streaming::read_transcript_g1_points(g1_x, filename, 0, manifest.num_g1_points);
+    filename = getTranscriptInPath(dir, ++num);
+  }
+
+  if (num == 0)
+  {
+    throw std::runtime_error("No input files found.");
+  }
+}
+
 } // namespace streaming

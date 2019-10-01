@@ -16,8 +16,8 @@ async function main() {
   process.once('SIGTERM', shutdown);
 
   const adminAddress = Address.fromString('0x3a9b2101bff555793b85493b5171451fa00124c8');
-  const participantSelectorFactory = new ParticipantSelectorFactory('ropsten', adminAddress, INFURA_API_KEY);
-  const latestBlock = await participantSelectorFactory.getCurrentBlockHeight();
+  const participantSelectorFactory = new ParticipantSelectorFactory(adminAddress, INFURA_API_KEY);
+  const latestBlock = await participantSelectorFactory.getCurrentBlockHeight('ropsten');
   const defaults = defaultState(latestBlock);
   const stateStore = new DiskStateStore(STORE_PATH + '/state', defaults);
   const transcriptStoreFactory = new DiskTranscriptStoreFactory(STORE_PATH);

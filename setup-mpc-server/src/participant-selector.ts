@@ -1,19 +1,18 @@
 import { EventEmitter } from 'events';
+import { EthNet } from 'setup-mpc-common';
 import { Address } from 'web3x/address';
 import { Eth } from 'web3x/eth';
 import { HttpProvider } from 'web3x/providers';
 
-export type EthNet = 'mainnet' | 'ropsten';
-
 export class ParticipantSelectorFactory {
-  constructor(private ethNet: EthNet, private signupAddress: Address, private projectId: string) {}
+  constructor(private signupAddress: Address, private projectId: string) {}
 
-  public create(startBlock: number, selectBlock: number) {
-    return new ParticipantSelector(this.ethNet, this.signupAddress, startBlock, selectBlock, this.projectId);
+  public create(ethNet: EthNet, startBlock: number, selectBlock: number) {
+    return new ParticipantSelector(ethNet, this.signupAddress, startBlock, selectBlock, this.projectId);
   }
 
-  public async getCurrentBlockHeight() {
-    const provider = new HttpProvider(`https://${this.ethNet}.infura.io/v3/${this.projectId}`);
+  public async getCurrentBlockHeight(ethNet: EthNet) {
+    const provider = new HttpProvider(`https://${ethNet}.infura.io/v3/${this.projectId}`);
     const eth = new Eth(provider);
     return await eth.getBlockNumber();
   }

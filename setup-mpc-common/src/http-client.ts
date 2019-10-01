@@ -9,7 +9,7 @@ import { Account } from 'web3x/account';
 import { Address } from 'web3x/address';
 import { bufferToHex } from 'web3x/utils';
 import { hashFiles } from './hash-files';
-import { MpcServer, MpcState, Participant, PatchState } from './mpc-server';
+import { EthNet, MpcServer, MpcState, Participant, PatchState } from './mpc-server';
 import { mpcStateFromJSON } from './mpc-state';
 
 export class HttpClient implements MpcServer {
@@ -26,6 +26,7 @@ export class HttpClient implements MpcServer {
     name: string,
     startTime: Moment,
     endTime: Moment,
+    network: EthNet,
     startBlock: number,
     selectBlock: number,
     maxTier2: number,
@@ -33,6 +34,8 @@ export class HttpClient implements MpcServer {
     numG1Points: number,
     numG2Points: number,
     pointsPerTranscript: number,
+    rangeProofSize: number,
+    rangeProofsPerFile: number,
     invalidateAfter: number,
     participants0: Address[],
     participants1: Address[]

@@ -25,7 +25,8 @@ export async function advanceState(state: MpcState, store: TranscriptStore, veri
   if (
     state.ceremonyState === 'PRESELECTION' ||
     state.ceremonyState === 'SEALING' ||
-    state.ceremonyState === 'PUBLISHING'
+    state.ceremonyState === 'PUBLISHING' ||
+    state.ceremonyState === 'RANGE_PROOFS'
   ) {
     return;
   }

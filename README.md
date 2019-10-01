@@ -60,6 +60,10 @@ During the ceremony it is not necessary to validate the previous participants, n
 
 ## Building The Entire Repository
 
+After cloning the repo:
+
+`git submodule init && git submodule update`
+
 In order to efficiently manage the monorepo we are using `mbt`. It's not necessary to install `mbt` to build each project but it may simplify things.
 Binaries are available below, install in your `PATH` as `mbt`:
 

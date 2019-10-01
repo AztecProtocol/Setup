@@ -1,10 +1,11 @@
 import { Mutex } from 'async-mutex';
 import moment, { Moment } from 'moment';
-import { cloneMpcState, hashFiles, MpcServer, MpcState, Participant, PatchState } from 'setup-mpc-common';
+import { cloneMpcState, EthNet, MpcServer, MpcState, Participant, PatchState } from 'setup-mpc-common';
 import { Address } from 'web3x/address';
 import { getGeoData } from './maxmind';
 import { ParticipantSelector, ParticipantSelectorFactory } from './participant-selector';
 import { Publisher } from './publisher';
+import { RangeProofPublisher } from './range-proof-publisher';
 import { Sealer } from './sealer';
 import { StateStore } from './state-store';
 import { advanceState } from './state/advance-state';
@@ -23,6 +24,7 @@ export class Server implements MpcServer {
   private participantSelector!: ParticipantSelector;
   private sealer?: Sealer;
   private publisher?: Publisher;
+  private rangeProofPublisher?: RangeProofPublisher;
   private store!: TranscriptStore;
 
   constructor(
@@ -50,6 +52,11 @@ export class Server implements MpcServer {
       this.publisher = undefined;
     }
 
+    if (this.rangeProofPublisher) {
+      this.rangeProofPublisher.cancel();
+      this.rangeProofPublisher = undefined;
+    }
+
     if (this.participantSelector) {
       this.participantSelector.stop();
     }
@@ -63,6 +70,7 @@ export class Server implements MpcServer {
     name: string,
     startTime: Moment,
     endTime: Moment,
+    network: EthNet,
     latestBlock: number,
     selectBlock: number,
     maxTier2: number,
@@ -70,6 +78,8 @@ export class Server implements MpcServer {
     numG1Points: number,
     numG2Points: number,
     pointsPerTranscript: number,
+    rangeProofSize: number,
+    rangeProofsPerFile: number,
     invalidateAfter: number,
     participants0: Address[],
     participants1: Address[]
@@ -91,6 +101,7 @@ export class Server implements MpcServer {
       numG2Points,
       startTime,
       endTime,
+      network,
       latestBlock,
       selectBlock,
       maxTier2,
@@ -99,6 +110,9 @@ export class Server implements MpcServer {
       pointsPerTranscript,
       sealingProgress: 0,
       publishProgress: 0,
+      rangeProofSize,
+      rangeProofProgress: 0,
+      rangeProofsPerFile,
       participants: [],
     };
 
@@ -122,6 +136,9 @@ export class Server implements MpcServer {
     const release = await this.mutex.acquire();
     switch (this.state.ceremonyState) {
       case 'COMPLETE':
+      case 'RANGE_PROOFS':
+        delete state.rangeProofSize;
+        delete state.rangeProofsPerFile;
       case 'PUBLISHING':
       case 'SEALING':
         delete state.endTime;
@@ -158,14 +175,14 @@ export class Server implements MpcServer {
     this.verifier = await this.createVerifier();
     this.verifier.run();
 
-    this.participantSelector = this.createParticipantSelector(state.latestBlock, state.selectBlock);
+    this.participantSelector = this.createParticipantSelector(state.network, state.latestBlock, state.selectBlock);
     this.participantSelector.run();
 
     this.scheduleAdvanceState();
   }
 
-  private createParticipantSelector(latestBlock: number, selectBlock: number) {
-    const participantSelector = this.participantSelectorFactory.create(latestBlock, selectBlock);
+  private createParticipantSelector(ethNet: EthNet, latestBlock: number, selectBlock: number) {
+    const participantSelector = this.participantSelectorFactory.create(ethNet, latestBlock, selectBlock);
     participantSelector.on('newParticipants', (addresses, latestBlock) => this.addParticipants(addresses, latestBlock));
     participantSelector.on('selectParticipants', blockHash => this.selectParticipants(blockHash));
     return participantSelector;
@@ -260,6 +277,10 @@ export class Server implements MpcServer {
       if (this.state.ceremonyState === 'PUBLISHING' && !this.publisher) {
         this.launchPublisher();
       }
+
+      if (this.state.ceremonyState === 'RANGE_PROOFS' && !this.rangeProofPublisher) {
+        this.launchRangeProofsPublisher();
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -296,8 +317,26 @@ export class Server implements MpcServer {
       this.state.sequence += 1;
       this.state.statusSequence = this.state.sequence;
     });
-    this.publisher.run().then(() => {
+    this.publisher.run().then(publishPath => {
       if (this.state.ceremonyState !== 'PUBLISHING') {
+        // Server was reset.
+        return;
+      }
+      this.state.ceremonyState = this.state.rangeProofSize ? 'RANGE_PROOFS' : 'COMPLETE';
+      this.state.publishPath = publishPath;
+      this.state.sequence += 1;
+    });
+  }
+
+  private launchRangeProofsPublisher() {
+    this.rangeProofPublisher = new RangeProofPublisher(this.state);
+    this.rangeProofPublisher.on('progress', progress => {
+      this.state.rangeProofProgress = progress;
+      this.state.sequence += 1;
+      this.state.statusSequence = this.state.sequence;
+    });
+    this.rangeProofPublisher.run().then(() => {
+      if (this.state.ceremonyState !== 'RANGE_PROOFS') {
         // Server was reset.
         return;
       }

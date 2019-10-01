@@ -2,7 +2,6 @@
 # trusted_setup_post_processing
 # copyright spilsbury holdings 2019
 
-
 add_executable(
     compute_generator_polynomial
     compute_generator_polynomial.tcc

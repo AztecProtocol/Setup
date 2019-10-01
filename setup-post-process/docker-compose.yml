@@ -4,6 +4,7 @@ services:
     build: .
     image: aztec/setup-post-process
     environment:
+      MPC_SERVER_HOST: setup-mpc-server
       JOB_SERVER_HOST: job-server
     volumes:
       - .:/usr/src/runner
@@ -18,7 +19,7 @@ services:
       NODE_ENV: production
       REDIS_URL: redis://redis
     ports:
-      - "8080:80"
+      - '8080:80'
     depends_on:
       - redis
 

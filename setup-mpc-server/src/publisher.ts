@@ -41,7 +41,7 @@ export class Publisher extends EventEmitter {
         await this.publishCeremonyManifest();
         await this.publishIndex();
 
-        return;
+        return `https://aztec-ignition.s3.eu-west-2.amazonaws.com/${this.state.startTime.format('YYYYMMDD_HHmmss')}`;
       } catch (err) {
         console.error('Publisher failed (will retry): ', err);
         await new Promise(resolve => setTimeout(resolve, 1000));
@@ -96,11 +96,24 @@ export class Publisher extends EventEmitter {
   }
 
   private async publishCeremonyManifest() {
-    const { numG1Points, numG2Points, pointsPerTranscript, startTime, participants, crs } = this.state;
+    const {
+      numG1Points,
+      numG2Points,
+      pointsPerTranscript,
+      rangeProofSize,
+      rangeProofsPerFile,
+      selectBlock,
+      startTime,
+      participants,
+      crs,
+    } = this.state;
     const manifest = {
       numG1Points,
       numG2Points,
       pointsPerTranscript,
+      rangeProofSize,
+      rangeProofsPerFile,
+      selectBlock,
       startTime,
       completedAt: moment(),
       participants: participants

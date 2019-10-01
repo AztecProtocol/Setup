@@ -31,6 +31,47 @@ async function loadScripts(redisClient: RedisClient) {
   return files.reduce((a, file, i) => ({ ...a, [file]: shas[i] }), {});
 }
 
+function createResultStream(redisClient: RedisClient, from: number, num: number) {
+  return new Readable({
+    async read() {
+      if (!num) {
+        this.push(null);
+        return;
+      }
+
+      const batch = Math.min(num, 100);
+      const keys = Array(batch)
+        .fill(0)
+        .map((_, idx) => `complete:${from + idx}`);
+      const results = await redisClient.mgetAsync(...keys);
+      const nullIndex = results.indexOf(null);
+      const toSend = nullIndex === -1 ? batch : nullIndex;
+
+      from += toSend;
+      num -= toSend;
+
+      if (toSend === 0) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+
+      const chunk = results.slice(0, toSend).join('\n');
+
+      this.push(chunk);
+    },
+  });
+}
+
+async function getResults(redisClient: RedisClient, from: number, num: number) {
+  const keys = new Array(num).fill(0).map((_, idx) => `complete:${from + idx}`);
+  const results: string[] = await redisClient.mgetAsync(...keys);
+
+  if (results.some(r => r === null)) {
+    return [];
+  }
+
+  return results;
+}
+
 function app(redisClient: RedisClient, scripts: { [k: string]: string }) {
   const router = new Router();
 
@@ -56,38 +97,18 @@ function app(redisClient: RedisClient, scripts: { [k: string]: string }) {
   router.get('/result', async ctx => {
     const to = Number(await redisClient.getAsync('to'));
     let from: number = +ctx.query.from || 0;
-    let num = ctx.query.num || to - from;
+    let num = +ctx.query.num || to - from;
 
-    ctx.body = new Readable({
-      async read() {
-        if (!num) {
-          this.push(null);
-          return;
-        }
-
-        const batch = Math.min(num, 100);
-        const keys = Array(batch)
-          .fill(0)
-          .map((_, idx) => `complete:${from + idx}`);
-        const results = await redisClient.mgetAsync(...keys);
-        const nullIndex = results.indexOf(null);
-        const toSend = nullIndex === -1 ? batch : nullIndex;
-
-        from += toSend;
-        num -= toSend;
-
-        if (toSend === 0) {
-          await new Promise(resolve => setTimeout(resolve, 1000));
-        }
-
-        const chunk = results
-          .slice(0, toSend)
-          .map((r: string) => `${r}\n`)
-          .join('');
-
-        this.push(chunk);
-      },
-    });
+    if (ctx.query.stream) {
+      ctx.body = createResultStream(redisClient, from, num);
+    } else {
+      const results = await getResults(redisClient, from, num);
+      if (!results.length) {
+        ctx.status = 404;
+        return;
+      }
+      ctx.body = results.join('\n');
+    }
   });
 
   const app = new Koa();

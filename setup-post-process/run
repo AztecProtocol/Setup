@@ -1,17 +1,63 @@
 #!/bin/bash
+set -e
 
 # Wait for other docker-composed stuff to startup. Ugh.
 until curl --output /dev/null --silent --head --fail http://$JOB_SERVER_HOST; do
   echo "Waiting for job server to start..."
   sleep 1
 done
-
-[ -z "$NUMJOBS" ] && NUMJOBS=$(nproc)
-
-echo "Running $NUMJOBS job processors."
-
-for i in $(seq 1 $NUMJOBS)
-do
-   ./run-job &
+until curl --output /dev/null --silent --head --fail http://$MPC_SERVER_HOST/api; do
+  echo "Waiting for mpc server to start..."
+  sleep 1
 done
-wait
+
+mkdir -p /usr/src/setup_db
+cd /usr/src/setup_db
+
+while true; do
+  rm -f /usr/src/setup_db/*
+
+  # Get server state. Wait until state is RANGE_PROOFS.
+  echo "Waiting until ceremony is computing range proofs..."
+  while : ; do
+      STATE=$(curl -s http://$MPC_SERVER_HOST/api/state)
+      CEREMONYSTATE=$(echo $STATE | jq -j .ceremonyState)
+      [ "$CEREMONYSTATE" != "RANGE_PROOFS" ] || break
+      sleep 10
+  done
+  echo "Ceremony state is RANGE_PROOFS."
+
+  export NUMG1POINTS=$(echo $STATE | jq -j .numG1Points)
+
+  # Download generator coefficients.
+  echo Downloading generator coefficients...
+  curl -s https://aztec-ignition.s3.eu-west-2.amazonaws.com/generator$NUMG1POINTS.dat > generator.dat
+
+  # Extract variables from state.
+  export CEREMONYNAME=$(echo $STATE | jq -j .name)
+  STARTTIME=$(echo $STATE | jq -j .startTime)
+  FOLDER=$(date -u -d$STARTTIME +%Y%m%d_%H%M%S)
+  POINTSPERFILE=$(echo $STATE | jq -j .pointsPerTranscript)
+  TRANSCRIPTS=$[NUMG1POINTS/POINTSPERFILE]
+
+  # Download final set of transcripts.
+  for TRANSCRIPT in $(seq 0 $[TRANSCRIPTS - 1]); do
+    echo Downloading transcript $TRANSCRIPT...
+    FILENAME=`printf transcript%02d.dat $TRANSCRIPT`
+    curl -s -S https://aztec-ignition.s3.eu-west-2.amazonaws.com/$FOLDER/sealed/$FILENAME > transcript$TRANSCRIPT.dat
+  done
+
+  # Transform data in prep for memory mapping.
+  cd /usr/src/setup-tools
+  ./prep_range_data ../setup_db
+
+  [ -z "$NUMJOBS" ] && NUMJOBS=$(nproc)
+
+  cd /usr/src/setup-post-process
+  echo "Running $NUMJOBS job processors."
+  for i in $(seq 1 $NUMJOBS)
+  do
+    ./run-job &
+  done
+  wait
+done

@@ -33,4 +33,8 @@ void read_transcript_g2_points(std::vector<G2> &g2_x, std::string const &path, i
 
 void write_transcript(std::vector<G1> const &g1_x, std::vector<G2> const &g2_x, Manifest const &manifest, std::string const &path);
 
+std::string getTranscriptInPath(std::string const &dir, size_t num);
+
+void read_transcripts_g1_points(std::vector<G1> &g1_x, std::string const &dir);
+
 } // namespace streaming

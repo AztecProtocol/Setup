@@ -13,9 +13,9 @@ namespace streaming
 {
 constexpr bool USE_COMPRESSION = false;
 
-void write_field_elements_to_file(std::vector<Fr> &coefficients, const char *filename);
+void write_field_elements_to_file(std::vector<Fr> &coefficients, std::string const &filename);
 
-void read_field_elements_from_file(std::vector<Fr> &coefficients, const char *filename, size_t degree);
+void read_field_elements_from_file(std::vector<Fr> &coefficients, std::string const &filename);
 
 size_t get_file_size(std::string const &filename);
 

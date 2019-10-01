@@ -27,7 +27,7 @@ void write_fq_to_buffer(FieldT &element, char *buffer)
 
 } // namespace
 
-void write_field_elements_to_file(std::vector<Fr> &coefficients, const char *filename)
+void write_field_elements_to_file(std::vector<Fr> &coefficients, std::string const &filename)
 {
     constexpr size_t bytes_per_element = sizeof(Fr);
     // const size_t bytes_per_element = (bits_per_element >> 3) + ((bits_per_element & 0x7) > 0 ? 1 : 0);
@@ -45,11 +45,12 @@ void write_field_elements_to_file(std::vector<Fr> &coefficients, const char *fil
     file.close();
 }
 
-void read_field_elements_from_file(std::vector<Fr> &coefficients, const char *filename, size_t degree)
+void read_field_elements_from_file(std::vector<Fr> &coefficients, std::string const &filename)
 {
     constexpr size_t bytes_per_element = sizeof(Fr);
     constexpr size_t num_limbs = sizeof(Fr) / GMP_NUMB_BYTES;
-    const size_t length = (degree + 1) * bytes_per_element;
+    const size_t length = get_file_size(filename);
+    const size_t degree = length / bytes_per_element;
 
     std::vector<uint8_t> buffer;
     buffer.reserve(length);
@@ -61,7 +62,7 @@ void read_field_elements_from_file(std::vector<Fr> &coefficients, const char *fi
 
     Fr element;
     auto element_bigint = element.as_bigint();
-    coefficients.reserve(degree + 1);
+    coefficients.reserve(coefficients.size() + degree);
     for (size_t i = 0; i < length; i += bytes_per_element)
     {
         mp_limb_t *element_ptr = (mp_limb_t *)((char *)(&*buffer.begin()) + i);
