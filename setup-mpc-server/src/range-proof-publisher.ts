@@ -18,6 +18,10 @@ export class RangeProofPublisher extends EventEmitter {
     let rangeProofProgress = this.state.rangeProofProgress;
     const { rangeProofsPerFile, rangeProofSize, startTime } = this.state;
 
+    if (rangeProofProgress === rangeProofSize) {
+      return;
+    }
+
     await fetch(`http://job-server/create-jobs?from=${rangeProofProgress}&num=${rangeProofSize - rangeProofProgress}`);
 
     while (true) {
@@ -36,7 +40,7 @@ export class RangeProofPublisher extends EventEmitter {
         await this.upload(responseStream, key);
         rangeProofProgress += rangeProofsPerFile;
         this.emit('progress', rangeProofProgress);
-        if (this.cancelled) {
+        if (rangeProofProgress === rangeProofSize || this.cancelled) {
           return;
         }
       } catch (err) {
