@@ -52,6 +52,11 @@ export class Server implements MpcServer {
       this.publisher = undefined;
     }
 
+    if (this.rangeProofPublisher) {
+      this.rangeProofPublisher.cancel();
+      this.rangeProofPublisher = undefined;
+    }
+
     if (this.participantSelector) {
       this.participantSelector.stop();
     }
@@ -73,6 +78,7 @@ export class Server implements MpcServer {
     numG2Points: number,
     pointsPerTranscript: number,
     rangeProofSize: number,
+    rangeProofsPerFile: number,
     invalidateAfter: number,
     participants0: Address[],
     participants1: Address[]
@@ -104,6 +110,7 @@ export class Server implements MpcServer {
       publishProgress: 0,
       rangeProofSize,
       rangeProofProgress: 0,
+      rangeProofsPerFile,
       participants: [],
     };
 
@@ -128,6 +135,8 @@ export class Server implements MpcServer {
     switch (this.state.ceremonyState) {
       case 'COMPLETE':
       case 'RANGE_PROOFS':
+        delete state.rangeProofSize;
+        delete state.rangeProofsPerFile;
       case 'PUBLISHING':
       case 'SEALING':
         delete state.endTime;

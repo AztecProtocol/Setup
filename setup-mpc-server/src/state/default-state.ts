@@ -22,6 +22,7 @@ export function defaultState(latestBlock: number): MpcState {
     publishProgress: 0,
     rangeProofSize: 100000,
     rangeProofProgress: 0,
+    rangeProofsPerFile: 1024,
     participants: [],
   };
 }

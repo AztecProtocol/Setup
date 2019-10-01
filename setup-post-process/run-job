@@ -3,14 +3,6 @@ set -e
 cd /usr/src/setup-tools
 
 while true; do
-  # Restart if ceremony changed.
-  STATE=$(curl -s http://$MPC_SERVER_HOST/api/state)
-  NEW_STARTTIME=$(echo $STATE | jq -j .startTime)
-  if [ "$NEW_STARTTIME" != "$STARTTIME" ]; then
-    echo "Ceremony start time changed. Exiting."
-    exit 0
-  fi
-
   JOBNUM=$(curl -s http://$JOB_SERVER_HOST/job)
   if [ -z "$JOBNUM" ]; then
     sleep 1
@@ -20,6 +12,15 @@ while true; do
   START=`date +%s`
   RESULT=$(./compute_range_polynomial ../setup_db $JOBNUM $NUMG1POINTS)
   END=`date +%s`
+
+  # Restart if ceremony changed.
+  STATE=$(curl -s http://$MPC_SERVER_HOST/api/state)
+  NEW_NAME=$(echo $STATE | jq -j .name)
+  if [ "$NEW_NAME" != "$NAME" ]; then
+    echo "Ceremony name changed. Exiting."
+    exit 0
+  fi
+
   if [ -n "$RESULT" ]; then
     curl -s -X PUT -d "$RESULT" -H "Content-Type: text/plain" http://$JOB_SERVER_HOST/complete/$JOBNUM > /dev/null
   fi

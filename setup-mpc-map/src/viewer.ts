@@ -38,6 +38,9 @@ export class Viewer extends EventEmitter {
       Cesium.Camera.DEFAULT_VIEW_FACTOR = 0.7;
     }
 
+    Cesium.Ion.defaultAccessToken =
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiI3OWQ3MjYyNi00NDM1LTQzYzAtOWQwYS01ZjZhNWY0MDNjMGQiLCJpZCI6MTQ5MjUsInNjb3BlcyI6WyJhc3IiLCJnYyJdLCJpYXQiOjE1NjY3NTc2OTB9.fJWGzS1hGgjxUCY4jN7f7jKk4rIpRI6jF52lcues4Uc';
+
     this.viewer = new Cesium.Viewer('cesiumContainer', {
       imageryProviderViewModels,
       fullscreenButton: false,

@@ -5,8 +5,6 @@ import readline from 'readline';
 import { MpcState } from 'setup-mpc-common';
 import { PassThrough } from 'stream';
 
-const SIGNATURES_PER_FILE = 1024;
-
 export class RangeProofPublisher extends EventEmitter {
   private cancelled = false;
   private s3: S3;
@@ -18,17 +16,13 @@ export class RangeProofPublisher extends EventEmitter {
 
   public async run() {
     let rangeProofProgress = this.state.rangeProofProgress;
+    const { rangeProofsPerFile, rangeProofSize, startTime } = this.state;
 
-    // TODO: Consider that currently processing jobs will complete. And then the old results will be accepted as
-    // new results. And then we're in a bad way. This will only happen if a new ceremony completes within the time
-    // of computing one range proof and that's pretty unlikely, even in a dev scenario...
-    await fetch(
-      `http://job-server/create-jobs?from=${rangeProofProgress}&num=${this.state.rangeProofSize - rangeProofProgress}`
-    );
+    await fetch(`http://job-server/create-jobs?from=${rangeProofProgress}&num=${rangeProofSize - rangeProofProgress}`);
 
     while (true) {
       try {
-        const responseStream = await this.getResultStream(rangeProofProgress, SIGNATURES_PER_FILE);
+        const responseStream = await this.getResultStream(rangeProofProgress, rangeProofsPerFile);
         if (!responseStream) {
           await new Promise(resolve => setTimeout(resolve, 10000));
           if (this.cancelled) {
@@ -38,9 +32,9 @@ export class RangeProofPublisher extends EventEmitter {
         }
 
         const filename = `data${rangeProofProgress.toString()}.dat`;
-        const key = `${this.state.startTime.format('YYYYMMDD_HHmmss')}/range_proofs/${filename}`;
+        const key = `${startTime.format('YYYYMMDD_HHmmss')}/range_proofs/${filename}`;
         await this.upload(responseStream, key);
-        rangeProofProgress += SIGNATURES_PER_FILE;
+        rangeProofProgress += rangeProofsPerFile;
         this.emit('progress', rangeProofProgress);
         if (this.cancelled) {
           return;

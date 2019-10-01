@@ -81,6 +81,7 @@ export interface MpcState {
   publishProgress: number;
   rangeProofSize: number;
   rangeProofProgress: number;
+  rangeProofsPerFile: number;
   crs?: CRS;
   publishPath?: string;
   participants: Participant[];
@@ -111,6 +112,7 @@ export interface MpcServer {
     numG2Points: number,
     pointsPerTranscript: number,
     rangeProofSize: number,
+    rangeProofsPerFile: number,
     invalidateAfter: number,
     participants0: Address[],
     participants1: Address[]

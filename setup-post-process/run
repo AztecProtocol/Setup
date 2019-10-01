@@ -29,11 +29,14 @@ export NUMG1POINTS=$(echo $STATE | jq -j .numG1Points)
 echo Downloading generator coefficients...
 curl -s https://aztec-ignition.s3.eu-west-2.amazonaws.com/generator$NUMG1POINTS.dat > generator.dat
 
-# Download final set of transcripts.
-export STARTTIME=$(echo $STATE | jq -j .startTime)
+# Extract variables from state.
+export CEREMONYNAME=$(echo $STATE | jq -j .name)
+STARTTIME=$(echo $STATE | jq -j .startTime)
 FOLDER=$(date -u -d$STARTTIME +%Y%m%d_%H%M%S)
 POINTSPERFILE=$(echo $STATE | jq -j .pointsPerTranscript)
 TRANSCRIPTS=$[NUMG1POINTS/POINTSPERFILE]
+
+# Download final set of transcripts.
 for TRANSCRIPT in $(seq 0 $[TRANSCRIPTS - 1]); do
   echo Downloading transcript $TRANSCRIPT...
   FILENAME=`printf transcript%02d.dat $TRANSCRIPT`

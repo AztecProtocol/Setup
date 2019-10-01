@@ -13,6 +13,10 @@
 declare module 'cesium/Cesium' {
     type RenderState = any;
 
+    class Ion {
+        static defaultAccessToken: string;
+    }
+
     interface Proxy {
         getURL(resource: string): string;
     }
