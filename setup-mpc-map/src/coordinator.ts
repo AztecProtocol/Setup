@@ -138,18 +138,31 @@ export class Coordinator {
   }
 
   private updateCeremonyStatus(state: MpcState) {
+    const {
+      ceremonyState,
+      startTime,
+      selectBlock,
+      latestBlock,
+      sealingProgress,
+      publishProgress,
+      rangeProofProgress,
+      rangeProofSize,
+      participants,
+    } = state;
+
     const el = document.getElementById('overlay-ceremony-status')!;
-    switch (state.ceremonyState) {
+
+    switch (ceremonyState) {
       case 'PRESELECTION':
         el.className = 'yellow';
-        el.innerHTML = `SELECTING IN ${state.selectBlock - state.latestBlock} BLOCKS`;
+        el.innerHTML = `SELECTING IN ${selectBlock - latestBlock} BLOCKS`;
         break;
       case 'SELECTED':
         el.className = 'green';
         el.innerHTML = `PARTICIPANTS SELECTED`;
         break;
       case 'RUNNING':
-        if (!state.participants.some(p => p.state === 'RUNNING')) {
+        if (!participants.some(p => p.state === 'RUNNING')) {
           el.className = 'yellow';
           el.innerHTML = `AWAITING PARTICIPANT`;
         } else {
@@ -159,11 +172,15 @@ export class Coordinator {
         break;
       case 'SEALING':
         el.className = 'yellow';
-        el.innerHTML = `SEALING (${state.sealingProgress.toFixed(2)}%)`;
+        el.innerHTML = `SEALING (${sealingProgress.toFixed(2)}%)`;
         break;
       case 'PUBLISHING':
         el.className = 'yellow';
-        el.innerHTML = `PUBLISHING (${state.publishProgress.toFixed(2)}%)`;
+        el.innerHTML = `PUBLISHING (${publishProgress.toFixed(2)}%)`;
+        break;
+      case 'RANGE_PROOFS':
+        el.className = 'yellow';
+        el.innerHTML = `COMPUTING RANGE PROOFS (${((rangeProofProgress * 100) / rangeProofSize).toFixed(2)}%)`;
         break;
       case 'COMPLETE':
         el.className = 'green';
@@ -171,10 +188,10 @@ export class Coordinator {
         break;
     }
 
-    if (state.ceremonyState === 'COMPLETE') {
+    if (ceremonyState === 'COMPLETE') {
       document.getElementById('overlay-transcripts-link')!.style.display = 'inline';
       const linkEl = document.querySelector('#overlay-transcripts-link a')! as HTMLLinkElement;
-      linkEl.href = `https://aztec-ignition.s3.eu-west-2.amazonaws.com/index.html#${state.startTime
+      linkEl.href = `https://aztec-ignition.s3.eu-west-2.amazonaws.com/index.html#${startTime
         .utc()
         .format('YYYYMMDD_HHmmss')}/`;
     } else {

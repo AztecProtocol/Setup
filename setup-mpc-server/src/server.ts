@@ -5,6 +5,7 @@ import { Address } from 'web3x/address';
 import { getGeoData } from './maxmind';
 import { ParticipantSelector, ParticipantSelectorFactory } from './participant-selector';
 import { Publisher } from './publisher';
+import { RangeProofPublisher } from './range-proof-publisher';
 import { Sealer } from './sealer';
 import { StateStore } from './state-store';
 import { advanceState } from './state/advance-state';
@@ -23,6 +24,7 @@ export class Server implements MpcServer {
   private participantSelector!: ParticipantSelector;
   private sealer?: Sealer;
   private publisher?: Publisher;
+  private rangeProofPublisher?: RangeProofPublisher;
   private store!: TranscriptStore;
 
   constructor(
@@ -125,6 +127,7 @@ export class Server implements MpcServer {
     const release = await this.mutex.acquire();
     switch (this.state.ceremonyState) {
       case 'COMPLETE':
+      case 'RANGE_PROOFS':
       case 'PUBLISHING':
       case 'SEALING':
         delete state.endTime;
@@ -263,6 +266,10 @@ export class Server implements MpcServer {
       if (this.state.ceremonyState === 'PUBLISHING' && !this.publisher) {
         this.launchPublisher();
       }
+
+      if (this.state.ceremonyState === 'RANGE_PROOFS' && !this.rangeProofPublisher) {
+        this.launchRangeProofsPublisher();
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -304,8 +311,25 @@ export class Server implements MpcServer {
         // Server was reset.
         return;
       }
-      this.state.ceremonyState = 'COMPLETE';
+      this.state.ceremonyState = this.state.rangeProofSize ? 'RANGE_PROOFS' : 'COMPLETE';
       this.state.publishPath = publishPath;
+      this.state.sequence += 1;
+    });
+  }
+
+  private launchRangeProofsPublisher() {
+    this.rangeProofPublisher = new RangeProofPublisher(this.state);
+    this.rangeProofPublisher.on('progress', progress => {
+      this.state.rangeProofProgress = progress;
+      this.state.sequence += 1;
+      this.state.statusSequence = this.state.sequence;
+    });
+    this.rangeProofPublisher.run().then(() => {
+      if (this.state.ceremonyState !== 'RANGE_PROOFS') {
+        // Server was reset.
+        return;
+      }
+      this.state.ceremonyState = 'COMPLETE';
       this.state.completedAt = moment();
       this.state.sequence += 1;
     });

@@ -6,7 +6,7 @@ while true; do
   # Restart if ceremony changed.
   STATE=$(curl -s http://$MPC_SERVER_HOST/api/state)
   NEW_STARTTIME=$(echo $STATE | jq -j .startTime)
-  if [ "$NEW_STARTTIME" -ne "$STARTTIME"]; then
+  if [ "$NEW_STARTTIME" != "$STARTTIME" ]; then
     echo "Ceremony start time changed. Exiting."
     exit 0
   fi
