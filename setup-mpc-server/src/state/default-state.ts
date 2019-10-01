@@ -10,6 +10,7 @@ export function defaultState(latestBlock: number): MpcState {
     ceremonyState: 'PRESELECTION',
     startTime: moment().add(20, 'seconds'),
     endTime: moment().add(1, 'hour'),
+    network: 'ropsten',
     latestBlock,
     selectBlock: latestBlock + 1,
     maxTier2: 0,

@@ -7,7 +7,7 @@ import Router from 'koa-router';
 import moment from 'moment';
 import readline from 'readline';
 import { hashFiles, MpcServer } from 'setup-mpc-common';
-import { PassThrough, Readable } from 'stream';
+import { PassThrough } from 'stream';
 import meter from 'stream-meter';
 import { isNumber, isString } from 'util';
 import { Address } from 'web3x/address';
@@ -66,7 +66,8 @@ export function appFactory(
   });
 
   router.post('/reset', adminAuth, koaBody(), async (ctx: Koa.Context) => {
-    const latestBlock = await participantSelectorFactory.getCurrentBlockHeight();
+    const network = ctx.request.body.network || 'ropsten';
+    const latestBlock = await participantSelectorFactory.getCurrentBlockHeight(network);
     const settings = {
       ...defaultState(latestBlock),
       ...ctx.request.body,
@@ -78,6 +79,7 @@ export function appFactory(
         settings.name,
         settings.startTime,
         settings.endTime,
+        settings.network,
         settings.latestBlock,
         settings.selectBlock,
         settings.maxTier2,

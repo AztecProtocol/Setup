@@ -1,6 +1,6 @@
 import { Mutex } from 'async-mutex';
 import moment, { Moment } from 'moment';
-import { cloneMpcState, MpcServer, MpcState, Participant, PatchState } from 'setup-mpc-common';
+import { cloneMpcState, EthNet, MpcServer, MpcState, Participant, PatchState } from 'setup-mpc-common';
 import { Address } from 'web3x/address';
 import { getGeoData } from './maxmind';
 import { ParticipantSelector, ParticipantSelectorFactory } from './participant-selector';
@@ -70,6 +70,7 @@ export class Server implements MpcServer {
     name: string,
     startTime: Moment,
     endTime: Moment,
+    network: EthNet,
     latestBlock: number,
     selectBlock: number,
     maxTier2: number,
@@ -100,6 +101,7 @@ export class Server implements MpcServer {
       numG2Points,
       startTime,
       endTime,
+      network,
       latestBlock,
       selectBlock,
       maxTier2,
@@ -173,14 +175,14 @@ export class Server implements MpcServer {
     this.verifier = await this.createVerifier();
     this.verifier.run();
 
-    this.participantSelector = this.createParticipantSelector(state.latestBlock, state.selectBlock);
+    this.participantSelector = this.createParticipantSelector(state.network, state.latestBlock, state.selectBlock);
     this.participantSelector.run();
 
     this.scheduleAdvanceState();
   }
 
-  private createParticipantSelector(latestBlock: number, selectBlock: number) {
-    const participantSelector = this.participantSelectorFactory.create(latestBlock, selectBlock);
+  private createParticipantSelector(ethNet: EthNet, latestBlock: number, selectBlock: number) {
+    const participantSelector = this.participantSelectorFactory.create(ethNet, latestBlock, selectBlock);
     participantSelector.on('newParticipants', (addresses, latestBlock) => this.addParticipants(addresses, latestBlock));
     participantSelector.on('selectParticipants', blockHash => this.selectParticipants(blockHash));
     return participantSelector;

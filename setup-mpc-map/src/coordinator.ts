@@ -218,7 +218,7 @@ export class Coordinator {
     if (state.ceremonyState === 'PRESELECTION' || state.ceremonyState === 'SELECTED') {
       document.getElementById('status-overlay-starting-in')!.style.display = 'block';
       document.getElementById('status-overlay-started-at')!.style.display = 'none';
-      document.getElementById('overlay-starting-in')!.innerHTML = `T-${startIn}s`;
+      document.getElementById('overlay-starting-in')!.innerHTML = `${formatMoment(state.startTime)} (T-${startIn}s)`;
     } else {
       document.getElementById('status-overlay-started-at')!.style.display = 'block';
       document.getElementById('status-overlay-starting-in')!.style.display = 'none';

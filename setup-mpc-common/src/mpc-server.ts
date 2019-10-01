@@ -60,6 +60,8 @@ export interface ParticipantLocation {
   longitude?: number;
 }
 
+export type EthNet = 'mainnet' | 'ropsten';
+
 export interface MpcState {
   name: string;
   sequence: number;
@@ -74,6 +76,7 @@ export interface MpcState {
   invalidateAfter: number;
   startTime: Moment;
   endTime: Moment;
+  network: EthNet;
   latestBlock: number;
   selectBlock: number;
   completedAt?: Moment;
@@ -106,6 +109,7 @@ export interface MpcServer {
     name: string,
     startTime: Moment,
     endTime: Moment,
+    network: EthNet,
     latestBlock: number,
     selectBlock: number,
     maxTier2: number,
