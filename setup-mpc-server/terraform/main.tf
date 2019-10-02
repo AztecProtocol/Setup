@@ -41,7 +41,7 @@ resource "aws_service_discovery_service" "setup_mpc_server" {
 
 # Create EC2 instances in each AZ.
 resource "aws_instance" "container_instance_az1" {
-  ami                    = "ami-010624faf51b049d3"
+  ami                    = "ami-08ebd554ebc53fa9f"
   instance_type          = "m5.xlarge"
   subnet_id              = "${data.terraform_remote_state.setup_iac.outputs.subnet_az1_private_id}"
   vpc_security_group_ids = ["${data.terraform_remote_state.setup_iac.outputs.security_group_private_id}"]
@@ -52,6 +52,7 @@ resource "aws_instance" "container_instance_az1" {
   user_data = <<USER_DATA
 #!/bin/bash
 echo ECS_CLUSTER=${data.terraform_remote_state.setup_iac.outputs.ecs_cluster_name} >> /etc/ecs/ecs.config
+echo 'ECS_INSTANCE_ATTRIBUTES={"group": "setup-mpc-server"}' >> /etc/ecs/ecs.config
 USER_DATA
 
   tags = {
@@ -59,24 +60,25 @@ USER_DATA
   }
 }
 
-resource "aws_instance" "container_instance_az2" {
-  ami                    = "ami-010624faf51b049d3"
-  instance_type          = "m5.xlarge"
-  subnet_id              = "${data.terraform_remote_state.setup_iac.outputs.subnet_az2_private_id}"
-  vpc_security_group_ids = ["${data.terraform_remote_state.setup_iac.outputs.security_group_private_id}"]
-  iam_instance_profile   = "${data.terraform_remote_state.setup_iac.outputs.ecs_instance_profile_name}"
-  key_name               = "${data.terraform_remote_state.setup_iac.outputs.ecs_instance_key_pair_name}"
-  availability_zone      = "eu-west-2b"
+# resource "aws_instance" "container_instance_az2" {
+#   ami                    = "ami-08ebd554ebc53fa9f"
+#   instance_type          = "m5.xlarge"
+#   subnet_id              = "${data.terraform_remote_state.setup_iac.outputs.subnet_az2_private_id}"
+#   vpc_security_group_ids = ["${data.terraform_remote_state.setup_iac.outputs.security_group_private_id}"]
+#   iam_instance_profile   = "${data.terraform_remote_state.setup_iac.outputs.ecs_instance_profile_name}"
+#   key_name               = "${data.terraform_remote_state.setup_iac.outputs.ecs_instance_key_pair_name}"
+#   availability_zone      = "eu-west-2b"
 
-  user_data = <<USER_DATA
-#!/bin/bash
-echo ECS_CLUSTER=${data.terraform_remote_state.setup_iac.outputs.ecs_cluster_name} >> /etc/ecs/ecs.config
-USER_DATA
+#   user_data = <<USER_DATA
+# #!/bin/bash
+# echo ECS_CLUSTER=${data.terraform_remote_state.setup_iac.outputs.ecs_cluster_name} >> /etc/ecs/ecs.config
+# echo 'ECS_INSTANCE_ATTRIBUTES={"group": "setup-mpc-server"}' >> /etc/ecs/ecs.config
+# USER_DATA
 
-  tags = {
-    Name = "setup-container-instance-az2"
-  }
-}
+#   tags = {
+#     Name = "setup-container-instance-az2"
+#   }
+# }
 
 # Configure an EFS filesystem for holding transcripts and state data, mountable in each AZ.
 resource "aws_efs_file_system" "setup_data_store" {
@@ -143,6 +145,10 @@ resource "aws_ecs_task_definition" "setup_mpc_server" {
         "value": "production"
       },
       {
+        "name": "JOB_SERVER_HOST",
+        "value": "job-server.local"
+      },
+      {
         "name": "INFURA_API_KEY",
         "value": "${var.INFURA_API_KEY}"
       }
@@ -194,6 +200,11 @@ resource "aws_ecs_service" "setup_mpc_server" {
 
   service_registries {
     registry_arn = "${aws_service_discovery_service.setup_mpc_server.arn}"
+  }
+
+  placement_constraints {
+    type       = "memberOf"
+    expression = "attribute:group == setup-mpc-server"
   }
 
   task_definition = "${aws_ecs_task_definition.setup_mpc_server.family}:${max("${aws_ecs_task_definition.setup_mpc_server.revision}", "${data.aws_ecs_task_definition.setup_mpc_server.revision}")}"

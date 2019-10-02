@@ -5,11 +5,19 @@ import readline from 'readline';
 import { MpcState } from 'setup-mpc-common';
 import { PassThrough } from 'stream';
 
+export class RangeProofPublisherFactory {
+  constructor(private jobServerHost: string) {}
+
+  public create(state: MpcState) {
+    return new RangeProofPublisher(state, this.jobServerHost);
+  }
+}
+
 export class RangeProofPublisher extends EventEmitter {
   private cancelled = false;
   private s3: S3;
 
-  constructor(private state: MpcState) {
+  constructor(private state: MpcState, private jobServerHost: string) {
     super();
     this.s3 = new S3();
   }
@@ -22,7 +30,9 @@ export class RangeProofPublisher extends EventEmitter {
       return;
     }
 
-    await fetch(`http://job-server/create-jobs?from=${rangeProofProgress}&num=${rangeProofSize - rangeProofProgress}`);
+    await fetch(
+      `http://${this.jobServerHost}/create-jobs?from=${rangeProofProgress}&num=${rangeProofSize - rangeProofProgress}`
+    );
 
     while (true) {
       try {
@@ -54,7 +64,7 @@ export class RangeProofPublisher extends EventEmitter {
   }
 
   private async getResultStream(from: number, num: number) {
-    const response = await fetch(`http://job-server/result?from=${from}&num=${num}`);
+    const response = await fetch(`http://${this.jobServerHost}/result?from=${from}&num=${num}`);
     if (response.status === 404) {
       return;
     }

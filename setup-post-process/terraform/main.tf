@@ -172,10 +172,12 @@ data "aws_ecs_task_definition" "setup_post_process" {
 }
 
 resource "aws_ecs_service" "setup_post_process" {
-  name          = "setup-post-process"
-  cluster       = "${data.terraform_remote_state.setup_iac.outputs.ecs_cluster_id}"
-  launch_type   = "EC2"
-  desired_count = "2"
+  name                               = "setup-post-process"
+  cluster                            = "${data.terraform_remote_state.setup_iac.outputs.ecs_cluster_id}"
+  launch_type                        = "EC2"
+  desired_count                      = "2"
+  deployment_maximum_percent         = 100
+  deployment_minimum_healthy_percent = 0
 
   network_configuration {
     subnets = [
@@ -186,8 +188,12 @@ resource "aws_ecs_service" "setup_post_process" {
   }
 
   placement_constraints {
+    type = "distinctInstance"
+  }
+
+  placement_constraints {
     type       = "memberOf"
-    expression = "attribute:group == setup-post-process and runningTasksCount == 0"
+    expression = "attribute:group == setup-post-process"
   }
 
   # Track the latest ACTIVE revision

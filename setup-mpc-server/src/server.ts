@@ -5,7 +5,7 @@ import { Address } from 'web3x/address';
 import { getGeoData } from './maxmind';
 import { ParticipantSelector, ParticipantSelectorFactory } from './participant-selector';
 import { Publisher } from './publisher';
-import { RangeProofPublisher } from './range-proof-publisher';
+import { RangeProofPublisher, RangeProofPublisherFactory } from './range-proof-publisher';
 import { Sealer } from './sealer';
 import { StateStore } from './state-store';
 import { advanceState } from './state/advance-state';
@@ -30,7 +30,8 @@ export class Server implements MpcServer {
   constructor(
     private storeFactory: TranscriptStoreFactory,
     private stateStore: StateStore,
-    private participantSelectorFactory: ParticipantSelectorFactory
+    private participantSelectorFactory: ParticipantSelectorFactory,
+    private rangeProofPublisherFactory: RangeProofPublisherFactory
   ) {}
 
   public async start() {
@@ -329,7 +330,7 @@ export class Server implements MpcServer {
   }
 
   private launchRangeProofsPublisher() {
-    this.rangeProofPublisher = new RangeProofPublisher(this.state);
+    this.rangeProofPublisher = this.rangeProofPublisherFactory.create(this.state);
     this.rangeProofPublisher.on('progress', progress => {
       this.state.rangeProofProgress = progress;
       this.state.sequence += 1;
