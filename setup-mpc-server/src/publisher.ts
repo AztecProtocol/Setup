@@ -97,22 +97,26 @@ export class Publisher extends EventEmitter {
 
   private async publishCeremonyManifest() {
     const {
+      name,
       numG1Points,
       numG2Points,
       pointsPerTranscript,
       rangeProofSize,
       rangeProofsPerFile,
+      network,
       selectBlock,
       startTime,
       participants,
       crs,
     } = this.state;
     const manifest = {
+      name,
       numG1Points,
       numG2Points,
       pointsPerTranscript,
       rangeProofSize,
       rangeProofsPerFile,
+      network,
       selectBlock,
       startTime,
       completedAt: moment(),

@@ -1,9 +1,13 @@
 name: setup-post-process
-# build:
-#   default:
-#     cmd: docker-compose
-#     args:
-#       - build
-#       - setup-post-process
+build:
+  default:
+    cmd: ../ci-scripts/build.sh
+    args:
+      - setup-post-process
+commands:
+  deploy:
+    cmd: ../ci-scripts/deploy.sh
+    args:
+      - setup-post-process
 dependencies:
   - setup-tools
