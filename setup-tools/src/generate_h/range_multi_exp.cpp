@@ -66,6 +66,7 @@ void compute_h(std::string const &setup_db_path, std::string const &generator_pa
     std::cerr << "Compute time: " << compute_timer.toString() << "s" << std::endl;
     std::cerr << "Total time: " << total_timer.toString() << "s" << std::endl;
 
+    result.to_affine_coordinates();
     gmp_printf("[\"0x%Nx\",\"0x%Nx\"]\n",
                result.X.as_bigint().data, 4L,
                result.Y.as_bigint().data, 4L);

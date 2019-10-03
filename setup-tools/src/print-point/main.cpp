@@ -38,6 +38,7 @@ int main(int argc, char **argv)
                 throw std::runtime_error("Point not found.");
             }
             G1 point = g1_x[0];
+            point.to_affine_coordinates();
             gmp_printf("[\"0x%Nx\",\"0x%Nx\"]\n",
                        point.X.as_bigint().data, 4L,
                        point.Y.as_bigint().data, 4L);
@@ -50,6 +51,7 @@ int main(int argc, char **argv)
                 throw std::runtime_error("Point not found.");
             }
             G2 point = g2_x[0];
+            point.to_affine_coordinates();
             gmp_printf("[\"0x%Nx\",\"0x%Nx\",\"0x%Nx\",\"0x%Nx\"]\n",
                        point.X.c0.as_bigint().data, 4L,
                        point.X.c1.as_bigint().data, 4L,
