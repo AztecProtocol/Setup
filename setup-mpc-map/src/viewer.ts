@@ -127,6 +127,7 @@ export class Viewer extends EventEmitter {
   }
 
   public updateCompletedEntities(locations: LatLon[]) {
+    locations = locations.map(({ lat, lon }) => ({ lat: +lat.toFixed(1), lon: +lon.toFixed(1) }));
     this.completeMarkers = this.getCompletedMarkerEntityData(locations);
     this.shootingStars = new ShootingStars(locations, this.viewer);
   }
@@ -134,7 +135,7 @@ export class Viewer extends EventEmitter {
   private getCompletedMarkerEntityData(locations: LatLon[]) {
     const data = locations.reduce(
       (a, { lat, lon }) => {
-        const key = `${lat.toFixed(1)},${lon.toFixed(1)}`;
+        const key = `${lat},${lon}`;
         if (a[key]) {
           a[key].height += 1;
         } else {
