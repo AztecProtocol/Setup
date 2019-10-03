@@ -133,14 +133,13 @@ export class TerminalInterface {
       const myState = participants[myIndex];
       switch (myState.state) {
         case 'WAITING':
-          const position = myIndex - selectedIndex;
           if (ceremonyState === 'PRESELECTION') {
             const selectCountdown = selectBlock - latestBlock;
             this.term.white(
               `Your position in the queue will determined at block number ${selectBlock} (B-${selectCountdown}).\n`
             );
           } else {
-            this.term.white(`You are ${position ? `number ${myIndex - selectedIndex}` : 'first'} in the queue.\n`);
+            this.term.white(`You are number ${myState.position} in the queue.\n`);
           }
           break;
         case 'RUNNING':

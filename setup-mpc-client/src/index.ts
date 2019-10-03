@@ -4,7 +4,7 @@ import { hexToBuffer } from 'web3x/utils';
 import { App } from './app';
 
 async function main() {
-  const { API_URL = 'https://setup.aztecprotocol.com/api', PRIVATE_KEY = '', COMPUTE_OFFLINE = 0 } = process.env;
+  const { API_URL = 'https://ignition.aztecprotocol.com/api', PRIVATE_KEY = '', COMPUTE_OFFLINE = 0 } = process.env;
   const myAccount = PRIVATE_KEY ? Account.fromPrivate(hexToBuffer(PRIVATE_KEY)) : undefined;
   const server = new HttpClient(API_URL, myAccount);
   const app = new App(

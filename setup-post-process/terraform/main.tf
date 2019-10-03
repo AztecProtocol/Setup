@@ -41,7 +41,6 @@ resource "aws_iam_role_policy_attachment" "ec2_spot_fleet_policy" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEC2SpotFleetRole"
 }
 
-/*
 resource "aws_spot_fleet_request" "main" {
   iam_fleet_role                      = "${aws_iam_role.ec2_spot_fleet_role.arn}"
   allocation_strategy                 = "diversified"
@@ -96,7 +95,6 @@ USER_DATA
     ignore_changes = ["valid_until"]
   }
 }
-*/
 
 resource "aws_ecs_task_definition" "setup_post_process" {
   family                   = "setup-post-process"

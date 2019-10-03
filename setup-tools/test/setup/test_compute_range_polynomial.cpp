@@ -32,12 +32,11 @@ TEST(range, window)
         accumulator *= x;
     }
 
-    libff::alt_bn128_G1 h = generate_h::process_range(g1_x, generator_polynomial, 0, DEGREE);
+    libff::alt_bn128_G1 h = generate_h::batch_process_range(4, g1_x, generator_polynomial);
 
     for (size_t i = 0; i < DEGREE; ++i)
     {
-        libff::alt_bn128_Fr fa;
-        libff::alt_bn128_G1 process_result = process_range(i, fa, &g1_x[0], &generator_polynomial[0], 0, DEGREE);
+        libff::alt_bn128_G1 process_result = batch_process_range(i, DEGREE, 4, &g1_x[0], &generator_polynomial[0]);
         libff::alt_bn128_G1 t0 = x * process_result;
         libff::alt_bn128_G1 t1 = (-libff::alt_bn128_Fr(i)) * process_result;
         libff::alt_bn128_G1 result = t0 + t1;

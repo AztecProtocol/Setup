@@ -77,7 +77,24 @@ G1 process_range(int range_index, Fr &fa, G1 *const powers_of_x, Fr *const gener
                : process_range_single(range_index, fa, powers_of_x, generator_coefficients, start, num);
 }
 
-void compute_range_polynomials(std::string const &setup_db_path, int range_index, size_t polynomial_degree)
+G1 batch_process_range(size_t range_index, size_t polynomial_degree, size_t batch_num, G1 *const &g1_x, Fr *const &generator_polynomial)
+{
+    size_t batch_size = polynomial_degree / batch_num;
+    size_t leftovers = polynomial_degree % batch_size;
+    std::vector<size_t> batches(batch_num);
+    std::iota(batches.begin(), batches.end(), 0);
+    Fr fa = Fr::zero();
+
+    auto batch_process = [&](size_t i) {
+        return process_range(range_index, fa, g1_x, generator_polynomial, batch_size * i, (i == batch_num - 1) ? batch_size + leftovers : batch_size);
+    };
+
+    std::vector<G1> results;
+    std::transform(batches.begin(), batches.end(), std::back_inserter(results), batch_process);
+    return std::accumulate(results.begin(), results.end(), G1::zero());
+}
+
+void compute_range_polynomials(std::string const &setup_db_path, size_t range_index, size_t polynomial_degree)
 {
     Timer total_timer;
 
@@ -87,22 +104,8 @@ void compute_range_polynomials(std::string const &setup_db_path, int range_index
     G1 *g1_x = (G1 *)map_file(setup_db_path + "/g1_x_prep.dat");
     std::cerr << "Loaded in " << data_timer.toString() << "s" << std::endl;
 
-    size_t batch_num = 4;
-    size_t batch_size = polynomial_degree / batch_num;
-    size_t leftovers = polynomial_degree % batch_size;
-    std::vector<size_t> batches(batch_num);
-    std::iota(batches.begin(), batches.end(), 0);
-    Fr fa = Fr::zero();
-
-    auto batch_process = [&](size_t i) {
-        batch_size += (i == batch_num - 1) ? leftovers : 0;
-        return process_range(range_index, fa, g1_x, generator_polynomial, batch_size * i, batch_size);
-    };
-
     Timer compute_timer;
-    std::vector<G1> results;
-    std::transform(batches.begin(), batches.end(), std::back_inserter(results), batch_process);
-    G1 result = std::accumulate(results.begin(), results.end(), G1::zero());
+    G1 result = batch_process_range(range_index, polynomial_degree, 4, g1_x, generator_polynomial);
 
     std::cerr << "Compute time: " << compute_timer.toString() << "s" << std::endl;
     std::cerr << "Total time: " << total_timer.toString() << "s" << std::endl;

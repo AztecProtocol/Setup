@@ -134,7 +134,7 @@ export class Viewer extends EventEmitter {
   private getCompletedMarkerEntityData(locations: LatLon[]) {
     const data = locations.reduce(
       (a, { lat, lon }) => {
-        const key = `${lat.toFixed(2)},${lon.toFixed(2)}`;
+        const key = `${lat.toFixed(1)},${lon.toFixed(1)}`;
         if (a[key]) {
           a[key].height += 1;
         } else {
