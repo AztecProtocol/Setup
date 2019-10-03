@@ -21,6 +21,7 @@ RUN apt update && \
 COPY --from=0 /usr/src/setup-tools/verify /usr/src/setup-tools/verify
 COPY --from=0 /usr/src/setup-tools/seal /usr/src/setup-tools/seal
 COPY --from=0 /usr/src/setup-tools/print_point /usr/src/setup-tools/print_point
+COPY --from=0 /usr/src/setup-tools/generate_h /usr/src/setup-tools/generate_h
 WORKDIR /usr/src/setup-mpc-common
 COPY --from=1 /usr/src/setup-mpc-common .
 RUN yarn link

@@ -24,7 +24,13 @@ export interface Transcript {
   uploaded: number;
 }
 
-export type CRS = [string, string, string, string];
+export type G1 = [string, string];
+export type G2 = [string, string, string, string];
+
+export type CRS = {
+  h: G1;
+  g2: G2;
+};
 
 export interface Participant {
   // Server controlled data.

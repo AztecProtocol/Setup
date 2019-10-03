@@ -153,7 +153,7 @@ docker-compose run build-env
 If not using the docker container, the following installs the required packages on the latest Ubuntu:
 
 ```
-sudo apt-get update && sudo apt-get install build-essential git cmake libgmp-dev libssl-dev
+sudo apt-get update && sudo apt-get install build-essential cmake libgmp-dev libssl-dev
 ```
 
 Once in the container (or your own build environment) you can build executables from your modified source code on the host:

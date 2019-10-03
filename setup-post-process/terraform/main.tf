@@ -42,40 +42,6 @@ resource "aws_iam_role_policy_attachment" "ec2_spot_fleet_policy" {
 }
 
 /*
-resource "aws_instance" "setup_task" {
-  ami = "ami-013b322dbc79e9a6a"
-  instance_type = "m5.metal"
-  subnet_id = "${aws_subnet.setup.id}"
-  vpc_security_group_ids = ["${aws_security_group.setup.id}"]
-  iam_instance_profile = "${aws_iam_instance_profile.ecs.name}"
-  associate_public_ip_address = true
-  key_name = "${aws_key_pair.deployer.key_name}"
-
-  user_data = <<USER_DATA
-#!/bin/bash
-echo ECS_CLUSTER=${aws_ecs_cluster.setup.name} >> /etc/ecs/ecs.config
-USER_DATA
-
-  tags = {
-    Name = "setup-post-process"
-  }
-}
-*/
-
-# resource "aws_instance" "setup_task_2" {
-#   ami                    = "ami-f976839e"
-#   instance_type          = "r5.8xlarge"
-#   subnet_id              = "${data.terraform_remote_state.setup_iac.outputs.subnet_az1_private_id}"
-#   vpc_security_group_ids = ["${data.terraform_remote_state.setup_iac.outputs.security_group_private_id}"]
-#   iam_instance_profile   = "${data.terraform_remote_state.setup_iac.outputs.ecs_instance_profile_name}"
-#   key_name               = "${data.terraform_remote_state.setup_iac.outputs.ecs_instance_key_pair_name}"
-#   availability_zone      = "eu-west-2a"
-
-#   tags = {
-#     Name = "setup-generator"
-#   }
-# }
-
 resource "aws_spot_fleet_request" "main" {
   iam_fleet_role                      = "${aws_iam_role.ec2_spot_fleet_role.arn}"
   allocation_strategy                 = "diversified"
@@ -130,6 +96,7 @@ USER_DATA
     ignore_changes = ["valid_until"]
   }
 }
+*/
 
 resource "aws_ecs_task_definition" "setup_post_process" {
   family                   = "setup-post-process"

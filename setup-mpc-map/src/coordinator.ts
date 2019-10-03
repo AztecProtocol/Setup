@@ -172,7 +172,11 @@ export class Coordinator {
         break;
       case 'SEALING':
         el.className = 'yellow';
-        el.innerHTML = `SEALING (${sealingProgress.toFixed(2)}%)`;
+        if (sealingProgress < 100) {
+          el.innerHTML = `SEALING (${sealingProgress.toFixed(2)}%)`;
+        } else {
+          el.innerHTML = `COMPUTING H PARAMETER`;
+        }
         break;
       case 'PUBLISHING':
         el.className = 'yellow';

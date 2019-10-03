@@ -102,8 +102,8 @@ export class Verifier {
 
     console.error(`Verifiying transcript ${transcriptNumber}...`);
     return new Promise<boolean>(resolve => {
-      const { VERIFY_PATH = '../setup-tools/verify' } = process.env;
-      const verify = spawn(VERIFY_PATH, args);
+      const binPath = '../setup-tools/verify';
+      const verify = spawn(binPath, args);
       this.proc = verify;
 
       verify.stdout.on('data', data => {

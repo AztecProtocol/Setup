@@ -125,8 +125,8 @@ export class Compute {
 
   private async compute() {
     return new Promise(async (resolve, reject) => {
-      const { SETUP_PATH = '../setup-tools/setup' } = process.env;
-      const setup = spawn(SETUP_PATH, ['../setup_db']);
+      const binPath = '../setup-tools/setup';
+      const setup = spawn(binPath, ['../setup_db']);
       this.setupProc = setup;
 
       readline

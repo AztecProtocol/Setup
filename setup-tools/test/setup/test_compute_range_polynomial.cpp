@@ -5,6 +5,7 @@
 #include <libfqfft/polynomial_arithmetic/basic_operations.hpp>
 
 #include <range/range_multi_exp.hpp>
+#include <generate_h/range_multi_exp.hpp>
 #include <generator/compute_generator_polynomial.hpp>
 #include "test_utils.hpp"
 
@@ -31,12 +32,7 @@ TEST(range, window)
         accumulator *= x;
     }
 
-    libff::alt_bn128_G1 h = libff::alt_bn128_G1::zero();
-    for (size_t i = 0; i < generator_polynomial.size(); ++i)
-    {
-        libff::alt_bn128_G1 pt = generator_polynomial[i] * g1_x[i];
-        h = h + pt;
-    }
+    libff::alt_bn128_G1 h = generate_h::process_range(g1_x, generator_polynomial, 0, DEGREE);
 
     for (size_t i = 0; i < DEGREE; ++i)
     {
@@ -47,5 +43,6 @@ TEST(range, window)
         libff::alt_bn128_G1 result = t0 + t1;
         result.to_affine_coordinates();
         h.to_affine_coordinates();
+        test_utils::validate_g1_point<4>(result, h);
     }
 }

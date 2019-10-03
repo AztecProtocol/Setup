@@ -64,14 +64,26 @@ export class TerminalInterface {
       const startedStr = `${startTime.utc().format('MMM Do YYYY HH:mm:ss')} UTC`;
       this.term.white(`The ceremony will begin at ${startedStr} in T-${startTime.diff(moment(), 's')}s.\n\n`);
     } else {
-      if (this.state.ceremonyState === 'SEALING') {
-        this.term.white(`The ceremony is in its final sealing phase: ${this.state.sealingProgress.toFixed(2)}%\n\n`);
-      } else if (this.state.ceremonyState === 'PUBLISHING') {
-        this.term.white(`Publishing transcripts to S3: ${this.state.publishProgress.toFixed(2)}%\n\n`);
-      } else {
-        this.term.white(
-          `The ceremony is in progress and started at ${startTime.utc().format('MMM Do YYYY HH:mm:ss')} UTC.\n\n`
-        );
+      const { ceremonyState, sealingProgress, publishProgress, rangeProofProgress, rangeProofSize } = this.state;
+      switch (ceremonyState) {
+        case 'SEALING':
+          if (sealingProgress < 100) {
+            this.term.white(`Sealing final transcripts: ${sealingProgress.toFixed(2)}%\n\n`);
+          } else {
+            this.term.white('Computing H parameter...');
+          }
+          break;
+        case 'PUBLISHING':
+          this.term.white(`Publishing transcripts to S3: ${publishProgress.toFixed(2)}%\n\n`);
+          break;
+        case 'RANGE_PROOFS':
+          this.term.white(`Computing range proofs: ${((rangeProofProgress * 100) / rangeProofSize).toFixed(2)}%\n\n`);
+          break;
+        default:
+          this.term.white(
+            `The ceremony is in progress and started at ${startTime.utc().format('MMM Do YYYY HH:mm:ss')} UTC.\n\n`
+          );
+          break;
       }
     }
 

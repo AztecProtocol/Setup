@@ -35,6 +35,7 @@ export interface TranscriptStore {
   eraseAll(address: Address): Promise<void>;
   eraseUnverified(address: Address, num?: number): Promise<void>;
   copyVerifiedTo(address: Address, path: string): Promise<void>;
+  getGeneratorPath(size: number): string;
   getSealedPath(): string;
   getSealed(): Promise<TranscriptStoreRecord[]>;
 }
@@ -55,15 +56,18 @@ export class DiskTranscriptStore implements TranscriptStore {
   private unverifiedPath: string;
   private verifiedPath: string;
   private sealingPath: string;
+  private generatorsPath: string;
   private fileRegex = /transcript(\d+).(dat|sig)$/;
 
   constructor(storePath: string) {
     this.verifiedPath = storePath + '/verified';
     this.unverifiedPath = storePath + '/unverified';
     this.sealingPath = storePath + '/sealed';
+    this.generatorsPath = storePath + '/../generators';
     mkdirSync(this.verifiedPath, { recursive: true });
     mkdirSync(this.unverifiedPath, { recursive: true });
     mkdirSync(this.sealingPath, { recursive: true });
+    mkdirSync(this.generatorsPath, { recursive: true });
   }
 
   public async save(address: Address, num: number, transcriptPath: string, signaturePath: string) {
@@ -194,5 +198,9 @@ export class DiskTranscriptStore implements TranscriptStore {
 
   public async getSealed() {
     return this.getDirRecords(this.sealingPath, false);
+  }
+
+  public getGeneratorPath(size: number) {
+    return `${this.generatorsPath}/generator${size}.dat`;
   }
 }

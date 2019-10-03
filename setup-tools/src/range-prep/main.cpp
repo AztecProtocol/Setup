@@ -10,7 +10,6 @@ void transform(std::string const &setup_db_path)
   streaming::read_transcripts_g1_points(g1_x, setup_db_path);
 
   streaming::read_field_elements_from_file(generator_polynomial, setup_db_path + "/generator.dat");
-  g1_x.insert(g1_x.begin(), G1::one());
 
   std::cout << "Writing..." << std::endl;
 

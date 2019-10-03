@@ -1,12 +1,14 @@
 import { ChildProcess, spawn } from 'child_process';
 import { EventEmitter } from 'events';
+import { createWriteStream } from 'fs';
 import readline from 'readline';
-import { CRS, MpcState } from 'setup-mpc-common';
+import { CRS, G1, G2, MpcState } from 'setup-mpc-common';
+import { Readable } from 'stream';
 import { existsAsync, mkdirAsync, renameAsync } from './fs-async';
 import { TranscriptStore } from './transcript-store';
 
 export class Sealer extends EventEmitter {
-  private sealingProc?: ChildProcess;
+  private proc?: ChildProcess;
   private sealingPath: string;
   private cancelled = false;
 
@@ -15,7 +17,7 @@ export class Sealer extends EventEmitter {
     this.sealingPath = transcriptStore.getSealedPath();
   }
 
-  public async run(state: MpcState) {
+  public async run(state: MpcState): Promise<CRS | undefined> {
     while (true) {
       try {
         const previousParticipant = state.participants
@@ -37,7 +39,10 @@ export class Sealer extends EventEmitter {
         await this.compute();
         await this.renameTranscripts();
 
-        return this.getFinalG2Point();
+        return {
+          h: await this.generateH(state.numG1Points),
+          g2: await this.getFinalG2Point(),
+        };
       } catch (err) {
         console.error('Sealer failed (will retry): ', err);
         await new Promise(resolve => setTimeout(resolve, 1000));
@@ -51,9 +56,9 @@ export class Sealer extends EventEmitter {
   public cancel() {
     this.cancelled = true;
     this.removeAllListeners();
-    if (this.sealingProc) {
-      this.sealingProc.kill('SIGINT');
-      this.sealingProc = undefined;
+    if (this.proc) {
+      this.proc.kill('SIGINT');
+      this.proc = undefined;
     }
   }
 
@@ -67,20 +72,20 @@ export class Sealer extends EventEmitter {
 
   private async compute() {
     return new Promise((resolve, reject) => {
-      const { SETUP_PATH = '../setup-tools/seal' } = process.env;
-      const sealingProc = (this.sealingProc = spawn(SETUP_PATH, [this.sealingPath]));
+      const binPath = '../setup-tools/seal';
+      const proc = (this.proc = spawn(binPath, [this.sealingPath]));
 
       readline
         .createInterface({
-          input: sealingProc.stdout,
+          input: proc.stdout,
           terminal: false,
         })
         .on('line', this.handleSetupOutput);
 
-      sealingProc.stderr.on('data', data => console.error(data.toString()));
+      proc.stderr.on('data', data => console.error(data.toString()));
 
-      sealingProc.on('close', code => {
-        this.sealingProc = undefined;
+      proc.on('close', code => {
+        this.proc = undefined;
         if (code === 0 || this.cancelled) {
           console.error(`Sealing complete or cancelled.`);
           resolve();
@@ -89,7 +94,7 @@ export class Sealer extends EventEmitter {
         }
       });
 
-      sealingProc.on('error', reject);
+      proc.on('error', reject);
     });
   }
 
@@ -108,25 +113,66 @@ export class Sealer extends EventEmitter {
     }
   };
 
-  private async getFinalG2Point(): Promise<CRS> {
+  private async getFinalG2Point(): Promise<G2> {
     return new Promise((resolve, reject) => {
-      const { SETUP_PATH = '../setup-tools/print_point' } = process.env;
-      const printProc = spawn(SETUP_PATH, [`${this.sealingPath}/transcript0.dat`, 'g2', '0']);
+      const binPath = '../setup-tools/print_point';
+      const proc = spawn(binPath, [`${this.sealingPath}/transcript0.dat`, 'g2', '0']);
 
       readline
         .createInterface({
-          input: printProc.stdout,
+          input: proc.stdout,
           terminal: false,
         })
         .on('line', line => resolve(JSON.parse(line)));
 
-      printProc.on('close', code => {
+      proc.on('close', code => {
         if (code !== 0) {
           reject(new Error(`print_point exited with code ${code}`));
         }
       });
 
-      printProc.on('error', reject);
+      proc.on('error', reject);
+    });
+  }
+
+  private async fetchGenerator(numG1Points: number) {
+    const generatorPath = this.transcriptStore.getGeneratorPath(numG1Points);
+    if (!(await existsAsync(generatorPath))) {
+      await new Promise(async (resolve, reject) => {
+        const response = await fetch(`https://aztec-ignition.s3-eu-west-2.amazonaws.com/generator${numG1Points}.dat`);
+        if (response.status !== 200) {
+          reject(new Error(`Bad status code fetching generator: ${response.status}`));
+          return;
+        }
+        const writeStream = createWriteStream(generatorPath);
+        writeStream.on('close', resolve);
+        ((response.body! as any) as Readable).pipe(writeStream);
+      });
+    }
+    return generatorPath;
+  }
+
+  private async generateH(numG1Points: number): Promise<G1> {
+    const generatorPath = await this.fetchGenerator(numG1Points);
+
+    return new Promise((resolve, reject) => {
+      const binPath = '../setup-tools/generate_h';
+      const proc = (this.proc = spawn(binPath, [this.sealingPath, generatorPath]));
+
+      readline
+        .createInterface({
+          input: proc.stdout,
+          terminal: false,
+        })
+        .on('line', line => resolve(JSON.parse(line)));
+
+      proc.on('close', code => {
+        if (code !== 0) {
+          reject(new Error(`generate_h exited with code ${code}`));
+        }
+      });
+
+      proc.on('error', reject);
     });
   }
 }
