@@ -9,9 +9,6 @@
 #include <generator/compute_generator_polynomial.hpp>
 #include "test_utils.hpp"
 
-namespace
-{
-}
 TEST(range, window)
 {
     libff::init_alt_bn128_params();

@@ -29,7 +29,7 @@ export type G2 = [string, string, string, string];
 
 export type CRS = {
   h: G1;
-  g2: G2;
+  t2: G2;
 };
 
 export interface Participant {

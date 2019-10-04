@@ -41,7 +41,7 @@ export class Sealer extends EventEmitter {
 
         return {
           h: await this.generateH(state.numG1Points),
-          g2: await this.getFinalG2Point(),
+          t2: await this.getFinalG2Point(),
         };
       } catch (err) {
         console.error('Sealer failed (will retry): ', err);
