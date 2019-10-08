@@ -20,7 +20,7 @@ while true; do
   # Get server state. Wait until state is RANGE_PROOFS.
   echo "Waiting until ceremony is computing range proofs..."
   while : ; do
-      STATE=$(curl -s http://$MPC_SERVER_HOST/api/state)
+      STATE=$(curl -L -s http://$MPC_SERVER_HOST/api/state)
       CEREMONYSTATE=$(echo $STATE | jq -j .ceremonyState)
       [ "$CEREMONYSTATE" != "RANGE_PROOFS" ] || break
       sleep 10

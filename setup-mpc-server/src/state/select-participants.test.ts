@@ -27,14 +27,16 @@ describe('select participants', () => {
     }
   });
 
-  it('should correctly select participants with participant 0', () => {
+  it('should correctly select participants with tier 0', () => {
+    state.participants[7].tier = 0;
     state.participants[9].tier = 0;
     selectParticipants(state, hexToBuffer('0x1aeaff3366f816e1d0157664dcd7ffaeb8741c854e2575ec9d438fc42c83b870'));
-    expect(state.participants[0].address).toEqual(addresses[9]);
-    for (const p of state.participants.slice(1, 6)) {
+    expect(state.participants[0].address).toEqual(addresses[7]);
+    expect(state.participants[1].address).toEqual(addresses[9]);
+    for (const p of state.participants.slice(2, 7)) {
       expect(addresses.slice(0, 5).includes(p.address)).toBeTruthy();
     }
-    for (const p of state.participants.slice(6)) {
+    for (const p of state.participants.slice(7)) {
       expect(addresses.slice(5, 9).includes(p.address)).toBeTruthy();
     }
   });

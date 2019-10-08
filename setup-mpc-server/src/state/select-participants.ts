@@ -33,10 +33,11 @@ export function selectParticipants(state: MpcState, blockHash: Buffer) {
   state.ceremonyState = 'SELECTED';
 
   let { participants } = state;
-  shuffle(blockHash, participants);
   const tier0 = participants.filter(t => t.tier === 0);
   const tier1 = participants.filter(t => t.tier === 1);
+  shuffle(blockHash, tier1);
   const earlyBirds = participants.filter(t => t.tier === 2);
+  shuffle(blockHash, earlyBirds);
   const tier2 = earlyBirds.slice(0, state.maxTier2);
   const tier3 = earlyBirds.slice(state.maxTier2).sort((a, b) => a.addedAt.valueOf() - b.addedAt.valueOf());
   tier3.forEach(p => (p.tier = 3));

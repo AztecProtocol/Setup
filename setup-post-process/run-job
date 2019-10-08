@@ -3,7 +3,7 @@ set -e
 cd /usr/src/setup-tools
 
 while true; do
-  JOBNUM=$(curl -s http://$JOB_SERVER_HOST/job)
+  JOBNUM=$(curl -L -s http://$JOB_SERVER_HOST/job)
   if [ -z "$JOBNUM" ]; then
     sleep 1
     continue
@@ -14,7 +14,7 @@ while true; do
   END=`date +%s`
 
   # Restart if ceremony changed.
-  STATE=$(curl -s http://$MPC_SERVER_HOST/api/state)
+  STATE=$(curl -L -s http://$MPC_SERVER_HOST/api/state)
   NAME=$(echo $STATE | jq -j .name)
   if [ "$NAME" != "$CEREMONYNAME" ]; then
     echo "Ceremony name changed. Exiting."
@@ -22,7 +22,7 @@ while true; do
   fi
 
   if [ -n "$RESULT" ]; then
-    curl -s -X PUT -d "$RESULT" -H "Content-Type: text/plain" http://$JOB_SERVER_HOST/complete/$JOBNUM > /dev/null
+    curl -L -s -X PUT -d "$RESULT" -H "Content-Type: text/plain" http://$JOB_SERVER_HOST/complete/$JOBNUM > /dev/null
   fi
   echo "Job $JOBNUM complete in $((END-START))s: $RESULT"
 done

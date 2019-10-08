@@ -15,79 +15,68 @@ data "terraform_remote_state" "setup_iac" {
   }
 }
 
-provider "aws" {
-  profile = "default"
-  region  = "eu-west-2"
-}
-
-data "aws_iam_policy_document" "fleet_assume_role_policy" {
-  statement {
-    actions = ["sts:AssumeRole"]
-
-    principals {
-      type        = "Service"
-      identifiers = ["spotfleet.amazonaws.com", "ec2.amazonaws.com"]
-    }
+data "terraform_remote_state" "setup_iac_us_east_2" {
+  backend = "s3"
+  config = {
+    bucket = "aztec-terraform"
+    key    = "setup/setup-iac/us-east-2"
+    region = "eu-west-2"
   }
 }
 
-resource "aws_iam_role" "ec2_spot_fleet_role" {
-  name               = "ec2-spot-fleet-role"
-  assume_role_policy = "${data.aws_iam_policy_document.fleet_assume_role_policy.json}"
+provider "aws" {
+  profile = "default"
+  region  = "us-east-2"
 }
 
-resource "aws_iam_role_policy_attachment" "ec2_spot_fleet_policy" {
-  role       = "${aws_iam_role.ec2_spot_fleet_role.name}"
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEC2SpotFleetRole"
-}
-
+# Create spot fleet.
 resource "aws_spot_fleet_request" "main" {
-  iam_fleet_role                      = "${aws_iam_role.ec2_spot_fleet_role.arn}"
+  iam_fleet_role                      = "${data.terraform_remote_state.setup_iac.outputs.ecs_spot_fleet_role_arn}"
   allocation_strategy                 = "diversified"
   target_capacity                     = "32"
-  spot_price                          = "0.017"
+  spot_price                          = "0.013"
   terminate_instances_with_expiration = true
   valid_until                         = "2020-01-01T00:00:00Z"
 
   launch_specification {
     weighted_capacity      = 16
-    ami                    = "ami-08ebd554ebc53fa9f"
+    ami                    = "ami-0918be4c91697b460"
     instance_type          = "m5.4xlarge"
-    subnet_id              = "${data.terraform_remote_state.setup_iac.outputs.subnet_az1_private_id}"
-    vpc_security_group_ids = ["${data.terraform_remote_state.setup_iac.outputs.security_group_private_id}"]
+    subnet_id              = "${data.terraform_remote_state.setup_iac_us_east_2.outputs.subnet_az1_private_id}"
+    vpc_security_group_ids = ["${data.terraform_remote_state.setup_iac_us_east_2.outputs.security_group_private_id}"]
     iam_instance_profile   = "${data.terraform_remote_state.setup_iac.outputs.ecs_instance_profile_name}"
-    key_name               = "${data.terraform_remote_state.setup_iac.outputs.ecs_instance_key_pair_name}"
-    availability_zone      = "eu-west-2a"
+    key_name               = "${data.terraform_remote_state.setup_iac_us_east_2.outputs.instance_key_pair_name}"
+    availability_zone      = "us-east-2a"
 
     user_data = <<USER_DATA
 #!/bin/bash
-echo ECS_CLUSTER=${data.terraform_remote_state.setup_iac.outputs.ecs_cluster_name} >> /etc/ecs/ecs.config
+echo ECS_CLUSTER=${data.terraform_remote_state.setup_iac_us_east_2.outputs.ecs_main_cluster_name} >> /etc/ecs/ecs.config
 echo 'ECS_INSTANCE_ATTRIBUTES={"group": "setup-post-process"}' >> /etc/ecs/ecs.config
 USER_DATA
 
     tags = {
-      Name = "setup-post-process-az1"
+      Name = "setup-post-process-us-east-2a"
     }
   }
 
   launch_specification {
     weighted_capacity      = 16
-    ami                    = "ami-08ebd554ebc53fa9f"
+    ami                    = "ami-0918be4c91697b460"
     instance_type          = "m5.4xlarge"
-    subnet_id              = "${data.terraform_remote_state.setup_iac.outputs.subnet_az2_private_id}"
-    vpc_security_group_ids = ["${data.terraform_remote_state.setup_iac.outputs.security_group_private_id}"]
+    subnet_id              = "${data.terraform_remote_state.setup_iac_us_east_2.outputs.subnet_az2_private_id}"
+    vpc_security_group_ids = ["${data.terraform_remote_state.setup_iac_us_east_2.outputs.security_group_private_id}"]
     iam_instance_profile   = "${data.terraform_remote_state.setup_iac.outputs.ecs_instance_profile_name}"
-    key_name               = "${data.terraform_remote_state.setup_iac.outputs.ecs_instance_key_pair_name}"
-    availability_zone      = "eu-west-2b"
+    key_name               = "${data.terraform_remote_state.setup_iac_us_east_2.outputs.instance_key_pair_name}"
+    availability_zone      = "us-east-2b"
 
     user_data = <<USER_DATA
 #!/bin/bash
-echo ECS_CLUSTER=${data.terraform_remote_state.setup_iac.outputs.ecs_cluster_name} >> /etc/ecs/ecs.config
+echo ECS_CLUSTER=${data.terraform_remote_state.setup_iac_us_east_2.outputs.ecs_main_cluster_name} >> /etc/ecs/ecs.config
 echo 'ECS_INSTANCE_ATTRIBUTES={"group": "setup-post-process"}' >> /etc/ecs/ecs.config
 USER_DATA
 
     tags = {
-      Name = "setup-post-process-az2"
+      Name = "setup-post-process-us-east-2b"
     }
   }
 
@@ -112,18 +101,18 @@ resource "aws_ecs_task_definition" "setup_post_process" {
     "environment": [
       {
         "name": "JOB_SERVER_HOST",
-        "value": "job-server.local"
+        "value": "internal-setup-job-server-466812739.eu-west-2.elb.amazonaws.com"
       },
       {
         "name": "MPC_SERVER_HOST",
-        "value": "setup-mpc-server.local"
+        "value": "ignition.aztecprotocol.com"
       }
     ],
     "logConfiguration": {
       "logDriver": "awslogs",
       "options": {
-        "awslogs-group": "/fargate/service/setup-post-process",
-        "awslogs-region": "eu-west-2",
+        "awslogs-group": "/service/setup-post-process",
+        "awslogs-region": "us-east-2",
         "awslogs-stream-prefix": "ecs"
       }
     }
@@ -138,7 +127,7 @@ data "aws_ecs_task_definition" "setup_post_process" {
 
 resource "aws_ecs_service" "setup_post_process" {
   name                               = "setup-post-process"
-  cluster                            = "${data.terraform_remote_state.setup_iac.outputs.ecs_cluster_id}"
+  cluster                            = "${data.terraform_remote_state.setup_iac_us_east_2.outputs.ecs_main_cluster_id}"
   launch_type                        = "EC2"
   desired_count                      = "2"
   deployment_maximum_percent         = 100
@@ -146,10 +135,10 @@ resource "aws_ecs_service" "setup_post_process" {
 
   network_configuration {
     subnets = [
-      "${data.terraform_remote_state.setup_iac.outputs.subnet_az1_private_id}",
-      "${data.terraform_remote_state.setup_iac.outputs.subnet_az2_private_id}"
+      "${data.terraform_remote_state.setup_iac_us_east_2.outputs.subnet_az1_private_id}",
+      "${data.terraform_remote_state.setup_iac_us_east_2.outputs.subnet_az2_private_id}"
     ]
-    security_groups = ["${data.terraform_remote_state.setup_iac.outputs.security_group_private_id}"]
+    security_groups = ["${data.terraform_remote_state.setup_iac_us_east_2.outputs.security_group_private_id}"]
   }
 
   placement_constraints {
@@ -168,6 +157,6 @@ resource "aws_ecs_service" "setup_post_process" {
 
 # Logging setup-post-process to CloudWatch
 resource "aws_cloudwatch_log_group" "setup_post_process" {
-  name              = "/fargate/service/setup-post-process"
+  name              = "/service/setup-post-process"
   retention_in_days = "14"
 }

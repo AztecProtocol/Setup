@@ -2,8 +2,24 @@ output "vpc_id" {
   value = "${aws_vpc.setup.id}"
 }
 
+output "vpc_main_route_table_id" {
+  value = "${aws_vpc.setup.main_route_table_id}"
+}
+
+output "route_table_az1_private_id" {
+  value = "${aws_route_table.private_az1.id}"
+}
+
+output "route_table_az2_private_id" {
+  value = "${aws_route_table.private_az2.id}"
+}
+
 output "local_service_discovery_id" {
   value = "${aws_service_discovery_private_dns_namespace.local.id}"
+}
+
+output "ecs_spot_fleet_role_arn" {
+  value = "${aws_iam_role.ec2_spot_fleet_role.arn}"
 }
 
 output "ecs_task_execution_role_arn" {
@@ -56,4 +72,8 @@ output "ecs_instance_profile_name" {
 
 output "ecs_instance_key_pair_name" {
   value = "${aws_key_pair.instance_key_pair.key_name}"
+}
+
+output "bastion_private_ip" {
+  value = "${aws_instance.bastion.private_ip}"
 }

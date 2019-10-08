@@ -127,17 +127,15 @@ resource "aws_security_group_rule" "setup_public_allow_https" {
   security_group_id = "${aws_security_group.public.id}"
 }
 
-// Check this is needed. I think it is as it allows return traffic from private subnet.
-resource "aws_security_group_rule" "setup_public_allow_setup_private" {
-  type                     = "ingress"
-  from_port                = 0
-  to_port                  = 0
-  protocol                 = "-1"
-  source_security_group_id = "${aws_security_group.private.id}"
-  security_group_id        = "${aws_security_group.public.id}"
+resource "aws_security_group_rule" "setup_public_allow_all_vpc" {
+  type              = "ingress"
+  from_port         = 0
+  to_port           = 0
+  protocol          = "-1"
+  cidr_blocks       = ["10.0.0.0/8"]
+  security_group_id = "${aws_security_group.public.id}"
 }
 
-// Check this is needed. I think it is as it allows the ALB to return traffic to internet.
 resource "aws_security_group_rule" "setup_public_allow_all_outgoing" {
   type              = "egress"
   from_port         = 0
@@ -149,7 +147,7 @@ resource "aws_security_group_rule" "setup_public_allow_all_outgoing" {
 
 ### PRIVATE NETWORK
 
-# Private subnets in each avilability zone.
+# Private subnets in each availability zone.
 resource "aws_subnet" "private_az1" {
   vpc_id            = "${aws_vpc.setup.id}"
   cidr_block        = "10.1.0.0/17"
@@ -222,10 +220,10 @@ resource "aws_security_group" "private" {
   }
 
   ingress {
-    protocol        = "tcp"
-    from_port       = 80
-    to_port         = 80
-    security_groups = ["${aws_security_group.public.id}"]
+    protocol    = "tcp"
+    from_port   = 80
+    to_port     = 80
+    cidr_blocks = ["10.0.0.0/8"]
   }
 
   ingress {
@@ -340,6 +338,27 @@ resource "aws_service_discovery_private_dns_namespace" "local" {
   vpc         = "${aws_vpc.setup.id}"
 }
 
+# We require a role to allow the spot fleet manager to terminate spot instances.
+data "aws_iam_policy_document" "fleet_assume_role_policy" {
+  statement {
+    actions = ["sts:AssumeRole"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["spotfleet.amazonaws.com", "ec2.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role" "ec2_spot_fleet_role" {
+  name               = "ec2-spot-fleet-role"
+  assume_role_policy = "${data.aws_iam_policy_document.fleet_assume_role_policy.json}"
+}
+
+resource "aws_iam_role_policy_attachment" "ec2_spot_fleet_policy" {
+  role       = "${aws_iam_role.ec2_spot_fleet_role.name}"
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEC2SpotFleetRole"
+}
 
 # We require a task execution role for the ECS container agent to make calls to the ECS API.
 # https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_execution_IAM_role.html

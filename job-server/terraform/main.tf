@@ -38,7 +38,7 @@ resource "aws_elasticache_cluster" "setup_redis" {
   security_group_ids   = ["${data.terraform_remote_state.setup_iac.outputs.security_group_private_id}"]
 }
 
-# Create our job-server service.
+# Service discovery.
 resource "aws_service_discovery_service" "job_server" {
   name = "job-server"
 
@@ -58,6 +58,55 @@ resource "aws_service_discovery_service" "job_server" {
   }
 }
 
+# Need a load balancer for our service endpoint for access via VPC peering.
+resource "aws_lb" "lb" {
+  name               = "setup-job-server"
+  internal           = true
+  load_balancer_type = "application"
+  security_groups    = ["${data.terraform_remote_state.setup_iac.outputs.security_group_private_id}"]
+  subnets = [
+    "${data.terraform_remote_state.setup_iac.outputs.subnet_az1_private_id}",
+    "${data.terraform_remote_state.setup_iac.outputs.subnet_az2_private_id}"
+  ]
+
+  tags = {
+    name = "setup-job-server"
+  }
+}
+
+resource "aws_lb_target_group" "job_server" {
+  name                 = "setup-job-server"
+  port                 = "80"
+  protocol             = "HTTP"
+  target_type          = "ip"
+  vpc_id               = "${data.terraform_remote_state.setup_iac.outputs.vpc_id}"
+  deregistration_delay = 5
+
+  health_check {
+    path              = "/"
+    matcher           = "200"
+    interval          = 5
+    healthy_threshold = 2
+    timeout           = 3
+  }
+
+  tags = {
+    name = "setup-job-server"
+  }
+}
+
+resource "aws_alb_listener" "listener" {
+  load_balancer_arn = "${aws_lb.lb.arn}"
+  port              = "80"
+  protocol          = "HTTP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = "${aws_lb_target_group.job_server.arn}"
+  }
+}
+
+# Create our job-server service.
 resource "aws_ecs_task_definition" "setup_job_server" {
   family                   = "setup-job-server"
   requires_compatibilities = ["FARGATE"]
@@ -121,6 +170,12 @@ resource "aws_ecs_service" "setup_job_server" {
 
   service_registries {
     registry_arn = "${aws_service_discovery_service.job_server.arn}"
+  }
+
+  load_balancer {
+    target_group_arn = "${aws_lb_target_group.job_server.arn}"
+    container_name   = "setup-job-server"
+    container_port   = 80
   }
 
   # Track the latest ACTIVE revision
