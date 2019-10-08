@@ -33,15 +33,15 @@ provider "aws" {
 resource "aws_spot_fleet_request" "main" {
   iam_fleet_role                      = "${data.terraform_remote_state.setup_iac.outputs.ecs_spot_fleet_role_arn}"
   allocation_strategy                 = "diversified"
-  target_capacity                     = "32"
-  spot_price                          = "0.013"
+  target_capacity                     = "96"
+  spot_price                          = "0.009"
   terminate_instances_with_expiration = true
   valid_until                         = "2020-01-01T00:00:00Z"
 
   launch_specification {
-    weighted_capacity      = 16
+    weighted_capacity      = 96
     ami                    = "ami-0918be4c91697b460"
-    instance_type          = "m5.4xlarge"
+    instance_type          = "m5.metal"
     subnet_id              = "${data.terraform_remote_state.setup_iac_us_east_2.outputs.subnet_az1_private_id}"
     vpc_security_group_ids = ["${data.terraform_remote_state.setup_iac_us_east_2.outputs.security_group_private_id}"]
     iam_instance_profile   = "${data.terraform_remote_state.setup_iac.outputs.ecs_instance_profile_name}"
@@ -60,9 +60,9 @@ USER_DATA
   }
 
   launch_specification {
-    weighted_capacity      = 16
+    weighted_capacity      = 96
     ami                    = "ami-0918be4c91697b460"
-    instance_type          = "m5.4xlarge"
+    instance_type          = "m5.metal"
     subnet_id              = "${data.terraform_remote_state.setup_iac_us_east_2.outputs.subnet_az2_private_id}"
     vpc_security_group_ids = ["${data.terraform_remote_state.setup_iac_us_east_2.outputs.security_group_private_id}"]
     iam_instance_profile   = "${data.terraform_remote_state.setup_iac.outputs.ecs_instance_profile_name}"
@@ -129,7 +129,7 @@ resource "aws_ecs_service" "setup_post_process" {
   name                               = "setup-post-process"
   cluster                            = "${data.terraform_remote_state.setup_iac_us_east_2.outputs.ecs_main_cluster_id}"
   launch_type                        = "EC2"
-  desired_count                      = "2"
+  desired_count                      = "10"
   deployment_maximum_percent         = 100
   deployment_minimum_healthy_percent = 0
 

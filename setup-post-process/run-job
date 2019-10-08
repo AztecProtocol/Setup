@@ -5,7 +5,7 @@ cd /usr/src/setup-tools
 while true; do
   JOBNUM=$(curl -L -s http://$JOB_SERVER_HOST/job)
   if [ -z "$JOBNUM" ]; then
-    sleep 1
+    sleep $[RANDOM%10+1]
     continue
   fi
   echo Computing range polynomial $JOBNUM
