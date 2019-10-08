@@ -13,11 +13,16 @@ while true; do
   RESULT=$(./compute_range_polynomial ../setup_db $JOBNUM $NUMG1POINTS)
   END=`date +%s`
 
-  # Restart if ceremony changed.
+  # Exit if ceremony changed or completed.
   STATE=$(curl -L -s http://$MPC_SERVER_HOST/api/state)
   NAME=$(echo $STATE | jq -j .name)
+  CEREMONYSTATE=$(echo $STATE | jq -j .ceremonyState)
   if [ "$NAME" != "$CEREMONYNAME" ]; then
     echo "Ceremony name changed. Exiting."
+    exit 0
+  fi
+  if [ "$CEREMONYSTATE" != "RANGE_PROOFS" ]; then
+    echo "Ceremony state no longer RANGE_PROOFS. Exiting."
     exit 0
   fi
 

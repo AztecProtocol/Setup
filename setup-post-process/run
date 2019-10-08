@@ -55,9 +55,9 @@ while true; do
 
   cd /usr/src/setup-post-process
   echo "Running $NUMJOBS job processors."
-  for i in $(seq 1 $NUMJOBS)
+  for CPU in $(seq 0 $[NUMJOBS - 1])
   do
-    ./run-job &
+    taskset -c $CPU ./run-job &
   done
   wait
 done
