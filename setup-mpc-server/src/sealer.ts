@@ -20,24 +20,26 @@ export class Sealer extends EventEmitter {
   public async run(state: MpcState): Promise<CRS | undefined> {
     while (true) {
       try {
-        const previousParticipant = state.participants
-          .slice()
-          .reverse()
-          .find(p => p.state === 'COMPLETE');
+        if (state.sealingProgress < 100) {
+          const previousParticipant = state.participants
+            .slice()
+            .reverse()
+            .find(p => p.state === 'COMPLETE');
 
-        if (!previousParticipant) {
-          throw new Error('No previous participant to perform sealing step on.');
+          if (!previousParticipant) {
+            throw new Error('No previous participant to perform sealing step on.');
+          }
+
+          await mkdirAsync(this.sealingPath, { recursive: true });
+          await this.transcriptStore.copyVerifiedTo(previousParticipant.address, this.sealingPath);
+
+          if (this.cancelled) {
+            return;
+          }
+
+          await this.compute();
+          await this.renameTranscripts();
         }
-
-        await mkdirAsync(this.sealingPath, { recursive: true });
-        await this.transcriptStore.copyVerifiedTo(previousParticipant.address, this.sealingPath);
-
-        if (this.cancelled) {
-          return;
-        }
-
-        await this.compute();
-        await this.renameTranscripts();
 
         return {
           h: await this.generateH(state.numG1Points),
