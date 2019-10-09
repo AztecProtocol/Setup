@@ -9,6 +9,9 @@
 #include <atomic>
 #include <chrono>
 #include <unistd.h>
+#ifdef __linux__
+#include <pthread.h>
+#endif
 
 #include <aztec_common/streaming_transcript.hpp>
 
@@ -67,6 +70,19 @@ void compute_job(std::vector<GroupT> &g_x, size_t start_from, size_t progress_to
             thread_range += leftovers;
         }
         threads.push_back(std::thread(compute_thread<GroupT, num_limbs>, std::ref(multiplicand), std::ref(g_x), start_from, thread_start, thread_range, std::ref(job_progress)));
+
+#ifdef __linux__
+        // Create a cpu_set_t object representing a set of CPUs. Clear it and mark
+        // only CPU i as set.
+        cpu_set_t cpuset;
+        CPU_ZERO(&cpuset);
+        CPU_SET(i, &cpuset);
+        int rc = pthread_setaffinity_np(threads[i].native_handle(), sizeof(cpu_set_t), &cpuset);
+        if (rc != 0)
+        {
+            std::cerr << "Error calling pthread_setaffinity_np: " << rc << "\n";
+        }
+#endif
     }
 
     while (job_progress < g_x.size())
