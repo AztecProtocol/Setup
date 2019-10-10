@@ -2,19 +2,19 @@ version: '3'
 services:
   setup-post-process:
     build: .
-    image: aztec/setup-post-process
+    image: 278380418400.dkr.ecr.eu-west-2.amazonaws.com/setup-post-process
     environment:
-      MPC_SERVER_HOST: setup-mpc-server
+      MPC_SERVER_HOST: ignition.aztecprotocol.com
       JOB_SERVER_HOST: job-server
     volumes:
-      - .:/usr/src/runner
+      - .:/usr/src/setup-post-process
     depends_on:
       - job-server
       - redis
 
   job-server:
     build: ../job-server
-    image: aztec/job-server
+    image: 278380418400.dkr.ecr.eu-west-2.amazonaws.com/job-server
     environment:
       NODE_ENV: production
       REDIS_URL: redis://redis

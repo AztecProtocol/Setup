@@ -14,6 +14,10 @@ done
 mkdir -p /usr/src/setup_db
 cd /usr/src/setup_db
 
+EC2_AVAIL_ZONE=$(curl --connect-timeout 5 -s http://169.254.169.254/latest/meta-data/placement/availability-zone || true)
+EC2_REGION=$(echo -n $EC2_AVAIL_ZONE | sed 's/[a-z]$//')
+EC2_REGION=${EC2_REGION:-'us-east-2'}
+
 while true; do
   rm -f /usr/src/setup_db/*
 
@@ -27,29 +31,17 @@ while true; do
   done
   echo "Ceremony state is RANGE_PROOFS."
 
-  export NUMG1POINTS=$(echo $STATE | jq -j .numG1Points)
-
-  # Download generator coefficients.
-  echo Downloading generator coefficients...
-  curl -s https://aztec-ignition.s3.eu-west-2.amazonaws.com/generator$NUMG1POINTS.dat > generator.dat
-
   # Extract variables from state.
   export CEREMONYNAME=$(echo $STATE | jq -j .name)
+  export NUMG1POINTS=$(echo $STATE | jq -j .numG1Points)
   STARTTIME=$(echo $STATE | jq -j .startTime)
   FOLDER=$(date -u -d$STARTTIME +%Y%m%d_%H%M%S)
-  POINTSPERFILE=$(echo $STATE | jq -j .pointsPerTranscript)
-  TRANSCRIPTS=$[NUMG1POINTS/POINTSPERFILE]
 
-  # Download final set of transcripts.
-  for TRANSCRIPT in $(seq 0 $[TRANSCRIPTS - 1]); do
-    echo Downloading transcript $TRANSCRIPT...
-    FILENAME=`printf transcript%02d.dat $TRANSCRIPT`
-    curl -s -S https://aztec-ignition.s3.eu-west-2.amazonaws.com/$FOLDER/sealed/$FILENAME > transcript$TRANSCRIPT.dat
-  done
+  echo Downloading generator coefficients from https://aztec-post-process.s3.$EC2_REGION.amazonaws.com/generator$NUMG1POINTS.dat
+  curl -s https://aztec-post-process.s3.$EC2_REGION.amazonaws.com/generator$NUMG1POINTS.dat > generator_prep.dat
 
-  # Transform data in prep for memory mapping.
-  cd /usr/src/setup-tools
-  ./prep_range_data ../setup_db
+  echo Downloading g1x points from https://aztec-post-process.s3.$EC2_REGION.amazonaws.com/$FOLDER/g1_x_prep.dat
+  curl -s https://aztec-post-process.s3.$EC2_REGION.amazonaws.com/$FOLDER/g1_x_prep.dat > g1_x_prep.dat
 
   [ -z "$NUMJOBS" ] && NUMJOBS=$(nproc)
 

@@ -42,7 +42,7 @@ resource "aws_service_discovery_service" "setup_mpc_server" {
 # Create EC2 instances in each AZ.
 resource "aws_instance" "container_instance_az1" {
   ami                    = "ami-08ebd554ebc53fa9f"
-  instance_type          = "m5.8xlarge"
+  instance_type          = "r5.xlarge"
   subnet_id              = "${data.terraform_remote_state.setup_iac.outputs.subnet_az1_private_id}"
   vpc_security_group_ids = ["${data.terraform_remote_state.setup_iac.outputs.security_group_private_id}"]
   iam_instance_profile   = "${data.terraform_remote_state.setup_iac.outputs.ecs_instance_profile_name}"
@@ -62,7 +62,7 @@ USER_DATA
 
 # resource "aws_instance" "container_instance_az2" {
 #   ami                    = "ami-08ebd554ebc53fa9f"
-#   instance_type          = "m5.xlarge"
+#   instance_type          = "r5.xlarge"
 #   subnet_id              = "${data.terraform_remote_state.setup_iac.outputs.subnet_az2_private_id}"
 #   vpc_security_group_ids = ["${data.terraform_remote_state.setup_iac.outputs.security_group_private_id}"]
 #   iam_instance_profile   = "${data.terraform_remote_state.setup_iac.outputs.ecs_instance_profile_name}"
@@ -292,6 +292,17 @@ resource "aws_iam_role_policy" "setup_mpc_server_task_policy" {
 resource "aws_s3_bucket" "aztec_ignition" {
   bucket = "aztec-ignition"
   acl    = "public-read"
+}
+
+# Create post processing bucket in us-east-2.
+provider "aws" {
+  alias  = "us-east-2"
+  region = "us-east-2"
+}
+
+resource "aws_s3_bucket" "aztec_post_process" {
+  provider = "aws.us-east-2"
+  bucket   = "aztec-post-process"
 }
 
 # WAF rules for DDOS protection.

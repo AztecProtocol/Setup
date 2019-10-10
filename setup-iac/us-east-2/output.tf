@@ -14,6 +14,10 @@ output "subnet_az2_private_id" {
   value = "${aws_subnet.private_az2.id}"
 }
 
+output "subnet_az3_private_id" {
+  value = "${aws_subnet.private_az3.id}"
+}
+
 output "security_group_private_id" {
   value = "${aws_security_group.private.id}"
 }
