@@ -1,9 +1,8 @@
 #!/bin/bash
-set -e
 cd /usr/src/setup-tools
 
 while true; do
-  JOBNUM=$(curl -L -s http://$JOB_SERVER_HOST/job)
+  JOBNUM=$(curl --retry 100 -L -s http://$JOB_SERVER_HOST/job)
   if [ -z "$JOBNUM" ]; then
     sleep $[RANDOM%10+1]
     continue
@@ -11,10 +10,13 @@ while true; do
   echo Computing range polynomial $JOBNUM
   START=`date +%s`
   RESULT=$(./compute_range_polynomial ../setup_db $JOBNUM $NUMG1POINTS)
+  if [ "$?" -ne 0 ]; then
+    continue
+  fi
   END=`date +%s`
 
   # Exit if ceremony changed or completed.
-  STATE=$(curl -L -s http://$MPC_SERVER_HOST/api/state)
+  STATE=$(curl --retry 100 -L -s http://$MPC_SERVER_HOST/api/state)
   NAME=$(echo $STATE | jq -j .name)
   CEREMONYSTATE=$(echo $STATE | jq -j .ceremonyState)
   if [ "$NAME" != "$CEREMONYNAME" ]; then
@@ -27,7 +29,7 @@ while true; do
   fi
 
   if [ -n "$RESULT" ]; then
-    curl -L -s -X PUT -d "$RESULT" -H "Content-Type: text/plain" http://$JOB_SERVER_HOST/complete/$JOBNUM > /dev/null
+    curl --retry 100 -L -s -X PUT -d "$RESULT" -H "Content-Type: text/plain" http://$JOB_SERVER_HOST/complete/$JOBNUM > /dev/null
   fi
   echo "Job $JOBNUM complete in $((END-START))s: $RESULT"
 done

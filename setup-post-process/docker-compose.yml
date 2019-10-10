@@ -8,6 +8,7 @@ services:
       JOB_SERVER_HOST: job-server
     volumes:
       - .:/usr/src/setup-post-process
+      - ${HOME}/.aws:/root/.aws
     depends_on:
       - job-server
       - redis

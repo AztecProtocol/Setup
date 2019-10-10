@@ -653,7 +653,7 @@ resource "aws_iam_role" "setup_post_process_task_role" {
 data "aws_iam_policy_document" "aztec_post_processing_bucket_read" {
   statement {
     effect    = "Allow"
-    actions   = ["s3:*"]
+    actions   = ["s3:GetObject"]
     resources = ["arn:aws:s3:::aztec-post-process/*"]
   }
 }
