@@ -19,7 +19,8 @@ EC2_REGION=$(echo -n $EC2_AVAIL_ZONE | sed 's/[a-z]$//')
 EC2_REGION=${EC2_REGION:-'us-east-2'}
 
 while true; do
-  rm -f /usr/src/setup_db/*
+  cd /usr/src/setup_db
+  rm -f *
 
   # Get server state. Wait until state is RANGE_PROOFS.
   echo "Waiting until ceremony is computing range proofs..."

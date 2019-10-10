@@ -34,8 +34,13 @@ if [ -d ./terraform ]; then
   terraform apply -input=false -auto-approve
 fi
 
+# Don't trigger service restart if argument 2 is -.
+[ "$2" != "-" ] || exit
+
 # Restart with latest image.
 SERVICE_NAME=${2:-$1}
-if aws ecs list-services --cluster setup | grep $SERVICE_NAME > /dev/null; then
-  aws ecs update-service --cluster setup --service $SERVICE_NAME --force-new-deployment
+REGION=${3:-$AWS_DEFAULT_REGION}
+CLUSTER=${4:-setup}
+if aws ecs list-services --region $REGION --cluster $CLUSTER | grep $SERVICE_NAME > /dev/null; then
+  aws ecs update-service --region $REGION --cluster $CLUSTER --service $SERVICE_NAME --force-new-deployment
 fi

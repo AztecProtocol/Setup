@@ -9,5 +9,6 @@ commands:
     cmd: ../ci-scripts/deploy.sh
     args:
       - setup-post-process
+      - '-'
 dependencies:
   - setup-tools
