@@ -39,10 +39,10 @@ while true; do
   FOLDER=$(date -u -d$STARTTIME +%Y%m%d_%H%M%S)
 
   echo Downloading generator coefficients from https://aztec-post-process.s3.$EC2_REGION.amazonaws.com/generator$NUMG1POINTS.dat
-  curl -s https://aztec-post-process.s3.$EC2_REGION.amazonaws.com/generator$NUMG1POINTS.dat > generator_prep.dat
+  curl -s -f https://aztec-post-process.s3.$EC2_REGION.amazonaws.com/generator$NUMG1POINTS.dat > generator_prep.dat
 
   echo Downloading g1x points from https://aztec-post-process.s3.$EC2_REGION.amazonaws.com/$FOLDER/g1_x_prep.dat
-  curl -s https://aztec-post-process.s3.$EC2_REGION.amazonaws.com/$FOLDER/g1_x_prep.dat > g1_x_prep.dat
+  curl -s -f https://aztec-post-process.s3.$EC2_REGION.amazonaws.com/$FOLDER/g1_x_prep.dat > g1_x_prep.dat
 
   [ -z "$NUMJOBS" ] && NUMJOBS=$(nproc)
 
