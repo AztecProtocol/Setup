@@ -35,7 +35,7 @@ if [ -d ./terraform ]; then
 fi
 
 # Don't trigger service restart if argument 2 is -.
-[ "$2" != "-" ] || exit
+[ "$2" != "-" ] || exit 0
 
 # Restart with latest image.
 SERVICE_NAME=${2:-$1}
