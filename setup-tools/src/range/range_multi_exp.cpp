@@ -94,7 +94,7 @@ G1 batch_process_range(size_t range_index, size_t polynomial_degree, size_t batc
     return std::accumulate(results.begin(), results.end(), G1::zero());
 }
 
-void compute_range_polynomials(std::string const &setup_db_path, size_t range_index, size_t polynomial_degree)
+void compute_range_polynomials(std::string const &setup_db_path, size_t range_index, size_t polynomial_degree, size_t batches)
 {
     Timer total_timer;
 
@@ -105,7 +105,7 @@ void compute_range_polynomials(std::string const &setup_db_path, size_t range_in
     std::cerr << "Loaded in " << data_timer.toString() << "s" << std::endl;
 
     Timer compute_timer;
-    G1 result = batch_process_range(range_index, polynomial_degree, 4, g1_x, generator_polynomial);
+    G1 result = batch_process_range(range_index, polynomial_degree, batches, g1_x, generator_polynomial);
 
     std::cerr << "Compute time: " << compute_timer.toString() << "s" << std::endl;
     std::cerr << "Total time: " << total_timer.toString() << "s" << std::endl;

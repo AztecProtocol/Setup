@@ -407,6 +407,18 @@ resource "aws_route" "private_az2_peer_private" {
   vpc_peering_connection_id = "${aws_vpc_peering_connection.peer.id}"
 }
 
+resource "aws_route" "private_az3_peer_public" {
+  route_table_id            = "${aws_route_table.private_az3.id}"
+  destination_cidr_block    = "10.0.0.0/16"
+  vpc_peering_connection_id = "${aws_vpc_peering_connection.peer.id}"
+}
+
+resource "aws_route" "private_az3_peer_private" {
+  route_table_id            = "${aws_route_table.private_az3.id}"
+  destination_cidr_block    = "10.1.0.0/16"
+  vpc_peering_connection_id = "${aws_vpc_peering_connection.peer.id}"
+}
+
 # eu-west-2 side of the peering configuration. Routes to us-east-2.
 provider "aws" {
   alias   = "eu-west-2"
