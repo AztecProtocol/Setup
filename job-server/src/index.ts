@@ -18,7 +18,7 @@ declare module 'redis' {
   }
 }
 
-const { PORT = 80, REDIS_URL = 'redis://localhost:6379' } = process.env;
+const { PORT = 80, REDIS_URL = 'redis://localhost:6379', JOB_EXPIRATION_TIME = '900' } = process.env;
 const SCRIPT_DIR = './redis-scripts';
 
 async function loadScripts(redisClient: RedisClient) {
@@ -86,7 +86,7 @@ function app(redisClient: RedisClient, scripts: { [k: string]: string }) {
 
   router.get('/job', async ctx => {
     const numJobs = ctx.query.num || 1;
-    ctx.body = await redisClient.evalshaAsync(scripts['get_job.lua'], 0, numJobs);
+    ctx.body = await redisClient.evalshaAsync(scripts['get_job.lua'], 0, numJobs, JOB_EXPIRATION_TIME);
   });
 
   router.put('/complete/:id', async ctx => {

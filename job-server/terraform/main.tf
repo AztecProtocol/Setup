@@ -134,6 +134,10 @@ resource "aws_ecs_task_definition" "setup_job_server" {
       {
         "name": "REDIS_URL",
         "value": "redis://${aws_elasticache_cluster.setup_redis.cache_nodes.0.address}"
+      },
+      {
+        "name": "JOB_EXPIRATION_TIME",
+        "value": "4000"
       }
     ],
     "logConfiguration": {
