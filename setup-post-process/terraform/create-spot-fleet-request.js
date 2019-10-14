@@ -1,3 +1,47 @@
+const m5Instances = [
+  ['m5.metal', 96],
+  ['m5.24xlarge', 96],
+  ['m5.16xlarge', 64],
+  ['m5.12xlarge', 48],
+  ['m5.8xlarge', 32],
+  ['m5.4xlarge', 16],
+  ['m5.2xlarge', 8],
+  ['m5.xlarge', 4],
+  ['m5d.metal', 96],
+  ['m5d.24xlarge', 96],
+  ['m5d.16xlarge', 64],
+  ['m5d.12xlarge', 48],
+  ['m5d.8xlarge', 32],
+  ['m5d.4xlarge', 16],
+  ['m5d.2xlarge', 8],
+  ['m5d.xlarge', 4],
+];
+
+// AMD machines are 70% as performant.
+const m5aInstances = [
+  ['m5a.24xlarge', 96],
+  ['m5a.16xlarge', 64],
+  ['m5a.12xlarge', 48],
+  ['m5a.8xlarge', 32],
+  ['m5a.4xlarge', 16],
+  ['m5a.2xlarge', 8],
+  ['m5a.xlarge', 4],
+  ['m5ad.24xlarge', 96],
+  ['m5ad.12xlarge', 48],
+  ['m5ad.4xlarge', 16],
+  ['m5ad.2xlarge', 8],
+  ['m5ad.xlarge', 4],
+].map(e => [e[0], Math.floor(e[1] * 0.7)]);
+
+// Older m4 machines are 90% as performant.
+const m4Instances = [
+  ['m4.16xlarge', 64],
+  ['m4.10xlarge', 40],
+  ['m4.4xlarge', 16],
+  ['m4.2xlarge', 8],
+  ['m4.xlarge', 4],
+].map(e => [e[0], Math.floor(e[1] * 0.9)]);
+
 const r5Instances = [
   ['r5.metal', 96],
   ['r5.24xlarge', 96],
@@ -7,9 +51,49 @@ const r5Instances = [
   ['r5.4xlarge', 16],
   ['r5.2xlarge', 8],
   ['r5.xlarge', 4],
+  ['r5d.metal', 96],
+  ['r5d.24xlarge', 96],
+  ['r5d.16xlarge', 64],
+  ['r5d.12xlarge', 48],
+  ['r5d.8xlarge', 32],
+  ['r5d.4xlarge', 16],
+  ['r5d.2xlarge', 8],
+  ['r5d.xlarge', 4],
 ];
 
-const instances = [...r5Instances];
+// AMD machines are 70% as performant.
+const r5aInstances = [
+  ['r5a.24xlarge', 96],
+  ['r5a.16xlarge', 64],
+  ['r5a.12xlarge', 48],
+  ['r5a.8xlarge', 32],
+  ['r5a.4xlarge', 16],
+  ['r5a.2xlarge', 8],
+  ['r5a.xlarge', 4],
+  ['r5ad.24xlarge', 96],
+  ['r5ad.12xlarge', 48],
+  ['r5ad.4xlarge', 16],
+  ['r5ad.2xlarge', 8],
+  ['r5ad.xlarge', 4],
+].map(e => [e[0], Math.floor(e[1] * 0.7)]);
+
+// Older m4 machines are 90% as performant.
+const r4Instances = [
+  ['r4.16xlarge', 64],
+  ['r4.8xlarge', 32],
+  ['r4.4xlarge', 16],
+  ['r4.2xlarge', 8],
+  ['r4.xlarge', 4],
+].map(e => [e[0], Math.floor(e[1] * 0.9)]);
+
+const instances = [
+  // ...m5Instances,
+  // ...m5aInstances,
+  // ...m4Instances,
+  ...r5Instances,
+  // ...r5aInstances,
+  // ...r4Instances,
+];
 
 const availabilityZones = [['us-east-2a', 'az1'], ['us-east-2b', 'az2'], ['us-east-2c', 'az3']];
 

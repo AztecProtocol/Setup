@@ -9,14 +9,21 @@ while true; do
   fi
   echo Computing range polynomial $JOBNUM
   START=`date +%s`
-  RESULT=$(./compute_range_polynomial ../setup_db $JOBNUM $NUMG1POINTS)
+  RESULT=$(./compute_range_polynomial ../setup_db $JOBNUM $NUMG1POINTS 5)
   if [ "$?" -ne 0 ]; then
     continue
   fi
   END=`date +%s`
 
+  # Get ceremony state. Retry if not valid json returned.
+  while : ; do
+    STATE=$(curl --retry 100 -L -s http://$MPC_SERVER_HOST/api/state)
+    [ -z $(echo "$STATE" | jq type) ] || break
+    echo "Bad json: $STATE"
+    sleep 1
+  done
+
   # Exit if ceremony changed or completed.
-  STATE=$(curl --retry 100 -L -s http://$MPC_SERVER_HOST/api/state)
   NAME=$(echo $STATE | jq -j .name)
   CEREMONYSTATE=$(echo $STATE | jq -j .ceremonyState)
   if [ "$NAME" != "$CEREMONYNAME" ]; then
