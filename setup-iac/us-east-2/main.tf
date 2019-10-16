@@ -40,6 +40,7 @@ resource "aws_vpc_ipv4_cidr_block_association" "cidr1" {
 ### PUBLIC NETWORK
 
 # Public subnets in each availability zone.
+/*
 resource "aws_subnet" "public_az1" {
   vpc_id            = "${aws_vpc.setup.id}"
   cidr_block        = "10.2.0.0/18"
@@ -147,6 +148,7 @@ resource "aws_security_group_rule" "setup_public_allow_all_outgoing" {
   cidr_blocks       = ["0.0.0.0/0"]
   security_group_id = "${aws_security_group.public.id}"
 }
+*/
 
 ### PRIVATE NETWORK
 
@@ -206,6 +208,7 @@ resource "aws_route_table" "private_az3" {
   }
 }
 
+/*
 resource "aws_route" "private_az1" {
   route_table_id         = "${aws_route_table.private_az1.id}"
   destination_cidr_block = "0.0.0.0/0"
@@ -224,6 +227,7 @@ resource "aws_route" "private_az3" {
   nat_gateway_id         = "${aws_nat_gateway.gw_az3.id}"
 }
 
+*/
 resource "aws_route_table_association" "subnet_association_az1" {
   subnet_id      = "${aws_subnet.private_az1.id}"
   route_table_id = "${aws_route_table.private_az1.id}"
@@ -265,6 +269,13 @@ resource "aws_security_group" "private" {
     cidr_blocks = ["${data.terraform_remote_state.setup_iac.outputs.bastion_private_ip}/32"]
   }
 
+  ingress {
+    protocol    = "-1"
+    from_port   = 0
+    to_port     = 0
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
   egress {
     protocol    = "-1"
     from_port   = 0
@@ -288,7 +299,7 @@ resource "aws_vpc_endpoint" "ecs_agent" {
     "${aws_security_group.private.id}",
   ]
 
-  subnet_ids = ["${aws_subnet.public_az1.id}"]
+  subnet_ids = ["${aws_subnet.private_az1.id}", "${aws_subnet.private_az2.id}", "${aws_subnet.private_az3.id}"]
 }
 
 resource "aws_vpc_endpoint" "ecs_telemetry" {
@@ -301,7 +312,7 @@ resource "aws_vpc_endpoint" "ecs_telemetry" {
     "${aws_security_group.private.id}",
   ]
 
-  subnet_ids = ["${aws_subnet.public_az1.id}"]
+  subnet_ids = ["${aws_subnet.private_az1.id}", "${aws_subnet.private_az2.id}", "${aws_subnet.private_az3.id}"]
 }
 
 resource "aws_vpc_endpoint" "ecs" {
@@ -314,7 +325,7 @@ resource "aws_vpc_endpoint" "ecs" {
     "${aws_security_group.private.id}",
   ]
 
-  subnet_ids = ["${aws_subnet.public_az1.id}"]
+  subnet_ids = ["${aws_subnet.private_az1.id}", "${aws_subnet.private_az2.id}", "${aws_subnet.private_az3.id}"]
 }
 
 resource "aws_vpc_endpoint" "logs" {
@@ -327,14 +338,40 @@ resource "aws_vpc_endpoint" "logs" {
     "${aws_security_group.private.id}",
   ]
 
-  subnet_ids = ["${aws_subnet.public_az1.id}"]
+  subnet_ids = ["${aws_subnet.private_az1.id}", "${aws_subnet.private_az2.id}", "${aws_subnet.private_az3.id}"]
+}
+
+resource "aws_vpc_endpoint" "ecr_api" {
+  vpc_id              = "${aws_vpc.setup.id}"
+  service_name        = "com.amazonaws.us-east-2.ecr.api"
+  vpc_endpoint_type   = "Interface"
+  private_dns_enabled = true
+
+  security_group_ids = [
+    "${aws_security_group.private.id}",
+  ]
+
+  subnet_ids = ["${aws_subnet.private_az1.id}", "${aws_subnet.private_az2.id}", "${aws_subnet.private_az3.id}"]
+}
+
+resource "aws_vpc_endpoint" "ecr_dkr" {
+  vpc_id              = "${aws_vpc.setup.id}"
+  service_name        = "com.amazonaws.us-east-2.ecr.dkr"
+  vpc_endpoint_type   = "Interface"
+  private_dns_enabled = true
+
+  security_group_ids = [
+    "${aws_security_group.private.id}",
+  ]
+
+  subnet_ids = ["${aws_subnet.private_az1.id}", "${aws_subnet.private_az2.id}", "${aws_subnet.private_az3.id}"]
 }
 
 resource "aws_vpc_endpoint" "s3" {
   vpc_id            = "${aws_vpc.setup.id}"
   service_name      = "com.amazonaws.us-east-2.s3"
   vpc_endpoint_type = "Gateway"
-  route_table_ids   = ["${aws_vpc.setup.main_route_table_id}"]
+  route_table_ids   = ["${aws_route_table.private_az1.id}", "${aws_route_table.private_az2.id}", "${aws_route_table.private_az3.id}"]
 }
 
 # Create our cluster.

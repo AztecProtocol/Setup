@@ -87,17 +87,18 @@ const r4Instances = [
 ].map(e => [e[0], Math.floor(e[1] * 0.9)]);
 
 const instances = [
-  // ...m5Instances,
+  ...m5Instances,
   // ...m5aInstances,
   // ...m4Instances,
-  ...r5Instances,
+  //...r5Instances,
   // ...r5aInstances,
   // ...r4Instances,
 ];
 
 const availabilityZones = [['us-east-2a', 'az1'], ['us-east-2b', 'az2'], ['us-east-2c', 'az3']];
 
-const target = '576';
+//const target = '576';
+const target = '1';
 const price = '0.011';
 
 const header = (target, price) => `

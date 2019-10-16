@@ -328,7 +328,7 @@ resource "aws_vpc_endpoint" "s3" {
   vpc_id            = "${aws_vpc.setup.id}"
   service_name      = "com.amazonaws.eu-west-2.s3"
   vpc_endpoint_type = "Gateway"
-  route_table_ids   = ["${aws_vpc.setup.main_route_table_id}"]
+  route_table_ids   = ["${aws_vpc.setup.main_route_table_id}", "${aws_route_table.private_az1.id}", "${aws_route_table.private_az2.id}"]
 }
 
 # Service discovery.

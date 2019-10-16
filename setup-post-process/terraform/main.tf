@@ -46,11 +46,11 @@ resource "aws_ecs_task_definition" "setup_post_process" {
     "environment": [
       {
         "name": "JOB_SERVER_HOST",
-        "value": "internal-setup-job-server-466812739.eu-west-2.elb.amazonaws.com"
+        "value": "internal-setup-job-server-1643422750.eu-west-2.elb.amazonaws.com"
       },
       {
         "name": "MPC_SERVER_HOST",
-        "value": "ignition.aztecprotocol.com"
+        "value": "internal-setup-mpc-server-1439018684.eu-west-2.elb.amazonaws.com"
       }
     ],
     "logConfiguration": {

@@ -10,5 +10,6 @@ commands:
     args:
       - setup-post-process
       - '-'
+      - us-east-2
 dependencies:
   - setup-tools

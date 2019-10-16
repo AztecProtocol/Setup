@@ -198,6 +198,12 @@ resource "aws_ecs_service" "setup_mpc_server" {
     container_port   = 80
   }
 
+  load_balancer {
+    target_group_arn = "${aws_alb_target_group.setup_mpc_server_internal.arn}"
+    container_name   = "setup-mpc-server"
+    container_port   = 80
+  }
+
   service_registries {
     registry_arn = "${aws_service_discovery_service.setup_mpc_server.arn}"
   }
@@ -344,4 +350,52 @@ resource "aws_wafregional_web_acl" "acl" {
 resource "aws_wafregional_web_acl_association" "acl_association" {
   resource_arn = "${data.terraform_remote_state.setup_iac.outputs.alb_arn}"
   web_acl_id   = "${aws_wafregional_web_acl.acl.id}"
+}
+
+# Need an internal load balancer for our service endpoint for access via VPC peering.
+resource "aws_lb" "internal" {
+  name               = "setup-mpc-server"
+  internal           = true
+  load_balancer_type = "application"
+  security_groups    = ["${data.terraform_remote_state.setup_iac.outputs.security_group_private_id}"]
+  subnets = [
+    "${data.terraform_remote_state.setup_iac.outputs.subnet_az1_private_id}",
+    "${data.terraform_remote_state.setup_iac.outputs.subnet_az2_private_id}"
+  ]
+
+  tags = {
+    name = "setup-job-server"
+  }
+}
+
+resource "aws_alb_target_group" "setup_mpc_server_internal" {
+  name                 = "setup-mpc-server-internal"
+  port                 = "80"
+  protocol             = "HTTP"
+  target_type          = "ip"
+  vpc_id               = "${data.terraform_remote_state.setup_iac.outputs.vpc_id}"
+  deregistration_delay = 5
+
+  health_check {
+    path              = "/api"
+    matcher           = "200"
+    interval          = 5
+    healthy_threshold = 2
+    timeout           = 3
+  }
+
+  tags = {
+    name = "setup-mpc-server"
+  }
+}
+
+resource "aws_lb_listener" "listener" {
+  load_balancer_arn = "${aws_lb.internal.arn}"
+  port              = "80"
+  protocol          = "HTTP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = "${aws_alb_target_group.setup_mpc_server_internal.arn}"
+  }
 }
