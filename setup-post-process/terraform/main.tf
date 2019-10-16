@@ -40,7 +40,7 @@ resource "aws_ecs_task_definition" "setup_post_process" {
 [
   {
     "name": "setup-post-process",
-    "image": "278380418400.dkr.ecr.eu-west-2.amazonaws.com/setup-post-process:latest",
+    "image": "278380418400.dkr.ecr.us-east-2.amazonaws.com/setup-post-process:latest",
     "essential": true,
     "memoryReservation": 256,
     "environment": [
