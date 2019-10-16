@@ -32,7 +32,7 @@ void transform_g1x(std::string const &setup_db_path)
     }
 
     std::cout << "Writing " << g1_x.size() << " points..." << std::endl;
-    file.write((char *)&g1_x[0], g1_x.size() * sizeof(bb::g1::affine_element));
+    file.write((char *)&bx[0], bx.size() * sizeof(bb::g1::affine_element));
 
     filename = streaming::getTranscriptInPath(setup_db_path, ++num);
   }
