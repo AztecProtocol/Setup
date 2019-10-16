@@ -9,3 +9,6 @@ add_library(
     ${DEPENDS_DIR}/blake2/ref/blake2-impl.h
     ${DEPENDS_DIR}/blake2/ref/blake2.h
 )
+
+OPTION(BARRETENBERG_TESTING OFF)
+add_subdirectory(barretenberg)

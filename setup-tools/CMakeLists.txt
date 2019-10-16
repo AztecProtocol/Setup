@@ -1,21 +1,15 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.14)
 
-include(cmake/cable/bootstrap.cmake)
-include(CableBuildType)
-include(CableCompilerSettings)
-include(CableToolchains)
 include(GNUInstallDirs)
 
-cable_configure_toolchain(DEFAULT cxx11-pic)
-
-include(HunterConfig)
-
-cable_set_build_type(DEFAULT Release CONFIGURATION_TYPES Debug Release)
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_EXTENSIONS ON)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
+set(CMAKE_CXX_EXTENSIONS ON)
 
 set(PROJECT_VERSION 0.1.0)
 project(aztec-trusted-setup)
-
-cable_configure_compiler(NO_PEDANTIC NO_CONVERSION_WARNINGS)
 
 set(include_dir ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
