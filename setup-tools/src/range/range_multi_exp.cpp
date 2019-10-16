@@ -92,18 +92,11 @@ void compute_range_polynomials(std::string const &setup_db_path, size_t range_in
     std::cerr << "Loading data..." << std::endl;
     Timer data_timer;
     bb::fr::field_t *generator_coefficients = (bb::fr::field_t *)map_file(setup_db_path + "/generator_prep.dat");
-    G1 *g1_x = (G1 *)map_file(setup_db_path + "/g1_x_prep.dat");
-
-    std::vector<bb::g1::affine_element> bx(polynomial_degree);
-    for (size_t i = 0; i < polynomial_degree; ++i)
-    {
-        g1_x[i].to_affine_coordinates();
-        memcpy(&bx[i], g1_x + i, sizeof(bb::g1::affine_element));
-    }
+    bb::g1::affine_element *g1_x = (bb::g1::affine_element *)map_file(setup_db_path + "/g1_x_prep.dat");
     std::cerr << "Loaded in " << data_timer.toString() << "s" << std::endl;
 
     Timer compute_timer;
-    bb::g1::element result = batch_process_range(range_index, polynomial_degree, batches, &bx[0], generator_coefficients);
+    bb::g1::element result = batch_process_range(range_index, polynomial_degree, batches, g1_x, generator_coefficients);
 
     std::cerr << "Compute time: " << compute_timer.toString() << "s" << std::endl;
     std::cerr << "Total time: " << total_timer.toString() << "s" << std::endl;
