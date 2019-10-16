@@ -4,6 +4,7 @@ build:
     cmd: ../ci-scripts/build.sh
     args:
       - setup-post-process
+      - 278380418400.dkr.ecr.us-east-2.amazonaws.com
 commands:
   deploy:
     cmd: ../ci-scripts/deploy.sh
