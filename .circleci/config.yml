@@ -10,6 +10,9 @@ jobs:
           command: git submodule init && git submodule update
       - setup_remote_docker
       - run:
+          name: 'ECR login'
+          command: $(aws ecr get-login --no-include-email)
+      - run:
           name: 'Build'
           command: |
             LAST_SUCCESSFUL_BUILD_URL="https://circleci.com/api/v1.1/project/github/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/tree/master?filter=successful&limit=1"
