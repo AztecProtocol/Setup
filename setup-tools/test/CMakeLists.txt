@@ -66,7 +66,7 @@ target_include_directories(
 
 set_target_properties(
     setup_tests
-    PROPERTIES RUNTIME_OUTPUT_DIRECTORY ..
+    PROPERTIES RUNTIME_OUTPUT_DIRECTORY .
 )
 
 add_test(

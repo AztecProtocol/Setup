@@ -2,8 +2,6 @@
 
 #include <libff/algebra/curves/alt_bn128/alt_bn128_pp.hpp>
 
-#include <libfqfft/polynomial_arithmetic/basic_operations.hpp>
-
 #include <range/range_multi_exp.hpp>
 #include <generate_h/range_multi_exp.hpp>
 #include <generator/compute_generator_polynomial.hpp>
@@ -139,7 +137,7 @@ TEST(range, batch_process_range)
 
     for (size_t i = 0; i < DEGREE; ++i)
     {
-        bb::g1::element process_result = batch_process_range(i, DEGREE, 4, &g1_x[0], bc);
+        bb::g1::element process_result = batch_process_range(i, DEGREE, 3, &g1_x[0], bc);
         bb::g1::element t0 = bb::g1::group_exponentiation(process_result, x);
 
         bb::fr::field_t bbi;
