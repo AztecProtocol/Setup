@@ -103,5 +103,7 @@ void compute_range_polynomials(std::string const &setup_db_path, size_t range_in
 
     bb::g1::affine_element r;
     bb::g1::jacobian_to_affine(result, r);
-    bb::g1::print(r);
+    bb::fq::from_montgomery_form(r.x, r.x);
+    bb::fq::from_montgomery_form(r.y, r.y);
+    gmp_printf("[\"0x%064Nx\",\"0x%064Nx\"]\n", r.x.data, 4L, r.y.data, 4L);
 }
