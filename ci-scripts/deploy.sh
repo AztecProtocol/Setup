@@ -21,6 +21,8 @@ LIFECYCLE_POLICY='{
 
 REGION=${3:-$AWS_DEFAULT_REGION}
 
+$(aws ecr get-login --region $REGION --no-include-email)
+
 aws ecr describe-repositories --region $REGION --repository-names $1 > /dev/null 2>&1 || \
   (aws ecr create-repository --region $REGION --repository-name $1 && \
    aws ecr put-lifecycle-policy --region $REGION --repository-name $1 --lifecycle-policy-text "$LIFECYCLE_POLICY")
