@@ -8,6 +8,8 @@
 #include <aztec_common/streaming_transcript.hpp>
 #include <aztec_common/timer.hpp>
 
+#include <barretenberg/groups/scalar_multiplication.hpp>
+
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/mman.h>
@@ -31,67 +33,56 @@ void *map_file(std::string const &filename)
     return data;
 }
 
-G1 process_range_zero(G1 *const &powers_of_x, Fr *const &generator_coefficients, size_t start, size_t num)
+bb::g1::element process_range_zero(bb::g1::affine_element *const &powers_of_x, bb::fr::field_t *const &generator_coefficients, size_t start, size_t num)
 {
-    G1 *a = powers_of_x + start;
-    G1 *b = powers_of_x + start + num;
-    Fr *c = generator_coefficients + 1 + start;
-    Fr *d = generator_coefficients + 1 + start + num;
-    return libff::multi_exp<G1, Fr, libff::multi_exp_method_bos_coster>(
-        *reinterpret_cast<std::vector<G1>::const_iterator *>(&a),
-        *reinterpret_cast<std::vector<G1>::const_iterator *>(&b),
-        *reinterpret_cast<std::vector<Fr>::const_iterator *>(&c),
-        *reinterpret_cast<std::vector<Fr>::const_iterator *>(&d),
-        1);
+    // Scalars are mutated, so copy them first.
+    auto range_coefficients = std::vector<bb::fr::field_t>(num);
+    memcpy(&range_coefficients[0], generator_coefficients + 1 + start, num * sizeof(bb::fr::field_t));
+    return bb::scalar_multiplication::pippenger_low_memory(&range_coefficients[0], powers_of_x + start, num);
 }
 
-G1 process_range_single(int range_index, Fr &fa, G1 *const &powers_of_x, Fr *const &generator_coefficients, size_t start, size_t num)
+bb::g1::element process_range_single(int range_index, bb::fr::field_t &fa, bb::g1::affine_element *const &powers_of_x, bb::fr::field_t *const &generator_coefficients, size_t start, size_t num)
 {
-    std::vector<Fr> range_coefficients(num);
-    Fr divisor = (-Fr(range_index)).inverse();
+    std::vector<bb::fr::field_t> range_coefficients(num);
 
-    range_coefficients[0] = (generator_coefficients[start] - fa) * divisor;
+    bb::fr::field_t divisor;
+    bb::fr::to_montgomery_form({(uint64_t)range_index, 0, 0, 0}, divisor);
+    bb::fr::neg(divisor, divisor);
+    divisor = bb::fr::invert(divisor);
+
+    range_coefficients[0] = bb::fr::mul(bb::fr::sub(generator_coefficients[start], fa), divisor);
     for (size_t i = 1; i < num; ++i)
     {
-        range_coefficients[i] = (generator_coefficients[start + i] - range_coefficients[i - 1]) * divisor;
+        range_coefficients[i] = bb::fr::mul(bb::fr::sub(generator_coefficients[start + i], range_coefficients[i - 1]), divisor);
     }
-
-    G1 *a = powers_of_x + start;
-    G1 *b = powers_of_x + start + num;
-    G1 multiexp_result = libff::multi_exp<G1, Fr, libff::multi_exp_method_bos_coster>(
-        *reinterpret_cast<std::vector<G1>::const_iterator *>(&a),
-        *reinterpret_cast<std::vector<G1>::const_iterator *>(&b),
-        range_coefficients.cbegin(),
-        range_coefficients.cend(),
-        1);
 
     fa = range_coefficients.back();
 
-    return multiexp_result;
+    return bb::scalar_multiplication::pippenger_low_memory(&range_coefficients[0], powers_of_x + start, num);
 }
 
-G1 process_range(int range_index, Fr &fa, G1 *const powers_of_x, Fr *const generator_coefficients, size_t start, size_t num)
+bb::g1::element process_range(int range_index, bb::fr::field_t &fa, bb::g1::affine_element *const powers_of_x, bb::fr::field_t *const generator_coefficients, size_t start, size_t num)
 {
     return range_index == 0
                ? process_range_zero(powers_of_x, generator_coefficients, start, num)
                : process_range_single(range_index, fa, powers_of_x, generator_coefficients, start, num);
 }
 
-G1 batch_process_range(size_t range_index, size_t polynomial_degree, size_t batch_num, G1 *const &g1_x, Fr *const &generator_polynomial)
+bb::g1::element batch_process_range(size_t range_index, size_t polynomial_degree, size_t batch_num, bb::g1::affine_element *const &g1_x, bb::fr::field_t *const &generator_polynomial)
 {
     size_t batch_size = polynomial_degree / batch_num;
     size_t leftovers = polynomial_degree % batch_size;
-    std::vector<size_t> batches(batch_num);
-    std::iota(batches.begin(), batches.end(), 0);
-    Fr fa = Fr::zero();
+    bb::fr::field_t fa = bb::fr::zero();
 
-    auto batch_process = [&](size_t i) {
-        return process_range(range_index, fa, g1_x, generator_polynomial, batch_size * i, (i == batch_num - 1) ? batch_size + leftovers : batch_size);
-    };
+    bb::g1::element result = {.x = {0}, .y = {0}, .z = {0}};
+    bb::g1::set_infinity(result);
+    for (size_t i = 0; i < batch_num; ++i)
+    {
+        auto r = process_range(range_index, fa, g1_x, generator_polynomial, batch_size * i, (i == batch_num - 1) ? batch_size + leftovers : batch_size);
+        bb::g1::add(r, result, result);
+    }
 
-    std::vector<G1> results;
-    std::transform(batches.begin(), batches.end(), std::back_inserter(results), batch_process);
-    return std::accumulate(results.begin(), results.end(), G1::zero());
+    return result;
 }
 
 void compute_range_polynomials(std::string const &setup_db_path, size_t range_index, size_t polynomial_degree, size_t batches)
@@ -100,15 +91,19 @@ void compute_range_polynomials(std::string const &setup_db_path, size_t range_in
 
     std::cerr << "Loading data..." << std::endl;
     Timer data_timer;
-    Fr *generator_polynomial = (Fr *)map_file(setup_db_path + "/generator_prep.dat");
-    G1 *g1_x = (G1 *)map_file(setup_db_path + "/g1_x_prep.dat");
+    bb::fr::field_t *generator_coefficients = (bb::fr::field_t *)map_file(setup_db_path + "/generator_prep.dat");
+    bb::g1::affine_element *g1_x = (bb::g1::affine_element *)map_file(setup_db_path + "/g1_x_prep.dat");
     std::cerr << "Loaded in " << data_timer.toString() << "s" << std::endl;
 
     Timer compute_timer;
-    G1 result = batch_process_range(range_index, polynomial_degree, batches, g1_x, generator_polynomial);
+    bb::g1::element result = batch_process_range(range_index, polynomial_degree, batches, g1_x, generator_coefficients);
 
     std::cerr << "Compute time: " << compute_timer.toString() << "s" << std::endl;
     std::cerr << "Total time: " << total_timer.toString() << "s" << std::endl;
 
-    result.print();
+    bb::g1::affine_element r;
+    bb::g1::jacobian_to_affine(result, r);
+    bb::fq::from_montgomery_form(r.x, r.x);
+    bb::fq::from_montgomery_form(r.y, r.y);
+    gmp_printf("[\"0x%064Nx\",\"0x%064Nx\"]\n", r.x.data, 4L, r.y.data, 4L);
 }

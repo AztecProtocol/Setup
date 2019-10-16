@@ -4,10 +4,14 @@
  **/
 #pragma once
 
-#include <aztec_common/libff_types.hpp>
+#include <string>
+#include <barretenberg/fields/fr.hpp>
+#include <barretenberg/groups/g1.hpp>
 
-G1 process_range(int range_index, Fr &fa, G1 *const powers_of_x, Fr *const generator_coefficients, size_t start, size_t num);
+namespace bb = barretenberg;
 
-G1 batch_process_range(size_t range_index, size_t polynomial_degree, size_t batch_num, G1 *const &g1_x, Fr *const &generator_polynomial);
+bb::g1::element process_range(int range_index, bb::fr::field_t &fa, bb::g1::affine_element *const powers_of_x, bb::fr::field_t *const generator_coefficients, size_t start, size_t num);
+
+bb::g1::element batch_process_range(size_t range_index, size_t polynomial_degree, size_t batch_num, bb::g1::affine_element *const &g1_x, bb::fr::field_t *const &generator_polynomial);
 
 void compute_range_polynomials(std::string const &setup_db_path, size_t range_index, size_t polynomial_degree, size_t batches);

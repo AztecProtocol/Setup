@@ -80,9 +80,9 @@ export class RangeProofPublisher extends EventEmitter {
         terminal: false,
       })
       .on('line', line => {
-        const [, xstr, ystr] = line.match(/\((\d+) , (\d+)\)/)!;
-        const x = new BN(xstr);
-        const y = new BN(ystr);
+        const [xhex, yhex] = JSON.parse(line);
+        const x = new BN(xhex.slice(2), 16);
+        const y = new BN(yhex.slice(2), 16);
         let compressed = x;
         if (y.testn(0)) {
           compressed = compressed.or(compressionMask);

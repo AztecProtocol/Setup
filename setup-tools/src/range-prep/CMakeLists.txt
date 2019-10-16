@@ -14,6 +14,7 @@ target_link_libraries(
         ff
         ${CMAKE_THREAD_LIBS_INIT}
         ${GMP_LIBRARIES}
+        barretenberg
 )
 
 target_include_directories(
@@ -23,6 +24,7 @@ target_include_directories(
         ${DEPENDS_DIR}/libfqfft
         ${include_dir}
         ${private_include_dir}
+        ${DEPENDS_DIR}/barretenberg/src
 )
 
 set_target_properties(prep_range_data PROPERTIES RUNTIME_OUTPUT_DIRECTORY ../..)

@@ -3,7 +3,7 @@
 # copyright spilsbury holdings 2019
 
 find_package (Threads)
-
+find_package (OpenMP)
 
 add_executable(
     compute_range_polynomial
@@ -12,6 +12,10 @@ add_executable(
     main.cpp
 )
 
+if(OpenMP_CXX_FOUND)
+    target_link_libraries(compute_range_polynomial PUBLIC OpenMP::OpenMP_CXX)
+endif()
+
 target_link_libraries(
     compute_range_polynomial
     PRIVATE
@@ -19,6 +23,7 @@ target_link_libraries(
         ff
         ${CMAKE_THREAD_LIBS_INIT}
         ${GMP_LIBRARIES}
+        barretenberg
 )
 
 target_include_directories(
@@ -28,6 +33,7 @@ target_include_directories(
         ${DEPENDS_DIR}/libfqfft
         ${include_dir}
         ${private_include_dir}
+        ${DEPENDS_DIR}/barretenberg/src
 )
 
 set_target_properties(compute_range_polynomial PROPERTIES RUNTIME_OUTPUT_DIRECTORY ../..)
