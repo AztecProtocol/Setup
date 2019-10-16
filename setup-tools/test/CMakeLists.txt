@@ -5,4 +5,5 @@ include(GoogleTest)
 
 set(setup_private_include_dir ${PROJECT_SOURCE_DIR}/src)
 
+add_subdirectory(deepstate-tests)
 add_subdirectory(setup)
