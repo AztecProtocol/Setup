@@ -17,10 +17,12 @@ cd /usr/src/setup_db
 EC2_AVAIL_ZONE=$(curl --connect-timeout 5 -s http://169.254.169.254/latest/meta-data/placement/availability-zone || true)
 EC2_REGION=$(echo -n $EC2_AVAIL_ZONE | sed 's/[a-z]$//')
 EC2_REGION=${EC2_REGION:-'us-east-2'}
+echo Region: $EC2_REGION
 
 function run_job {
   while : ; do
     taskset -c $1 ./run-job && break
+    sleep 1
   done
 }
 
@@ -40,15 +42,14 @@ while true; do
 
   # Extract variables from state.
   export CEREMONYNAME=$(echo $STATE | jq -j .name)
-  export NUMG1POINTS=$(echo $STATE | jq -j .numG1Points)
+  export KMAX=$(echo $STATE | jq -j .rangeProofKmax)
   STARTTIME=$(echo $STATE | jq -j .startTime)
-  FOLDER=$(date -u -d$STARTTIME +%Y%m%d_%H%M%S)
 
   echo Downloading generator coefficients...
-  aws --region $EC2_REGION s3 cp s3://aztec-post-process/generator$NUMG1POINTS.dat generator_prep.dat --quiet
+  aws --region $EC2_REGION s3 cp s3://aztec-post-process/generator$KMAX.dat generator_prep.dat --quiet
 
   echo Downloading g1x points...
-  aws --region $EC2_REGION s3 cp s3://aztec-post-process/$FOLDER/g1_x_prep.dat g1_x_prep.dat --quiet
+  aws --region $EC2_REGION s3 cp s3://aztec-post-process/$CEREMONYNAME/g1x_prep.dat g1x_prep.dat --quiet
 
   [ -z "$NUMJOBS" ] && NUMJOBS=$(nproc)
 

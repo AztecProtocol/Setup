@@ -3,7 +3,7 @@
 # copyright spilsbury holdings 2019
 
 find_package (Threads)
-
+find_package (OpenMP)
 
 add_executable(
     generate_h
@@ -12,6 +12,10 @@ add_executable(
     main.cpp
 )
 
+if(OpenMP_CXX_FOUND)
+    target_link_libraries(generate_h PUBLIC OpenMP::OpenMP_CXX)
+endif()
+
 target_link_libraries(
     generate_h
     PRIVATE
@@ -19,6 +23,7 @@ target_link_libraries(
         ff
         ${CMAKE_THREAD_LIBS_INIT}
         ${GMP_LIBRARIES}
+        barretenberg
 )
 
 target_include_directories(
@@ -28,6 +33,7 @@ target_include_directories(
         ${DEPENDS_DIR}/libfqfft
         ${include_dir}
         ${private_include_dir}
+        ${DEPENDS_DIR}/barretenberg/src
 )
 
 set_target_properties(generate_h PROPERTIES RUNTIME_OUTPUT_DIRECTORY ../..)

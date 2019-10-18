@@ -42,11 +42,12 @@ services:
 
   setup-post-process:
     build: ./setup-post-process
-    image: 278380418400.dkr.ecr.eu-west-2.amazonaws.com/setup-post-process
+    image: 278380418400.dkr.ecr.us-east-2.amazonaws.com/setup-post-process
     environment:
       MPC_SERVER_HOST: setup-mpc-server
       JOB_SERVER_HOST: job-server
     volumes:
       - ./setup-post-process:/usr/src/setup-post-process
+      - ${HOME}/.aws:/root/.aws
     depends_on:
       - job-server

@@ -11,10 +11,12 @@ export class Publisher extends EventEmitter {
   private s3: S3;
   private progressAccumulator = 0;
   private progressInFlight: { [key: string]: number } = {};
+  private s3Folder: string;
 
   constructor(private transcriptStore: TranscriptStore, private state: MpcState) {
     super();
     this.s3 = new S3();
+    this.s3Folder = this.state.name;
   }
 
   public async run() {
@@ -41,7 +43,7 @@ export class Publisher extends EventEmitter {
         await this.publishCeremonyManifest();
         await this.publishIndex();
 
-        return `https://aztec-ignition.s3.eu-west-2.amazonaws.com/${this.state.startTime.format('YYYYMMDD_HHmmss')}`;
+        return `https://aztec-ignition.s3.eu-west-2.amazonaws.com/${this.s3Folder}`;
       } catch (err) {
         console.error('Publisher failed (will retry): ', err);
         await new Promise(resolve => setTimeout(resolve, 1000));
@@ -73,7 +75,7 @@ export class Publisher extends EventEmitter {
       records.map(async ({ path, size, num }) => {
         const folder = `${position.toString().padStart(3, '0')}_${address.toString().toLowerCase()}`;
         const filename = `transcript${num.toString().padStart(2, '0')}${extname(path)}`;
-        const key = `${this.state.startTime.format('YYYYMMDD_HHmmss')}/${folder}/${filename}`;
+        const key = `${this.s3Folder}/${folder}/${filename}`;
         const body = createReadStream(path);
         await this.upload(body, key, size, totalSize);
       })
@@ -85,7 +87,7 @@ export class Publisher extends EventEmitter {
     await Promise.all(
       records.map(async ({ path, size, num }) => {
         const filename = `transcript${num.toString().padStart(2, '0')}.dat`;
-        const key = `${this.state.startTime.format('YYYYMMDD_HHmmss')}/sealed/${filename}`;
+        const key = `${this.s3Folder}/sealed/${filename}`;
         const body = createReadStream(path);
         await this.upload(body, key, size, totalSize);
         if (this.cancelled) {
@@ -101,6 +103,7 @@ export class Publisher extends EventEmitter {
       numG1Points,
       numG2Points,
       pointsPerTranscript,
+      rangeProofKmax,
       rangeProofSize,
       rangeProofsPerFile,
       network,
@@ -114,6 +117,7 @@ export class Publisher extends EventEmitter {
       numG1Points,
       numG2Points,
       pointsPerTranscript,
+      rangeProofKmax,
       rangeProofSize,
       rangeProofsPerFile,
       network,
@@ -130,7 +134,7 @@ export class Publisher extends EventEmitter {
         })),
       crs,
     };
-    const key = `${startTime.format('YYYYMMDD_HHmmss')}/manifest.json`;
+    const key = `${this.s3Folder}/manifest.json`;
     await this.upload(JSON.stringify(manifest, undefined, 2), key, 0, 0, 'application/json');
   }
 

@@ -4,15 +4,19 @@
  **/
 #pragma once
 
-#include <aztec_common/libff_types.hpp>
+#include <string>
+#include <barretenberg/fields/fr.hpp>
+#include <barretenberg/groups/g1.hpp>
+
+namespace bb = barretenberg;
 
 namespace generate_h
 {
 
-G1 process_range(std::vector<G1> const &powers_of_x, std::vector<Fr> const &generator_coefficients, size_t start, size_t num);
+bb::g1::element process_range(bb::g1::affine_element *const &powers_of_x, bb::fr::field_t *const &generator_coefficients, size_t start, size_t num);
 
-G1 batch_process_range(size_t batch_num, std::vector<G1> const &g1_x, std::vector<Fr> const &generator_polynomial);
+bb::g1::element batch_process_range(size_t polynomial_degree, size_t batch_num, bb::g1::affine_element *const &g1_x, bb::fr::field_t *const &generator_polynomial);
 
-void compute_h(std::string const &setup_db_path, std::string const &generator_path);
+void compute_h(std::string const &generator_path, std::string const& g1x_path, size_t polynomial_degree, size_t batches);
 
 } // namespace generate_h

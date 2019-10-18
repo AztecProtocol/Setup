@@ -24,19 +24,22 @@ export class RangeProofPublisher extends EventEmitter {
 
   public async run() {
     let rangeProofProgress = this.state.rangeProofProgress;
-    const { rangeProofsPerFile, rangeProofSize, startTime } = this.state;
+    const { name, rangeProofsPerFile, rangeProofSize } = this.state;
+    const totalSignatures = rangeProofSize + 1;
 
-    if (rangeProofProgress === rangeProofSize) {
+    if (rangeProofProgress === totalSignatures) {
       return;
     }
 
-    await fetch(
-      `http://${this.jobServerHost}/create-jobs?from=${rangeProofProgress}&num=${rangeProofSize - rangeProofProgress}`
-    );
+    const remainingSignatures = totalSignatures - rangeProofProgress;
+    console.log(`Creating job server jobs: from=${rangeProofProgress} num=${remainingSignatures}`);
+    await fetch(`http://${this.jobServerHost}/create-jobs?from=${rangeProofProgress}&num=${remainingSignatures}`);
 
     while (true) {
       try {
-        const responseStream = await this.getResultStream(rangeProofProgress, rangeProofsPerFile);
+        const remainingSignatures = totalSignatures - rangeProofProgress;
+        const toRequest = Math.min(rangeProofsPerFile, remainingSignatures);
+        const responseStream = await this.getResultStream(rangeProofProgress, toRequest);
         if (!responseStream) {
           await new Promise(resolve => setTimeout(resolve, 10000));
           if (this.cancelled) {
@@ -46,11 +49,11 @@ export class RangeProofPublisher extends EventEmitter {
         }
 
         const filename = `data${rangeProofProgress.toString()}.dat`;
-        const key = `${startTime.format('YYYYMMDD_HHmmss')}/range_proofs/${filename}`;
+        const key = `${name}/range_proofs/${filename}`;
         await this.upload(responseStream, key);
-        rangeProofProgress += rangeProofsPerFile;
+        rangeProofProgress += toRequest;
         this.emit('progress', rangeProofProgress);
-        if (rangeProofProgress === rangeProofSize || this.cancelled) {
+        if (rangeProofProgress === totalSignatures || this.cancelled) {
           return;
         }
       } catch (err) {

@@ -175,7 +175,7 @@ export class Coordinator {
         if (sealingProgress < 100) {
           el.innerHTML = `SEALING (${sealingProgress.toFixed(2)}%)`;
         } else {
-          el.innerHTML = `COMPUTING H PARAMETER`;
+          el.innerHTML = `PREPARING TO COMPUTE RANGE PROOFS`;
         }
         break;
       case 'PUBLISHING':

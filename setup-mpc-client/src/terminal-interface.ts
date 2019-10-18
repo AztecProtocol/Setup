@@ -70,7 +70,7 @@ export class TerminalInterface {
           if (sealingProgress < 100) {
             this.term.white(`Sealing final transcripts: ${sealingProgress.toFixed(2)}%\n\n`);
           } else {
-            this.term.white('Computing H parameter...\n\n');
+            this.term.white('Preparing to compute range proofs...\n\n');
           }
           break;
         case 'PUBLISHING':

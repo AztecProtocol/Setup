@@ -6,8 +6,15 @@ WORKDIR /usr/src/setup-mpc-common
 COPY --from=1 /usr/src/setup-mpc-common .
 RUN yarn link
 WORKDIR /usr/src/setup-mpc-server
+COPY package.json yarn.lock ./
+RUN yarn install
 COPY . .
-RUN yarn install && yarn test && yarn build && rm -rf node_modules && yarn install --production
+RUN yarn test && yarn build
+
+# COPY package.json .
+# RUN yarn install
+# COPY . .
+# RUN yarn test && yarn build
 
 FROM ubuntu:latest
 RUN apt update && \
@@ -16,12 +23,9 @@ RUN apt update && \
   curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - && \
   echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list && \
   apt update && \
-  apt install -y nodejs yarn && \
+  apt install -y nodejs yarn libgomp1 && \
   apt clean
-COPY --from=0 /usr/src/setup-tools/verify /usr/src/setup-tools/verify
-COPY --from=0 /usr/src/setup-tools/seal /usr/src/setup-tools/seal
-COPY --from=0 /usr/src/setup-tools/print_point /usr/src/setup-tools/print_point
-COPY --from=0 /usr/src/setup-tools/generate_h /usr/src/setup-tools/generate_h
+COPY --from=0 /usr/src/setup-tools /usr/src/setup-tools
 WORKDIR /usr/src/setup-mpc-common
 COPY --from=1 /usr/src/setup-mpc-common .
 RUN yarn link

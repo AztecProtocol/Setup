@@ -88,12 +88,33 @@ export interface MpcState {
   completedAt?: Moment;
   sealingProgress: number;
   publishProgress: number;
+  rangeProofKmax: number;
   rangeProofSize: number;
   rangeProofProgress: number;
   rangeProofsPerFile: number;
   crs?: CRS;
   publishPath?: string;
   participants: Participant[];
+}
+
+export interface ResetState {
+  name: string;
+  startTime: Moment;
+  endTime: Moment;
+  network: EthNet;
+  latestBlock: number;
+  selectBlock: number;
+  maxTier2: number;
+  minParticipants: number;
+  numG1Points: number;
+  numG2Points: number;
+  pointsPerTranscript: number;
+  rangeProofKmax: number;
+  rangeProofSize: number;
+  rangeProofsPerFile: number;
+  invalidateAfter: number;
+  participants0: Address[];
+  participants1: Address[];
 }
 
 export interface PatchState {
@@ -106,29 +127,13 @@ export interface PatchState {
   numG2Points?: number;
   pointsPerTranscript?: number;
   invalidateAfter?: number;
+  rangeProofKmax: number;
   rangeProofSize: number;
   rangeProofsPerFile: number;
 }
 
 export interface MpcServer {
-  resetState(
-    name: string,
-    startTime: Moment,
-    endTime: Moment,
-    network: EthNet,
-    latestBlock: number,
-    selectBlock: number,
-    maxTier2: number,
-    minParticipants: number,
-    numG1Points: number,
-    numG2Points: number,
-    pointsPerTranscript: number,
-    rangeProofSize: number,
-    rangeProofsPerFile: number,
-    invalidateAfter: number,
-    participants0: Address[],
-    participants1: Address[]
-  ): Promise<void>;
+  resetState(resetState: ResetState): Promise<void>;
   loadState(name: string): Promise<void>;
   patchState(state: PatchState): Promise<MpcState>;
   getState(sequence?: number): Promise<MpcState>;

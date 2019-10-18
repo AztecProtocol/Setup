@@ -10,6 +10,9 @@
 #include <barretenberg/fields/fr.hpp>
 #include <barretenberg/groups/g1.hpp>
 
+// REMOVE
+#include <barretenberg/groups/scalar_multiplication.hpp>
+
 namespace bb = barretenberg;
 
 /*
@@ -51,9 +54,10 @@ TEST(range, window)
 TEST(range, process_range)
 {
     libff::init_alt_bn128_params();
-    constexpr size_t DEGREE = 0x101;
+    constexpr size_t kmax = 0x101;
+    constexpr size_t DEGREE = kmax + 1;
 
-    std::vector<Fr> generator_polynomial = generator::compute_generator_polynomial<libff::alt_bn128_Fr>(DEGREE);
+    std::vector<Fr> generator_polynomial = generator::compute_generator_polynomial<libff::alt_bn128_Fr>(kmax);
     auto bc = reinterpret_cast<bb::fr::field_t *>(&generator_polynomial[0]);
     auto x = bb::fr::random_element();
     bb::fr::field_t accumulator = x;
@@ -69,15 +73,7 @@ TEST(range, process_range)
         accumulator = bb::fr::mul(x, accumulator);
     }
 
-    bb::g1::element h = {.x = {0}, .y = {0}, .z = {0}};
-    bb::g1::set_infinity(h);
-    for (size_t i = 0; i < generator_polynomial.size(); ++i)
-    {
-        bb::g1::element point;
-        bb::g1::affine_to_jacobian(g1_x[i], point);
-        bb::g1::element pt = bb::g1::group_exponentiation(point, bc[i]);
-        bb::g1::add(h, pt, h);
-    }
+    bb::g1::element h = generate_h::batch_process_range(DEGREE, 3, &g1_x[0], bc);
 
     for (size_t i = 0; i < DEGREE; ++i)
     {
@@ -107,9 +103,10 @@ TEST(range, process_range)
 TEST(range, batch_process_range)
 {
     libff::init_alt_bn128_params();
-    constexpr size_t DEGREE = 0x101;
+    constexpr size_t kmax = 0x101;
+    constexpr size_t DEGREE = kmax + 1;
 
-    std::vector<Fr> generator_polynomial = generator::compute_generator_polynomial<libff::alt_bn128_Fr>(DEGREE);
+    std::vector<Fr> generator_polynomial = generator::compute_generator_polynomial<libff::alt_bn128_Fr>(kmax);
     auto bc = reinterpret_cast<bb::fr::field_t *>(&generator_polynomial[0]);
     auto x = bb::fr::random_element();
     bb::fr::field_t accumulator = x;
@@ -125,15 +122,7 @@ TEST(range, batch_process_range)
         accumulator = bb::fr::mul(x, accumulator);
     }
 
-    bb::g1::element h = {.x = {0}, .y = {0}, .z = {0}};
-    bb::g1::set_infinity(h);
-    for (size_t i = 0; i < generator_polynomial.size(); ++i)
-    {
-        bb::g1::element point;
-        bb::g1::affine_to_jacobian(g1_x[i], point);
-        bb::g1::element pt = bb::g1::group_exponentiation(point, bc[i]);
-        bb::g1::add(h, pt, h);
-    }
+    bb::g1::element h = generate_h::batch_process_range(DEGREE, 3, &g1_x[0], bc);
 
     for (size_t i = 0; i < DEGREE; ++i)
     {

@@ -38,6 +38,7 @@ export interface TranscriptStore {
   getGeneratorPath(size: number): string;
   getSealedPath(): string;
   getSealed(): Promise<TranscriptStoreRecord[]>;
+  getG1xPrepPath(): string;
 }
 
 export interface TranscriptStoreFactory {
@@ -59,7 +60,7 @@ export class DiskTranscriptStore implements TranscriptStore {
   private generatorsPath: string;
   private fileRegex = /transcript(\d+).(dat|sig)$/;
 
-  constructor(storePath: string) {
+  constructor(private storePath: string) {
     this.verifiedPath = storePath + '/verified';
     this.unverifiedPath = storePath + '/unverified';
     this.sealingPath = storePath + '/sealed';
@@ -202,5 +203,9 @@ export class DiskTranscriptStore implements TranscriptStore {
 
   public getGeneratorPath(size: number) {
     return `${this.generatorsPath}/generator${size}.dat`;
+  }
+
+  public getG1xPrepPath() {
+    return `${this.storePath}/g1x_prep.dat`;
   }
 }

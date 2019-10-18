@@ -1,6 +1,6 @@
 import { Mutex } from 'async-mutex';
 import moment, { Moment } from 'moment';
-import { cloneMpcState, EthNet, MpcServer, MpcState, Participant, PatchState } from 'setup-mpc-common';
+import { cloneMpcState, EthNet, MpcServer, MpcState, Participant, PatchState, ResetState } from 'setup-mpc-common';
 import { Address } from 'web3x/address';
 import { getGeoData } from './maxmind';
 import { ParticipantSelector, ParticipantSelectorFactory } from './participant-selector';
@@ -67,61 +67,46 @@ export class Server implements MpcServer {
     }
   }
 
-  public async resetState(
-    name: string,
-    startTime: Moment,
-    endTime: Moment,
-    network: EthNet,
-    latestBlock: number,
-    selectBlock: number,
-    maxTier2: number,
-    minParticipants: number,
-    numG1Points: number,
-    numG2Points: number,
-    pointsPerTranscript: number,
-    rangeProofSize: number,
-    rangeProofsPerFile: number,
-    invalidateAfter: number,
-    participants0: Address[],
-    participants1: Address[]
-  ) {
+  public async resetState(resetState: ResetState) {
     await this.stateStore.saveState();
 
-    if (await this.stateStore.exists(name)) {
-      name += `_${startTime.format('YYYYMMDDHHmmss')}`;
+    // If we already have a state file with this name, append start time to disambiguate.
+    if (await this.stateStore.exists(resetState.name)) {
+      resetState.name += `_${resetState.startTime.format('YYYYMMDDHHmmss')}`;
     }
 
     const nextSequence = this.state.sequence + 1;
     const state: MpcState = {
-      name,
+      name: resetState.name,
       sequence: nextSequence,
       statusSequence: nextSequence,
       startSequence: nextSequence,
       ceremonyState: 'PRESELECTION',
-      numG1Points,
-      numG2Points,
-      startTime,
-      endTime,
-      network,
-      latestBlock,
-      selectBlock,
-      maxTier2,
-      minParticipants,
-      invalidateAfter,
-      pointsPerTranscript,
+      numG1Points: resetState.numG1Points,
+      numG2Points: resetState.numG2Points,
+      startTime: resetState.startTime,
+      endTime: resetState.endTime,
+      network: resetState.network,
+      latestBlock: resetState.latestBlock,
+      selectBlock: resetState.selectBlock,
+      maxTier2: resetState.maxTier2,
+      minParticipants: resetState.minParticipants,
+      invalidateAfter: resetState.invalidateAfter,
+      pointsPerTranscript: resetState.pointsPerTranscript,
       sealingProgress: 0,
       publishProgress: 0,
-      rangeProofSize,
+      rangeProofKmax: resetState.rangeProofKmax,
+      rangeProofSize: resetState.rangeProofSize,
       rangeProofProgress: 0,
-      rangeProofsPerFile,
+      rangeProofsPerFile: resetState.rangeProofsPerFile,
       participants: [],
     };
 
-    if (participants0.length) {
-      participants0.forEach(address => this.addNextParticipant(state, address, 0));
+    if (resetState.participants0.length) {
+      resetState.participants0.forEach(address => this.addNextParticipant(state, address, 0));
     }
-    if (participants1.length) {
-      participants1.forEach(address => this.addNextParticipant(state, address, 1));
+    if (resetState.participants1.length) {
+      resetState.participants1.forEach(address => this.addNextParticipant(state, address, 1));
     }
 
     await this.resetWithState(state);
@@ -138,6 +123,7 @@ export class Server implements MpcServer {
     switch (this.state.ceremonyState) {
       case 'COMPLETE':
       case 'RANGE_PROOFS':
+        delete state.rangeProofKmax;
         delete state.rangeProofSize;
         delete state.rangeProofsPerFile;
       case 'PUBLISHING':

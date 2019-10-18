@@ -68,31 +68,17 @@ export function appFactory(
   router.post('/reset', adminAuth, koaBody(), async (ctx: Koa.Context) => {
     const network = ctx.request.body.network || 'ropsten';
     const latestBlock = await participantSelectorFactory.getCurrentBlockHeight(network);
-    const settings = {
+    const resetState = {
       ...defaultState(latestBlock),
       ...ctx.request.body,
     };
-    normaliseSettings(settings);
+    normaliseSettings(resetState);
+
+    resetState.participants0 = resetState.participants0.map(Address.fromString);
+    resetState.participants1 = resetState.participants1.map(Address.fromString);
 
     try {
-      await server.resetState(
-        settings.name,
-        settings.startTime,
-        settings.endTime,
-        settings.network,
-        settings.latestBlock,
-        settings.selectBlock,
-        settings.maxTier2,
-        settings.minParticipants,
-        settings.numG1Points,
-        settings.numG2Points,
-        settings.pointsPerTranscript,
-        settings.rangeProofSize,
-        settings.rangeProofsPerFile,
-        settings.invalidateAfter,
-        settings.participants0.map(Address.fromString),
-        settings.participants1.map(Address.fromString)
-      );
+      await server.resetState(resetState);
       ctx.status = 200;
     } catch (err) {
       ctx.body = { error: err.message };

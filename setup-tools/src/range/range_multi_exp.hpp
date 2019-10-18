@@ -14,4 +14,4 @@ bb::g1::element process_range(int range_index, bb::fr::field_t &fa, bb::g1::affi
 
 bb::g1::element batch_process_range(size_t range_index, size_t polynomial_degree, size_t batch_num, bb::g1::affine_element *const &g1_x, bb::fr::field_t *const &generator_polynomial);
 
-void compute_range_polynomials(std::string const &setup_db_path, size_t range_index, size_t polynomial_degree, size_t batches);
+void compute_range_polynomials(std::string const &generator_path, std::string const &g1x_path, size_t range_index, size_t polynomial_degree, size_t batches);

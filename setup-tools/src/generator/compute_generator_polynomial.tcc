@@ -28,8 +28,9 @@
 namespace generator
 {
 template <typename FieldT>
-std::vector<FieldT> compute_generator_polynomial(size_t polynomial_degree)
+std::vector<FieldT> compute_generator_polynomial(const size_t kmax)
 {
+    size_t polynomial_degree = kmax + 1;
     size_t log2_polynomial_degree = log2(polynomial_degree);
     size_t acc = 1 << log2_polynomial_degree;
     if (acc < polynomial_degree)
@@ -57,6 +58,7 @@ std::vector<FieldT> compute_generator_polynomial(size_t polynomial_degree)
         coefficients.emplace_back(init);
         work_var -= FieldT::one();
     }
+
     for (size_t i = polynomial_degree; i < acc; ++i)
     {
         std::vector<FieldT> init;

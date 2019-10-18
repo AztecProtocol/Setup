@@ -9,8 +9,10 @@ while true; do
   fi
   echo Computing range polynomial $JOBNUM
   START=`date +%s`
-  RESULT=$(./compute_range_polynomial ../setup_db $JOBNUM $NUMG1POINTS 5)
+  echo ./compute_range_polynomial ../setup_db/generator_prep.dat ../setup_db/g1x_prep.dat $JOBNUM $KMAX 5
+  RESULT=$(./compute_range_polynomial ../setup_db/generator_prep.dat ../setup_db/g1x_prep.dat $JOBNUM $KMAX 5)
   if [ "$?" -ne 0 ]; then
+    sleep 1
     continue
   fi
   END=`date +%s`

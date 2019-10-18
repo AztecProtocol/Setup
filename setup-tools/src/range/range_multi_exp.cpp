@@ -85,14 +85,14 @@ bb::g1::element batch_process_range(size_t range_index, size_t polynomial_degree
     return result;
 }
 
-void compute_range_polynomials(std::string const &setup_db_path, size_t range_index, size_t polynomial_degree, size_t batches)
+void compute_range_polynomials(std::string const &generator_path, std::string const &g1x_path, size_t range_index, size_t polynomial_degree, size_t batches)
 {
     Timer total_timer;
 
     std::cerr << "Loading data..." << std::endl;
     Timer data_timer;
-    bb::fr::field_t *generator_coefficients = (bb::fr::field_t *)map_file(setup_db_path + "/generator_prep.dat");
-    bb::g1::affine_element *g1_x = (bb::g1::affine_element *)map_file(setup_db_path + "/g1_x_prep.dat");
+    bb::fr::field_t *generator_coefficients = (bb::fr::field_t *)map_file(generator_path);
+    bb::g1::affine_element *g1_x = (bb::g1::affine_element *)map_file(g1x_path);
     std::cerr << "Loaded in " << data_timer.toString() << "s" << std::endl;
 
     Timer compute_timer;
