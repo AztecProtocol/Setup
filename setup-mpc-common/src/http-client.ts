@@ -2,19 +2,19 @@ import { createReadStream, existsSync, statSync } from 'fs';
 import http from 'http';
 import https from 'https';
 import fetch from 'isomorphic-fetch';
-import { Moment } from 'moment';
 import progress from 'progress-stream';
 import { Readable } from 'stream';
 import { Account } from 'web3x/account';
 import { Address } from 'web3x/address';
 import { bufferToHex } from 'web3x/utils';
 import { hashFiles } from './hash-files';
-import { EthNet, MpcServer, MpcState, Participant, PatchState, ResetState } from './mpc-server';
+import { MpcServer, MpcState, Participant, PatchState, ResetState } from './mpc-server';
 import { mpcStateFromJSON } from './mpc-state';
 
 export class HttpClient implements MpcServer {
   private opts: any = {
     keepalive: true,
+    timeout: 60000,
   };
   constructor(private apiUrl: string, private account?: Account) {
     this.opts.agent = /^https/.test(apiUrl)
