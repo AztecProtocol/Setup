@@ -8,8 +8,7 @@ jobs:
       - run:
           name: 'Pull submodules'
           command: git submodule init && git submodule update
-      - setup_remote_docker:
-          docker_layer_caching: true
+      - setup_remote_docker
       - run:
           name: 'ECR login'
           command: $(aws ecr get-login --no-include-email)
