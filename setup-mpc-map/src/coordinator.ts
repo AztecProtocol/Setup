@@ -140,7 +140,7 @@ export class Coordinator {
   private updateCeremonyStatus(state: MpcState) {
     const {
       ceremonyState,
-      startTime,
+      publishPath,
       selectBlock,
       latestBlock,
       sealingProgress,
@@ -195,9 +195,7 @@ export class Coordinator {
     if (ceremonyState === 'COMPLETE') {
       document.getElementById('overlay-transcripts-link')!.style.display = 'inline';
       const linkEl = document.querySelector('#overlay-transcripts-link a')! as HTMLLinkElement;
-      linkEl.href = `https://aztec-ignition.s3.eu-west-2.amazonaws.com/index.html#${startTime
-        .utc()
-        .format('YYYYMMDD_HHmmss')}/`;
+      linkEl.href = publishPath!;
     } else {
       document.getElementById('overlay-transcripts-link')!.style.display = 'none';
     }

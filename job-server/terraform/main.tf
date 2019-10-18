@@ -137,7 +137,7 @@ resource "aws_ecs_task_definition" "setup_job_server" {
       },
       {
         "name": "JOB_EXPIRATION_TIME",
-        "value": "4000"
+        "value": "1000"
       }
     ],
     "logConfiguration": {

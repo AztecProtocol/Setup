@@ -288,6 +288,16 @@ data "aws_iam_policy_document" "aztec_ignition_bucket_write" {
     actions   = ["s3:*"]
     resources = ["${aws_s3_bucket.aztec_ignition.arn}/*"]
   }
+  statement {
+    effect    = "Allow"
+    actions   = ["s3:ListBucket"]
+    resources = ["${aws_s3_bucket.aztec_post_process.arn}"]
+  }
+  statement {
+    effect    = "Allow"
+    actions   = ["s3:*"]
+    resources = ["${aws_s3_bucket.aztec_post_process.arn}/*"]
+  }
 }
 
 resource "aws_iam_role_policy" "setup_mpc_server_task_policy" {
