@@ -1,6 +1,6 @@
 import humanizeDuration from 'humanize-duration';
-import moment from 'moment';
-import { MpcState, Participant } from 'setup-mpc-common';
+import moment, { Moment } from 'moment';
+import { cloneMpcState, MpcState, Participant } from 'setup-mpc-common';
 import { Account } from 'web3x/account';
 import { Address } from 'web3x/address';
 import { leftPad } from 'web3x/utils';
@@ -12,6 +12,7 @@ export class TerminalInterface {
   private listY!: number;
   private offset: number = 0;
   private state?: MpcState;
+  public lastUpdate?: Moment;
 
   constructor(private term: TerminalKit, private myAccount?: Account) {}
 
@@ -46,14 +47,15 @@ export class TerminalInterface {
   }
 
   private async renderStatus() {
+    this.term.moveTo(0, 3);
+    this.term.eraseLine();
+
     if (!this.state) {
+      this.term.white('Awaiting update from server...');
       return;
     }
 
     const { startTime, completedAt } = this.state;
-
-    this.term.moveTo(0, 3);
-    this.term.eraseLine();
 
     if (completedAt) {
       const completedStr = `${completedAt.utc().format('MMM Do YYYY HH:mm:ss')} UTC`;
@@ -70,7 +72,7 @@ export class TerminalInterface {
           if (sealingProgress < 100) {
             this.term.white(`Sealing final transcripts: ${sealingProgress.toFixed(2)}%\n\n`);
           } else {
-            this.term.white('Preparing to compute range proofs...\n\n');
+            this.term.white('Computing H parameter...\n\n');
           }
           break;
         case 'PUBLISHING':
@@ -111,12 +113,17 @@ export class TerminalInterface {
       this.banner = false;
       const online = participants.reduce((a, p) => a + (p.online ? 1 : 0), 0);
       const offline = participants.length - online;
-      this.term
-        .white(`Server status: (participants: ${participants.length}) (online: `)
-        .green(`${online}`)
-        .white(`) (offline: `)
-        .red(`${offline}`)
-        .white(`)\n`);
+      this.term.white(`Server status: `);
+      if (!this.lastUpdate || this.lastUpdate.isBefore(moment().subtract(10, 's'))) {
+        this.term.red('DISCONNECTED');
+      } else {
+        this.term
+          .white(`(participants: ${participants.length}) (online: `)
+          .green(`${online}`)
+          .white(`) (offline: `)
+          .red(`${offline}`)
+          .white(`)\n`);
+      }
     }
   }
 
@@ -126,7 +133,6 @@ export class TerminalInterface {
     this.term.eraseLine();
 
     const myIndex = participants.findIndex(p => p.address.equals(this.myAccount!.address));
-    const selectedIndex = participants.findIndex(p => p.state !== 'COMPLETE' && p.state !== 'INVALIDATED');
     if (myIndex === -1) {
       this.term.white(`Private key does not match an address. You are currently spectating.\n`);
     } else {
@@ -299,20 +305,20 @@ export class TerminalInterface {
     term.white(`${timeout}s)`);
   }
 
-  public async updateState(state: MpcState) {
+  public async updateState(state?: MpcState) {
     const oldState = this.state;
-    this.state = state;
+    this.state = state ? cloneMpcState(state) : undefined;
 
-    if (!oldState || oldState.startSequence !== state.startSequence) {
+    if (!oldState || !this.state || oldState.startSequence !== this.state.startSequence) {
       // If first time or reset render everything.
       this.render();
       return;
     }
 
     if (
-      state.ceremonyState === 'PRESELECTION' ||
-      state.ceremonyState === 'SELECTED' ||
-      state.statusSequence !== oldState.statusSequence
+      this.state.ceremonyState === 'PRESELECTION' ||
+      this.state.ceremonyState === 'SELECTED' ||
+      this.state.statusSequence !== oldState.statusSequence
     ) {
       // If the ceremony hasn't started, update the status line for the countdown.
       await this.renderStatus();
@@ -320,23 +326,12 @@ export class TerminalInterface {
       await this.renderBanner();
     }
 
-    state.participants.forEach((p, i) => {
+    this.state.participants.forEach((p, i) => {
       // Update any new participants, participants that changed, and always the running participant (for the countdown).
       if (!oldState.participants[i] || p.sequence !== oldState.participants[i].sequence || p.state === 'RUNNING') {
         this.renderLine(p, i);
       }
     });
-  }
-
-  public updateParticipant(participant: Participant) {
-    if (!this.state) {
-      return;
-    }
-    const index = this.state.participants.findIndex(p => p.address.equals(participant.address));
-    if (index >= 0 && this.state.participants[index].state === 'RUNNING') {
-      this.state.participants[index] = participant;
-      this.renderLine(this.state.participants[index], index - this.offset);
-    }
   }
 
   public getParticipant(address: Address) {

@@ -8,9 +8,7 @@ export class TerminalKit {
   private x: number = 1;
   private y: number = 1;
 
-  constructor(private stream: Writable, public height: number, public width: number) {
-    this.clear();
-  }
+  constructor(private stream: Writable, public height: number, public width: number) {}
 
   private getNewYPos(str: string) {
     let xPos = this.x;

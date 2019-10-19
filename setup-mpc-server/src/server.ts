@@ -67,17 +67,24 @@ export class Server implements MpcServer {
     }
   }
 
+  private async createUniqueCeremonyName(name: string) {
+    // Ensure name is unique.
+    if (await this.stateStore.exists(name)) {
+      let n = 1;
+      while (await this.stateStore.exists(`${name}_${n}`)) {
+        ++n;
+      }
+      return name + `_${n}`;
+    }
+    return name;
+  }
+
   public async resetState(resetState: ResetState) {
     await this.stateStore.saveState();
 
-    // If we already have a state file with this name, append start time to disambiguate.
-    if (await this.stateStore.exists(resetState.name)) {
-      resetState.name += `_${resetState.startTime.format('YYYYMMDDHHmmss')}`;
-    }
-
     const nextSequence = this.state.sequence + 1;
     const state: MpcState = {
-      name: resetState.name,
+      name: await this.createUniqueCeremonyName(resetState.name),
       sequence: nextSequence,
       statusSequence: nextSequence,
       startSequence: nextSequence,
@@ -107,6 +114,9 @@ export class Server implements MpcServer {
     }
     if (resetState.participants1.length) {
       resetState.participants1.forEach(address => this.addNextParticipant(state, address, 1));
+    }
+    if (resetState.participants2.length) {
+      resetState.participants2.forEach(address => this.addNextParticipant(state, address, 2));
     }
 
     await this.resetWithState(state);
@@ -157,7 +167,7 @@ export class Server implements MpcServer {
     this.readState = cloneMpcState(state);
     release();
 
-    this.store = this.storeFactory.create(state.startTime);
+    this.store = this.storeFactory.create(state.name);
 
     this.verifier = await this.createVerifier();
     this.verifier.run();
@@ -213,18 +223,20 @@ export class Server implements MpcServer {
     this.state.sequence += 1;
     this.state.statusSequence = this.state.sequence;
     this.addNextParticipant(this.state, address, tier);
+    this.state.participants = orderWaitingParticipants(this.state.participants, this.state.sequence);
     release();
   }
 
   private async addParticipants(addresses: Address[], latestBlock: number) {
     const release = await this.mutex.acquire();
-    this.state.sequence += 1;
-    this.state.statusSequence = this.state.sequence;
     this.state.latestBlock = latestBlock;
-    if (addresses.length) {
-      console.log(`Adding participants from block ${latestBlock}:`, addresses.map(a => a.toString()));
-      const tier = this.state.ceremonyState === 'PRESELECTION' ? 2 : 3;
-      addresses.forEach(address => this.addNextParticipant(this.state, address, tier));
+    if (addresses.length || this.state.ceremonyState === 'PRESELECTION') {
+      this.state.sequence += 1;
+      this.state.statusSequence = this.state.sequence;
+      if (addresses.length) {
+        console.log(`Adding participants from block ${latestBlock}:`, addresses.map(a => a.toString()));
+        addresses.forEach(address => this.addNextParticipant(this.state, address, 3));
+      }
     }
     release();
   }
@@ -294,6 +306,7 @@ export class Server implements MpcServer {
       this.state.crs = crs;
       this.state.ceremonyState = 'PUBLISHING';
       this.state.sequence += 1;
+      this.state.statusSequence = this.state.sequence;
     });
   }
 
@@ -312,6 +325,7 @@ export class Server implements MpcServer {
       this.state.ceremonyState = this.state.rangeProofSize ? 'RANGE_PROOFS' : 'COMPLETE';
       this.state.publishPath = publishPath;
       this.state.sequence += 1;
+      this.state.statusSequence = this.state.sequence;
     });
   }
 
@@ -330,6 +344,7 @@ export class Server implements MpcServer {
       this.state.ceremonyState = 'COMPLETE';
       this.state.completedAt = moment();
       this.state.sequence += 1;
+      this.state.statusSequence = this.state.sequence;
     });
   }
 

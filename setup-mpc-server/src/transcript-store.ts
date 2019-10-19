@@ -1,6 +1,5 @@
 import { createReadStream, mkdirSync } from 'fs';
 import moment = require('moment');
-import { Moment } from 'moment';
 import { Readable } from 'stream';
 import { Address } from 'web3x/address';
 import {
@@ -42,14 +41,14 @@ export interface TranscriptStore {
 }
 
 export interface TranscriptStoreFactory {
-  create(ceremonyStartTime: Moment): TranscriptStore;
+  create(name: string): TranscriptStore;
 }
 
 export class DiskTranscriptStoreFactory implements TranscriptStoreFactory {
   constructor(private storePath: string) {}
 
-  public create(ceremonyStartTime: Moment) {
-    return new DiskTranscriptStore(`${this.storePath}/${ceremonyStartTime.format('YYYYMMDD_HHmmss')}`);
+  public create(name: string) {
+    return new DiskTranscriptStore(`${this.storePath}/${name}`);
   }
 }
 

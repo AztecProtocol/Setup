@@ -22,12 +22,7 @@ export async function advanceState(state: MpcState, store: TranscriptStore, veri
   }
 
   // If we've not yet hit our selection block, or are sealing/publishing. Do nothing.
-  if (
-    state.ceremonyState === 'PRESELECTION' ||
-    state.ceremonyState === 'SEALING' ||
-    state.ceremonyState === 'PUBLISHING' ||
-    state.ceremonyState === 'RANGE_PROOFS'
-  ) {
+  if (state.ceremonyState !== 'SELECTED' && state.ceremonyState !== 'RUNNING') {
     return;
   }
 

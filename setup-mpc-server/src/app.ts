@@ -70,12 +70,16 @@ export function appFactory(
     const latestBlock = await participantSelectorFactory.getCurrentBlockHeight(network);
     const resetState = {
       ...defaultState(latestBlock),
+      participants0: [],
+      participants1: [],
+      participants2: [],
       ...ctx.request.body,
     };
     normaliseSettings(resetState);
 
     resetState.participants0 = resetState.participants0.map(Address.fromString);
     resetState.participants1 = resetState.participants1.map(Address.fromString);
+    resetState.participants2 = resetState.participants2.map(Address.fromString);
 
     try {
       await server.resetState(resetState);
@@ -112,7 +116,7 @@ export function appFactory(
 
   router.put('/participant/:address', adminAuth, async (ctx: Koa.Context) => {
     const address = Address.fromString(ctx.params.address.toLowerCase());
-    server.addParticipant(address, 2);
+    server.addParticipant(address, +ctx.query.tier || 2);
     ctx.status = 204;
   });
 

@@ -8,6 +8,7 @@ import { TerminalKit } from './terminal-kit';
 
 export class App {
   private interval!: NodeJS.Timeout;
+  private uiInterval!: NodeJS.Timeout;
   private terminalInterface!: TerminalInterface;
   private compute?: Compute;
   private state?: MpcState;
@@ -18,7 +19,8 @@ export class App {
     stream: Writable,
     height: number,
     width: number,
-    private computeOffline = false
+    private computeOffline = false,
+    private exitOnComplete = false
   ) {
     const termKit = new TerminalKit(stream, height, width);
     this.terminalInterface = new TerminalInterface(termKit, this.account);
@@ -26,10 +28,12 @@ export class App {
 
   public start() {
     this.updateState();
+    this.updateUi();
   }
 
   public stop() {
     clearTimeout(this.interval);
+    clearTimeout(this.uiInterval);
     this.terminalInterface.hideCursor(false);
   }
 
@@ -42,6 +46,7 @@ export class App {
       // Then get the latest state from the server.
       const remoteStateDelta = await this.server.getState(this.state ? this.state.sequence : undefined);
 
+      // this.state updates atomically in this code block, allowing the ui to update independently.
       if (!this.state) {
         this.state = remoteStateDelta;
       } else if (this.state.startSequence !== remoteStateDelta.startSequence) {
@@ -50,33 +55,34 @@ export class App {
         this.state = applyDelta(this.state, remoteStateDelta);
       }
 
+      this.terminalInterface.lastUpdate = moment();
+
       // Start or stop computation.
       await this.processRemoteState(this.state);
 
-      await this.terminalInterface.updateState(this.state);
-
       // Send any local state changes to the server.
       await this.updateRemoteState();
-
-      this.scheduleUpdate();
     } catch (err) {
-      // If we fail to communicate properly with server, we can still update terminal state locally.
-      if (this.compute) {
-        const myState = this.compute.getParticipant();
-        myState.lastUpdate = moment();
-        const termState = this.terminalInterface.getParticipant(myState.address);
-        this.terminalInterface.updateParticipant(this.mergeLocalAndRemoteParticipantState(myState, termState));
-      } else if (this.state) {
-        this.terminalInterface.updateState(this.state);
-      }
-
-      this.scheduleUpdate();
       console.error(err);
+    } finally {
+      this.scheduleUpdate();
     }
   };
 
+  private updateUi = () => {
+    if (this.compute && this.state) {
+      const local = this.compute.getParticipant();
+      const remote = this.state.participants.find(p => p.address.equals(local.address))!;
+      remote.runningState = local.runningState;
+      remote.transcripts = local.transcripts;
+      remote.computeProgress = local.computeProgress;
+    }
+    this.terminalInterface.updateState(this.state);
+    this.uiInterval = setTimeout(this.updateUi, 1000);
+  };
+
   private scheduleUpdate = () => {
-    if (process.env.EXIT_ON_COMPLETE && this.account) {
+    if (this.exitOnComplete && this.account) {
       const p = this.state!.participants.find(p => p.address.equals(this.account!.address));
       if (p && p.state === 'COMPLETE') {
         this.stop();
@@ -122,17 +128,6 @@ export class App {
       this.compute.cancel();
       this.compute = undefined;
     }
-  }
-
-  private mergeLocalAndRemoteParticipantState(local: Participant, remote: Participant): Participant {
-    // Retain mutable fields controlled by server.
-    return {
-      ...cloneParticipant(local),
-      state: remote.state,
-      verifyProgress: remote.verifyProgress,
-      completedAt: remote.completedAt,
-      startedAt: remote.startedAt,
-    };
   }
 
   private updateRemoteState = async () => {

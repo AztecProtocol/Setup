@@ -158,8 +158,8 @@ export class Coordinator {
         el.innerHTML = `SELECTING IN ${selectBlock - latestBlock} BLOCKS`;
         break;
       case 'SELECTED':
-        el.className = 'green';
-        el.innerHTML = `PARTICIPANTS SELECTED`;
+        el.className = 'yellow';
+        el.innerHTML = `PARTICIPANTS SELECTED, AWAITING START`;
         break;
       case 'RUNNING':
         if (!participants.some(p => p.state === 'RUNNING')) {
@@ -175,7 +175,7 @@ export class Coordinator {
         if (sealingProgress < 100) {
           el.innerHTML = `SEALING (${sealingProgress.toFixed(2)}%)`;
         } else {
-          el.innerHTML = `PREPARING TO COMPUTE RANGE PROOFS`;
+          el.innerHTML = `COMPUTING H PARAMETER`;
         }
         break;
       case 'PUBLISHING':

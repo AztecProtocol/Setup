@@ -6,8 +6,10 @@ WORKDIR /usr/src/setup-mpc-common
 COPY --from=1 /usr/src/setup-mpc-common .
 RUN yarn link
 WORKDIR /usr/src/setup-mpc-client
+COPY package.json yarn.lock ./
+RUN yarn install
 COPY . .
-RUN yarn install && yarn build && rm -rf node_modules && yarn install --production
+RUN yarn build
 
 FROM ubuntu:latest
 RUN apt update && \
@@ -26,4 +28,4 @@ RUN yarn link
 WORKDIR /usr/src/setup-mpc-client
 COPY --from=2 /usr/src/setup-mpc-client .
 RUN yarn link setup-mpc-common
-CMD ["yarn", "start"]
+CMD ["yarn", "--silent", "start"]

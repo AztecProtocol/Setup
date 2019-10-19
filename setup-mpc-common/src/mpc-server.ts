@@ -115,6 +115,7 @@ export interface ResetState {
   invalidateAfter: number;
   participants0: Address[];
   participants1: Address[];
+  participants2: Address[];
 }
 
 export interface PatchState {

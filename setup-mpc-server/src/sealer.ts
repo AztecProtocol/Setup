@@ -1,12 +1,13 @@
 import { S3 } from 'aws-sdk';
 import { ChildProcess, spawn } from 'child_process';
 import { EventEmitter } from 'events';
-import { createReadStream, createWriteStream } from 'fs';
+import { createReadStream } from 'fs';
 import readline from 'readline';
 import { CRS, G1, G2, MpcState } from 'setup-mpc-common';
-import { Readable } from 'stream';
 import { existsAsync, mkdirAsync, renameAsync } from './fs-async';
 import { TranscriptStore } from './transcript-store';
+
+class CancelledError extends Error {}
 
 export class Sealer extends EventEmitter {
   private proc?: ChildProcess;
@@ -35,7 +36,7 @@ export class Sealer extends EventEmitter {
           await this.transcriptStore.copyVerifiedTo(previousParticipant.address, this.sealingPath);
 
           if (this.cancelled) {
-            return;
+            throw new CancelledError();
           }
 
           await this.compute();
@@ -47,6 +48,10 @@ export class Sealer extends EventEmitter {
         await this.prepRangeData(this.sealingPath, g1xPath);
         await this.upload('aztec-post-process', createReadStream(g1xPath), `${state.name}/g1x_prep.dat`);
 
+        if (this.cancelled) {
+          throw new CancelledError();
+        }
+
         const generatorPath = await this.fetchOrComputeGenerator(state.rangeProofKmax);
 
         return {
@@ -54,11 +59,12 @@ export class Sealer extends EventEmitter {
           t2: await this.getFinalG2Point(),
         };
       } catch (err) {
-        console.error('Sealer failed (will retry): ', err);
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        if (this.cancelled) {
+        if (err instanceof CancelledError) {
+          console.error('Sealer cancelled.');
           return;
         }
+        console.error('Sealer failed: ', err);
+        await new Promise(resolve => setTimeout(resolve, 1000));
       }
     }
   }
@@ -96,8 +102,10 @@ export class Sealer extends EventEmitter {
 
       proc.on('close', code => {
         this.proc = undefined;
-        if (code === 0 || this.cancelled) {
-          console.error(`Sealing complete or cancelled.`);
+        if (this.cancelled) {
+          reject(new CancelledError());
+        } else if (code === 0) {
+          console.error(`Sealing complete.`);
           resolve();
         } else {
           reject(new Error(`seal exited with code ${code}`));
@@ -167,7 +175,9 @@ export class Sealer extends EventEmitter {
       const proc = (this.proc = spawn(binPath, [kmax.toString(), generatorPath]));
 
       proc.on('close', code => {
-        if (code !== 0) {
+        if (this.cancelled) {
+          reject(new CancelledError());
+        } else if (code !== 0) {
           reject(new Error(`compute_generator_polynomial exited with code ${code}`));
           return;
         }
@@ -184,7 +194,9 @@ export class Sealer extends EventEmitter {
       const proc = (this.proc = spawn(binPath, [inputDir, outputPath]));
 
       proc.on('close', code => {
-        if (code !== 0) {
+        if (this.cancelled) {
+          reject(new CancelledError());
+        } else if (code !== 0) {
           reject(new Error(`prep_range_data exited with code ${code}`));
           return;
         }
@@ -208,7 +220,9 @@ export class Sealer extends EventEmitter {
         .on('line', line => resolve(JSON.parse(line)));
 
       proc.on('close', code => {
-        if (code !== 0) {
+        if (this.cancelled) {
+          reject(new CancelledError());
+        } else if (code !== 0) {
           reject(new Error(`generate_h exited with code ${code}`));
         }
       });
