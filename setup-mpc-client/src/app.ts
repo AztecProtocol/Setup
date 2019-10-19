@@ -92,11 +92,6 @@ export class App {
     this.interval = setTimeout(this.updateState, 1000);
   };
 
-  /*
-    Given a remote state, this function will trigger or destroy the compute pipeline.
-    It will return a new local state, which may differ from the remote state as our local compute state takes priority
-    over the servers view of our state.
-  */
   private async processRemoteState(remoteState: MpcState) {
     if (!this.account) {
       // We are in spectator mode.

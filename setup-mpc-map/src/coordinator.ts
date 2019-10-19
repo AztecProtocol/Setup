@@ -57,7 +57,7 @@ export class Coordinator {
 
   private setAddress(p: Participant) {
     const addrString = p.address.toString();
-    const progIndex = addrString.length * (p.computeProgress / 100);
+    const progIndex = addrString.length * ((p.runningState === 'OFFLINE' ? p.verifyProgress : p.computeProgress) / 100);
     document.getElementById('overlay-address-done')!.innerHTML = addrString.slice(0, progIndex);
     document.getElementById('overlay-address-not-done')!.innerHTML = addrString.slice(progIndex);
     document.getElementById('overlay-address-done')!.className = 'yellow';

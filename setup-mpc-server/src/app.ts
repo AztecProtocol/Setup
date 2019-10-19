@@ -31,7 +31,7 @@ function normaliseSettings(settings: any) {
   if (isString(settings.endTime)) {
     settings.endTime = moment(settings.endTime);
   } else if (isNumber(settings.endTime)) {
-    settings.endTime = moment().add(settings.endTime, 's');
+    settings.endTime = moment(settings.startTime).add(settings.endTime, 's');
   }
 
   if (settings.selectBlock < 0) {
@@ -187,7 +187,8 @@ export function appFactory(
       return;
     }
 
-    if (+ctx.params.num >= 30) {
+    const transcriptNum = +ctx.params.num;
+    if (transcriptNum >= 30) {
       ctx.body = {
         error: 'Transcript number out of range (max 0-29).',
       };
@@ -195,9 +196,17 @@ export function appFactory(
       return;
     }
 
+    if (participant.transcripts[transcriptNum] && participant.transcripts[transcriptNum].complete) {
+      ctx.body = {
+        error: 'Transcript already uploaded.',
+      };
+      ctx.status = 401;
+      return;
+    }
+
     const nonce = randomBuffer(8).toString('hex');
-    const transcriptPath = `${tmpDir}/transcript_${ctx.params.address}_${ctx.params.num}_${nonce}.dat`;
-    const signaturePath = `${tmpDir}/transcript_${ctx.params.address}_${ctx.params.num}_${nonce}.sig`;
+    const transcriptPath = `${tmpDir}/transcript_${ctx.params.address}_${transcriptNum}_${nonce}.dat`;
+    const signaturePath = `${tmpDir}/transcript_${ctx.params.address}_${transcriptNum}_${nonce}.sig`;
 
     try {
       lockUpload = true;
@@ -208,6 +217,7 @@ export function appFactory(
         ctx.req.setTimeout(60000, reject);
         ctx.req
           .on('error', reject)
+          .on('aborted', reject)
           .pipe(meterStream)
           .on('error', (err: Error) => {
             ctx.status = 429;

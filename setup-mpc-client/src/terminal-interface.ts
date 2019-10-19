@@ -236,7 +236,7 @@ export class TerminalInterface {
   private renderRunningLine(p: Participant) {
     const { term } = this;
     const addrString = p.address.toString();
-    const progIndex = addrString.length * (p.computeProgress / 100);
+    const progIndex = addrString.length * ((p.runningState === 'OFFLINE' ? p.verifyProgress : p.computeProgress) / 100);
     term.yellow(addrString.slice(0, progIndex)).grey(addrString.slice(progIndex));
 
     term.red(' <');
@@ -246,7 +246,10 @@ export class TerminalInterface {
           term
             .white(' (')
             .blue('computing offline')
-            .white(')');
+            .white(') (')
+            .blue('\u2714')
+            .white(` ${p.verifyProgress.toFixed(p.verifyProgress < 100 ? 2 : 0)}%`)
+            .white(`)`);
           break;
         case 'RUNNING':
         case 'COMPLETE': {
