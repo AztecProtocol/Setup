@@ -14,7 +14,6 @@ import { mpcStateFromJSON } from './mpc-state';
 export class HttpClient implements MpcServer {
   private opts: any = {
     keepalive: true,
-    timeout: 60000,
   };
   constructor(private apiUrl: string, private account?: Account) {
     this.opts.agent = /^https/.test(apiUrl)
