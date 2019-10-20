@@ -1,22 +1,7 @@
 #!/bin/bash
 cd /usr/src/setup-tools
 
-while true; do
-  JOBNUM=$(curl --retry 100 -f -L -s http://$JOB_SERVER_HOST/job)
-  if [ ! "$JOBNUM" =~ '^[0-9]+$' ]; then
-    sleep $[RANDOM%10+1]
-    continue
-  fi
-  echo Computing range polynomial $JOBNUM
-  START=`date +%s`
-  echo ./compute_range_polynomial ../setup_db/generator_prep.dat ../setup_db/g1x_prep.dat $JOBNUM $KMAX 5
-  RESULT=$(./compute_range_polynomial ../setup_db/generator_prep.dat ../setup_db/g1x_prep.dat $JOBNUM $KMAX 5)
-  if [ "$?" -ne 0 ]; then
-    sleep 1
-    continue
-  fi
-  END=`date +%s`
-
+function exit_if_ceremony_changed() {
   # Get ceremony state. Retry if not valid json returned.
   while : ; do
     STATE=$(curl --retry 100 -L -s http://$MPC_SERVER_HOST/api/state)
@@ -27,15 +12,36 @@ while true; do
 
   # Exit if ceremony changed or completed.
   NAME=$(echo $STATE | jq -j .name)
-  CEREMONYSTATE=$(echo $STATE | jq -j .ceremonyState)
   if [ "$NAME" != "$CEREMONYNAME" ]; then
     echo "Ceremony name changed. Exiting."
     exit 0
   fi
+  CEREMONYSTATE=$(echo $STATE | jq -j .ceremonyState)
   if [ "$CEREMONYSTATE" != "RANGE_PROOFS" ]; then
     echo "Ceremony state no longer RANGE_PROOFS. Exiting."
     exit 0
   fi
+}
+
+while true; do
+  JOBNUM=$(curl --retry 100 -f -L -s http://$JOB_SERVER_HOST/job)
+  if [ ! "$JOBNUM" =~ '^[0-9]+$' ]; then
+    sleep $[RANDOM%10+1]
+    exit_if_ceremony_changed
+    continue
+  fi
+
+  echo Computing range polynomial $JOBNUM
+  START=`date +%s`
+  echo ./compute_range_polynomial ../setup_db/generator_prep.dat ../setup_db/g1x_prep.dat $JOBNUM $KMAX 5
+  RESULT=$(./compute_range_polynomial ../setup_db/generator_prep.dat ../setup_db/g1x_prep.dat $JOBNUM $KMAX 5)
+  if [ "$?" -ne 0 ]; then
+    sleep 1
+    continue
+  fi
+  END=`date +%s`
+
+  exit_if_ceremony_changed
 
   if [ -n "$RESULT" ]; then
     curl --retry 100 -L -s -X PUT -d "$RESULT" -H "Content-Type: text/plain" http://$JOB_SERVER_HOST/complete/$JOBNUM > /dev/null
