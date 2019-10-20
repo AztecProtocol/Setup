@@ -25,7 +25,7 @@ function exit_if_ceremony_changed() {
 
 while true; do
   JOBNUM=$(curl --retry 100 -f -L -s http://$JOB_SERVER_HOST/job)
-  if [ ! "$JOBNUM" =~ '^[0-9]+$' ]; then
+  if [ "$?" -ne 0 -o -z "$JOBNUM" ]; then
     sleep $[RANDOM%10+1]
     exit_if_ceremony_changed
     continue

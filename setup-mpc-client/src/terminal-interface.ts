@@ -62,13 +62,16 @@ export class TerminalInterface {
       case 'PRESELECTION':
       case 'SELECTED': {
         const startedStr = `${startTime.utc().format('MMM Do YYYY HH:mm:ss')} UTC`;
-        this.term.white(`The ceremony will begin at ${startedStr} in T-${startTime.diff(moment(), 's')}s.\n\n`);
+        this.term.white(
+          `The ceremony will begin at ${startedStr} in T-${Math.min(startTime.diff(moment(), 's'), 0)}s.\n\n`
+        );
         break;
       }
       case 'RUNNING':
         this.term.white(
           `The ceremony is in progress and started at ${startTime.utc().format('MMM Do YYYY HH:mm:ss')} UTC.\n\n`
         );
+        break;
       case 'SEALING':
         if (sealingProgress < 100) {
           this.term.white(`Sealing final transcripts: ${sealingProgress.toFixed(2)}%\n\n`);
