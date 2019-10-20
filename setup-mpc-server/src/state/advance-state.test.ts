@@ -93,6 +93,25 @@ describe('advance state', () => {
     expect(state.sequence).toBe(1);
   });
 
+  it('should not shift ceremony to SEALING state with running participant.', async () => {
+    state.ceremonyState = 'RUNNING';
+    state.minParticipants = 1;
+    state.endTime = moment(baseTime).add(1, 'h');
+    state.participants[0].state = 'COMPLETE';
+    state.participants[1].state = 'RUNNING';
+
+    // After end time and with min participants, but one is still running.
+    await advanceState(state, mockTranscriptStore as any, mockVerifier as any, moment(baseTime).add(2, 'h'));
+    expect(state.ceremonyState).toBe('RUNNING');
+    expect(state.sequence).toBe(0);
+
+    // After end time and after min participants.
+    state.participants[1].state = 'COMPLETE';
+    await advanceState(state, mockTranscriptStore as any, mockVerifier as any, moment(baseTime).add(2, 'h'));
+    expect(state.ceremonyState).toBe('SEALING');
+    expect(state.sequence).toBe(1);
+  });
+
   it('should shift first waiting online participant to running state', async () => {
     state.ceremonyState = 'RUNNING';
     state.participants[0].online = true;
