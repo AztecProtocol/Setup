@@ -63,7 +63,7 @@ export class TerminalInterface {
       case 'SELECTED': {
         const startedStr = `${startTime.utc().format('MMM Do YYYY HH:mm:ss')} UTC`;
         this.term.white(
-          `The ceremony will begin at ${startedStr} in T-${Math.min(startTime.diff(moment(), 's'), 0)}s.\n\n`
+          `The ceremony will begin at ${startedStr} in T-${Math.max(startTime.diff(moment(), 's'), 0)}s.\n\n`
         );
         break;
       }
