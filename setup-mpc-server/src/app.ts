@@ -196,7 +196,8 @@ export function appFactory(
       return;
     }
 
-    if (participant.transcripts[transcriptNum] && participant.transcripts[transcriptNum].complete) {
+    const transcript = participant.transcripts[transcriptNum];
+    if (transcript && transcript.uploaded === transcript.size) {
       ctx.body = {
         error: 'Transcript already uploaded.',
       };

@@ -57,35 +57,37 @@ export class TerminalInterface {
 
     const { startTime, completedAt } = this.state;
 
-    if (completedAt) {
-      const completedStr = `${completedAt.utc().format('MMM Do YYYY HH:mm:ss')} UTC`;
-      const duration = completedAt.diff(startTime);
-      const durationText = humanizeDuration(duration, { largest: 2, round: true });
-      this.term.white(`The ceremony was completed at ${completedStr} taking ${durationText}.\n\n`);
-    } else if (startTime.isAfter()) {
-      const startedStr = `${startTime.utc().format('MMM Do YYYY HH:mm:ss')} UTC`;
-      this.term.white(`The ceremony will begin at ${startedStr} in T-${startTime.diff(moment(), 's')}s.\n\n`);
-    } else {
-      const { ceremonyState, sealingProgress, publishProgress, rangeProofProgress, rangeProofSize } = this.state;
-      switch (ceremonyState) {
-        case 'SEALING':
-          if (sealingProgress < 100) {
-            this.term.white(`Sealing final transcripts: ${sealingProgress.toFixed(2)}%\n\n`);
-          } else {
-            this.term.white('Computing H parameter...\n\n');
-          }
-          break;
-        case 'PUBLISHING':
-          this.term.white(`Publishing transcripts to S3: ${publishProgress.toFixed(2)}%\n\n`);
-          break;
-        case 'RANGE_PROOFS':
-          this.term.white(`Computing range proofs: ${((rangeProofProgress * 100) / rangeProofSize).toFixed(2)}%\n\n`);
-          break;
-        default:
-          this.term.white(
-            `The ceremony is in progress and started at ${startTime.utc().format('MMM Do YYYY HH:mm:ss')} UTC.\n\n`
-          );
-          break;
+    const { ceremonyState, sealingProgress, publishProgress, rangeProofProgress, rangeProofSize } = this.state;
+    switch (ceremonyState) {
+      case 'PRESELECTION':
+      case 'SELECTED': {
+        const startedStr = `${startTime.utc().format('MMM Do YYYY HH:mm:ss')} UTC`;
+        this.term.white(`The ceremony will begin at ${startedStr} in T-${startTime.diff(moment(), 's')}s.\n\n`);
+        break;
+      }
+      case 'RUNNING':
+        this.term.white(
+          `The ceremony is in progress and started at ${startTime.utc().format('MMM Do YYYY HH:mm:ss')} UTC.\n\n`
+        );
+      case 'SEALING':
+        if (sealingProgress < 100) {
+          this.term.white(`Sealing final transcripts: ${sealingProgress.toFixed(2)}%\n\n`);
+        } else {
+          this.term.white('Computing H parameter...\n\n');
+        }
+        break;
+      case 'PUBLISHING':
+        this.term.white(`Publishing transcripts to S3: ${publishProgress.toFixed(2)}%\n\n`);
+        break;
+      case 'RANGE_PROOFS':
+        this.term.white(`Computing range proofs: ${((rangeProofProgress * 100) / rangeProofSize).toFixed(2)}%\n\n`);
+        break;
+      case 'COMPLETE': {
+        const completedStr = `${completedAt!.utc().format('MMM Do YYYY HH:mm:ss')} UTC`;
+        const duration = completedAt!.diff(startTime);
+        const durationText = humanizeDuration(duration, { largest: 2, round: true });
+        this.term.white(`The ceremony was completed at ${completedStr} taking ${durationText}.\n\n`);
+        break;
       }
     }
 
@@ -144,8 +146,15 @@ export class TerminalInterface {
             this.term.white(
               `Your position in the queue will determined at block number ${selectBlock} (B-${selectCountdown}).\n`
             );
+          }
+          if (ceremonyState !== 'RUNNING') {
+            this.term.white('Participants are no longer being selected.\n');
           } else {
-            this.term.white(`You are number ${myState.position} in the queue.\n`);
+            const first = participants.find(p => p.state === 'WAITING' || p.state === 'RUNNING')!;
+            const inFront = myState.position - first.position;
+            this.term.white(
+              `You are in position ${myState.position} (${inFront ? inFront + ' in front' : "you're next"}).\n`
+            );
           }
           break;
         case 'RUNNING':

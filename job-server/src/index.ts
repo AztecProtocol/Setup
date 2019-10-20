@@ -80,6 +80,7 @@ function app(redisClient: RedisClient, scripts: { [k: string]: string }) {
   });
 
   router.get('/create-jobs', async ctx => {
+    scripts = await loadScripts(redisClient);
     const { from = 0, num = 100 } = ctx.query;
     ctx.body = await redisClient.evalshaAsync(scripts['setup.lua'], 0, from, num);
   });

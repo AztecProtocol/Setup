@@ -29,13 +29,14 @@ resource "aws_elasticache_subnet_group" "setup_redis" {
 resource "aws_elasticache_cluster" "setup_redis" {
   cluster_id           = "setup-redis"
   engine               = "redis"
-  node_type            = "cache.t2.micro"
+  node_type            = "cache.t2.medium"
   num_cache_nodes      = 1
   parameter_group_name = "default.redis3.2"
   engine_version       = "3.2.10"
   port                 = 6379
   subnet_group_name    = "${aws_elasticache_subnet_group.setup_redis.name}"
   security_group_ids   = ["${data.terraform_remote_state.setup_iac.outputs.security_group_private_id}"]
+  apply_immediately    = true
 }
 
 # Service discovery.

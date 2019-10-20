@@ -257,6 +257,7 @@ export class Coordinator {
           break;
         case 'INVALIDATED':
           addrElement.className = 'red';
+          metaElement.innerHTML = '';
           break;
         default:
           addrElement.className = 'grey';

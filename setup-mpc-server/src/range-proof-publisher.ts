@@ -25,19 +25,18 @@ export class RangeProofPublisher extends EventEmitter {
   public async run() {
     let rangeProofProgress = this.state.rangeProofProgress;
     const { name, rangeProofsPerFile, rangeProofSize } = this.state;
-    const totalSignatures = rangeProofSize + 1;
 
-    if (rangeProofProgress === totalSignatures) {
+    if (rangeProofProgress === rangeProofSize) {
       return;
     }
 
-    const remainingSignatures = totalSignatures - rangeProofProgress;
+    const remainingSignatures = rangeProofSize - rangeProofProgress;
     console.log(`Creating job server jobs: from=${rangeProofProgress} num=${remainingSignatures}`);
     await fetch(`http://${this.jobServerHost}/create-jobs?from=${rangeProofProgress}&num=${remainingSignatures}`);
 
     while (true) {
       try {
-        const remainingSignatures = totalSignatures - rangeProofProgress;
+        const remainingSignatures = rangeProofSize - rangeProofProgress;
         const toRequest = Math.min(rangeProofsPerFile, remainingSignatures);
         const responseStream = await this.getResultStream(rangeProofProgress, toRequest);
         if (!responseStream) {
@@ -53,7 +52,7 @@ export class RangeProofPublisher extends EventEmitter {
         await this.upload(responseStream, key);
         rangeProofProgress += toRequest;
         this.emit('progress', rangeProofProgress);
-        if (rangeProofProgress === totalSignatures || this.cancelled) {
+        if (rangeProofProgress === rangeProofSize || this.cancelled) {
           return;
         }
       } catch (err) {

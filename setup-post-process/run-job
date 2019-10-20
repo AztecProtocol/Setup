@@ -2,8 +2,8 @@
 cd /usr/src/setup-tools
 
 while true; do
-  JOBNUM=$(curl --retry 100 -L -s http://$JOB_SERVER_HOST/job)
-  if [ -z "$JOBNUM" ]; then
+  JOBNUM=$(curl --retry 100 -f -L -s http://$JOB_SERVER_HOST/job)
+  if [ ! "$JOBNUM" =~ '^[0-9]+$' ]; then
     sleep $[RANDOM%10+1]
     continue
   fi
