@@ -146,14 +146,13 @@ export class TerminalInterface {
             this.term.white(
               `Your position in the queue will determined at block number ${selectBlock} (B-${selectCountdown}).\n`
             );
-          }
-          if (ceremonyState !== 'RUNNING') {
+          } else if (ceremonyState !== 'RUNNING' && ceremonyState !== 'SELECTED') {
             this.term.white('Participants are no longer being selected.\n');
           } else {
-            const first = participants.find(p => p.state === 'WAITING' || p.state === 'RUNNING')!;
+            const first = participants.find(p => p.state === 'WAITING')!;
             const inFront = myState.position - first.position;
             this.term.white(
-              `You are in position ${myState.position} (${inFront ? inFront + ' in front' : "you're next"}).\n`
+              `You are in position ${myState.position} (${inFront ? inFront + ' in front' : 'next in line'}).\n`
             );
           }
           break;
