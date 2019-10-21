@@ -49,12 +49,15 @@ export class Viewer extends EventEmitter {
       terrainProvider: Cesium.createWorldTerrain({
         requestWaterMask: true,
       }),
+      infoBox: false,
     });
 
     this.viewer.scene.screenSpaceCameraController.enableLook = false;
     this.viewer.scene.screenSpaceCameraController.enableTilt = false;
     this.viewer.scene.screenSpaceCameraController.enableTranslate = false;
     this.viewer.scene.screenSpaceCameraController.enableZoom = false;
+    this.viewer.cesiumWidget.screenSpaceEventHandler.removeInputAction(Cesium.ScreenSpaceEventType.LEFT_DOUBLE_CLICK);
+    this.viewer.cesiumWidget.screenSpaceEventHandler.removeInputAction(Cesium.ScreenSpaceEventType.LEFT_CLICK);
     this.viewer.scene.highDynamicRange = false;
     this.viewer.clock.clockRange = Cesium.ClockRange.LOOP_STOP;
     this.viewer.clock.shouldAnimate = true;
