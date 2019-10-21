@@ -35,14 +35,15 @@ export function selectParticipants(state: MpcState, blockHash: Buffer) {
   let { participants } = state;
   const tier0 = participants.filter(t => t.tier === 0);
   const tier1 = participants.filter(t => t.tier === 1);
-  shuffle(blockHash, tier1);
   const earlyBirds = participants.filter(t => t.tier === 2);
+  const tier3 = participants.filter(t => t.tier === 3);
+  shuffle(blockHash, tier1);
   shuffle(blockHash, earlyBirds);
   const tier2 = earlyBirds.slice(0, state.maxTier2);
-  const tier3 = earlyBirds.slice(state.maxTier2).sort((a, b) => a.addedAt.valueOf() - b.addedAt.valueOf());
-  tier3.forEach(p => (p.tier = 3));
+  const tier2rejects = earlyBirds.slice(state.maxTier2).sort((a, b) => a.addedAt.valueOf() - b.addedAt.valueOf());
+  tier2rejects.forEach(p => (p.tier = 3));
 
-  participants = [...tier0, ...tier1, ...tier2, ...tier3];
+  participants = [...tier0, ...tier1, ...tier2, ...tier2rejects, ...tier3];
 
   participants.forEach((p, i) => {
     p.sequence = state.sequence;

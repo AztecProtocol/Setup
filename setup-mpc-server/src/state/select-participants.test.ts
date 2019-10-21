@@ -41,6 +41,18 @@ describe('select participants', () => {
     }
   });
 
+  it('should correctly select participants with tier 3', () => {
+    state.participants[9].tier = 3;
+    selectParticipants(state, hexToBuffer('0x1aeaff3366f816e1d0157664dcd7ffaeb8741c854e2575ec9d438fc42c83b870'));
+    for (const p of state.participants.slice(0, 5)) {
+      expect(addresses.slice(0, 5).includes(p.address)).toBeTruthy();
+    }
+    for (const p of state.participants.slice(5, 9)) {
+      expect(addresses.slice(5).includes(p.address)).toBeTruthy();
+    }
+    expect(addresses[9].equals(state.participants[9].address)).toBeTruthy();
+  });
+
   it('should not affect priority with online status', () => {
     state.participants[9].online = true;
     selectParticipants(state, hexToBuffer('0x1aeaff3366f816e1d0157664dcd7ffaeb8741c854e2575ec9d438fc42c83b870'));
