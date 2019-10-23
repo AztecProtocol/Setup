@@ -51,6 +51,7 @@ export interface Participant {
   online: boolean;
   lastUpdate?: Moment;
   location?: ParticipantLocation;
+  invalidateAfter?: number;
 
   // Client controlled data.
   runningState: ParticipantRunningState;
@@ -140,7 +141,7 @@ export interface MpcServer {
   getState(sequence?: number): Promise<MpcState>;
   ping(address: Address, ip?: string): Promise<void>;
   addParticipant(address: Address, tier: number): Promise<void>;
-  updateParticipant(participant: Participant): Promise<void>;
+  updateParticipant(participant: Participant, admin?: boolean): Promise<void>;
   downloadData(address: Address, transcriptNumber: number): Promise<Readable>;
   downloadSignature(address: Address, num: number): Promise<string>;
   uploadData(

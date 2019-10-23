@@ -118,7 +118,8 @@ export class Coordinator {
     this.setProgress(p);
 
     const { invalidateAfter, numG1Points, numG2Points, pointsPerTranscript } = state!;
-    const verifyWithin = invalidateAfter / (Math.max(numG1Points, numG2Points) / pointsPerTranscript);
+    const completeWithin = p.invalidateAfter || invalidateAfter;
+    const verifyWithin = completeWithin / (Math.max(numG1Points, numG2Points) / pointsPerTranscript);
     const verifyTimeout = Math.max(
       0,
       moment(p.lastVerified || p.startedAt!)
@@ -129,7 +130,7 @@ export class Coordinator {
     const totalSkip = Math.max(
       0,
       moment(p.startedAt!)
-        .add(invalidateAfter, 's')
+        .add(completeWithin, 's')
         .diff(moment(), 's')
     );
 

@@ -297,7 +297,8 @@ export class TerminalInterface {
     }
 
     const { invalidateAfter, numG1Points, numG2Points, pointsPerTranscript } = this.state!;
-    const verifyWithin = invalidateAfter / (Math.max(numG1Points, numG2Points) / pointsPerTranscript);
+    const completeWithin = p.invalidateAfter || invalidateAfter;
+    const verifyWithin = completeWithin / (Math.max(numG1Points, numG2Points) / pointsPerTranscript);
     const verifyTimeout = Math.max(
       0,
       moment(p.lastVerified || p.startedAt!)
@@ -307,7 +308,7 @@ export class TerminalInterface {
     const timeout = Math.max(
       0,
       moment(p.startedAt!)
-        .add(this.state!.invalidateAfter, 's')
+        .add(completeWithin, 's')
         .diff(moment(), 's')
     );
 

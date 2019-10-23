@@ -201,6 +201,23 @@ describe('advance state', () => {
     expect(state.participants[0].state).toBe('INVALIDATED');
   });
 
+  it('should invalidate using participant timeout as priority over global timeout', async () => {
+    state.ceremonyState = 'RUNNING';
+    state.participants[0].startedAt = state.startTime;
+    state.participants[0].state = 'RUNNING';
+    state.participants[0].invalidateAfter = 190;
+
+    // Within time limit.
+    await advanceState(state, mockTranscriptStore as any, mockVerifier as any, moment(state.startTime).add(190, 's'));
+    expect(state.sequence).toBe(0);
+    expect(state.participants[0].state).toBe('RUNNING');
+
+    // After time limit.
+    await advanceState(state, mockTranscriptStore as any, mockVerifier as any, moment(state.startTime).add(191, 's'));
+    expect(state.sequence).toBe(1);
+    expect(state.participants[0].state).toBe('INVALIDATED');
+  });
+
   it('should invalidate running tier 2 participant after verify timeout', async () => {
     state.ceremonyState = 'RUNNING';
     state.participants[0].startedAt = state.startTime;

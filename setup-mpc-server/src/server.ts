@@ -371,23 +371,28 @@ export class Server implements MpcServer {
     }
   }
 
-  public async updateParticipant(participantData: Participant) {
+  public async updateParticipant(participantData: Participant, admin: boolean = false) {
     const release = await this.mutex.acquire();
     try {
-      const { transcripts, address, runningState, computeProgress } = participantData;
+      const { transcripts, address, runningState, computeProgress, invalidateAfter } = participantData;
       const p = this.getAndAssertRunningParticipant(address);
-      if (transcripts) {
-        // Only update transcript fields that are permitted.
-        p.transcripts.forEach((t, i) => {
-          t.size = transcripts[i].size;
-          t.downloaded = transcripts[i].downloaded;
-          t.uploaded = transcripts[i].uploaded;
-        });
+      if (admin) {
+        // Fields that administrator can adjust.
+        p.invalidateAfter = invalidateAfter;
+      } else {
+        if (transcripts) {
+          // Only update transcript fields that are permitted.
+          p.transcripts.forEach((t, i) => {
+            t.size = transcripts[i].size;
+            t.downloaded = transcripts[i].downloaded;
+            t.uploaded = transcripts[i].uploaded;
+          });
+        }
+        p.runningState = runningState;
+        p.computeProgress = computeProgress;
+        p.lastUpdate = moment();
+        p.online = true;
       }
-      p.runningState = runningState;
-      p.computeProgress = computeProgress;
-      p.lastUpdate = moment();
-      p.online = true;
       this.state.sequence += 1;
       p.sequence = this.state.sequence;
     } finally {

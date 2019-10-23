@@ -50,9 +50,13 @@ export function appFactory(
 ) {
   let lockUpload = false;
 
-  const adminAuth = async (ctx: Koa.Context, next: any) => {
+  const isAdmin = (ctx: Koa.Context) => {
     const signature = ctx.get('X-Signature');
-    if (!adminAddress.equals(recover('SignMeWithYourPrivateKey', signature))) {
+    return adminAddress.equals(recover('SignMeWithYourPrivateKey', signature));
+  };
+
+  const adminAuth = async (ctx: Koa.Context, next: any) => {
+    if (!isAdmin(ctx)) {
       ctx.status = 401;
       return;
     }
@@ -123,15 +127,22 @@ export function appFactory(
   router.patch('/participant/:address', koaBody(), async (ctx: Koa.Context) => {
     const signature = ctx.get('X-Signature');
     const address = Address.fromString(ctx.params.address.toLowerCase());
+    let admin = false;
     if (!address.equals(recover(JSON.stringify(ctx.request.body), signature))) {
-      ctx.status = 401;
-      return;
+      admin = isAdmin(ctx);
+      if (!admin) {
+        ctx.status = 401;
+        return;
+      }
     }
     try {
-      await server.updateParticipant({
-        ...ctx.request.body,
-        address,
-      });
+      await server.updateParticipant(
+        {
+          ...ctx.request.body,
+          address,
+        },
+        admin
+      );
     } catch (err) {
       // This is a "not running" error. Just swallow it as the client need not be concerned with this.
     }
