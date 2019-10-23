@@ -134,7 +134,7 @@ export class Coordinator {
     );
 
     document.getElementById('overlay-progress-skip')!.innerHTML =
-      p.tier > 1 ? `${verifyTimeout}/${totalSkip}s` : `${totalSkip}s`;
+      p.tier > 1 ? `(5%: ${verifyTimeout}s) (total: ${totalSkip}s)` : `${totalSkip}s`;
   }
 
   private updateCeremonyStatus(state: MpcState) {
