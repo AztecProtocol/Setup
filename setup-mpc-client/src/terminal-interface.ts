@@ -184,10 +184,8 @@ export class TerminalInterface {
     }
 
     const { participants } = this.state;
-    const selectedIndex = participants.findIndex(p => p.state !== 'COMPLETE' && p.state !== 'INVALIDATED');
-
     const linesLeft = this.term.height - this.listY;
-    this.offset = this.getRenderOffset(linesLeft, selectedIndex);
+    this.offset = this.getRenderOffset(linesLeft);
 
     participants.slice(this.offset, this.offset + linesLeft).forEach((p, i) => {
       this.renderLine(p, i);
@@ -197,7 +195,9 @@ export class TerminalInterface {
     this.term.eraseDisplayBelow();
   }
 
-  private getRenderOffset(linesForList: number, selectedIndex: number) {
+  private getRenderOffset(linesForList: number) {
+    const { participants } = this.state!;
+    const selectedIndex = participants.findIndex(p => p.state !== 'COMPLETE' && p.state !== 'INVALIDATED');
     const midLine = Math.floor(linesForList / 2);
     return Math.min(
       Math.max(0, (selectedIndex >= 0 ? selectedIndex : this.state!.participants.length - 1) - midLine),
@@ -344,7 +344,7 @@ export class TerminalInterface {
     this.state.participants.forEach((p, i) => {
       // Update any new participants, participants that changed, and always the running participant (for the countdown).
       if (!oldState.participants[i] || p.sequence !== oldState.participants[i].sequence || p.state === 'RUNNING') {
-        this.renderLine(p, i);
+        this.renderLine(p, i - this.offset);
       }
     });
   }
