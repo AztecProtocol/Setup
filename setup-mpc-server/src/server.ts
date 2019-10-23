@@ -378,7 +378,10 @@ export class Server implements MpcServer {
       const p = this.getAndAssertRunningParticipant(address);
       if (admin) {
         // Fields that administrator can adjust.
-        p.invalidateAfter = invalidateAfter;
+        if (invalidateAfter) {
+          p.startedAt = moment();
+          p.invalidateAfter = invalidateAfter;
+        }
       } else {
         if (transcripts) {
           // Only update transcript fields that are permitted.
