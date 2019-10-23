@@ -112,6 +112,11 @@ void write_buffer_to_file(std::string const &filename, std::vector<char> const &
     std::ofstream file;
     file.open(filename);
     file.write(&buffer[0], buffer.size());
+    if (file.fail())
+    {
+        file.close();
+        throw std::runtime_error("Failed to write buffer to " + filename + ". Out of storage space?");
+    }
     file.close();
 }
 
