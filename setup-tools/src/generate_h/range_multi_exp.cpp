@@ -47,7 +47,6 @@ bb::g1::element batch_process_range(size_t polynomial_degree, size_t batch_num, 
 {
     size_t batch_size = polynomial_degree / batch_num;
     size_t leftovers = polynomial_degree % batch_size;
-    bb::fr::field_t fa = bb::fr::zero();
 
     bb::g1::element result = {.x = {0}, .y = {0}, .z = {0}};
     bb::g1::set_infinity(result);
@@ -60,7 +59,7 @@ bb::g1::element batch_process_range(size_t polynomial_degree, size_t batch_num, 
     return result;
 }
 
-void compute_h(std::string const &generator_path, std::string const& g1x_path, size_t polynomial_degree, size_t batches)
+void compute_h(std::string const &generator_path, std::string const &g1x_path, size_t polynomial_degree, size_t batches)
 {
     Timer total_timer;
 

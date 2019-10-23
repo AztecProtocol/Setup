@@ -21,6 +21,7 @@ RUN apt update && \
   apt install -y nodejs yarn && \
   apt clean
 COPY --from=0 /usr/src/setup-tools/setup /usr/src/setup-tools/setup
+COPY --from=0 /usr/src/setup-tools/setup-fast /usr/src/setup-tools/setup-fast
 RUN mkdir /usr/src/setup_db
 WORKDIR /usr/src/setup-mpc-common
 COPY --from=1 /usr/src/setup-mpc-common .

@@ -3,6 +3,7 @@
 
 find_package (Threads)
 
+# Standard setup binary.
 add_executable(
     setup
     setup.cpp
@@ -30,6 +31,39 @@ target_include_directories(
 
 set_target_properties(setup PROPERTIES RUNTIME_OUTPUT_DIRECTORY ../..)
 
+# Super fast binary. Includes Barretenberg.
+add_executable(
+    setup-fast
+    setup.cpp
+    setup.hpp
+    utils.hpp
+    main.cpp
+)
+
+target_link_libraries(
+    setup-fast
+    PRIVATE
+        ff
+        ${CMAKE_THREAD_LIBS_INIT}
+        ${GMP_LIBRARIES}
+        aztec_common
+        barretenberg
+)
+
+target_include_directories(
+    setup-fast
+    PRIVATE
+        ${DEPENDS_DIR}/libff
+        ${DEPENDS_DIR}/blake2b/ref
+        ${private_include_dir}
+        ${DEPENDS_DIR}/barretenberg/src
+)
+
+target_compile_definitions(setup-fast PRIVATE SUPERFAST=1)
+
+set_target_properties(setup-fast PROPERTIES RUNTIME_OUTPUT_DIRECTORY ../..)
+
+# Sealing binary. Toxic waste is hash of previous transcripts. Includes barretenberg.
 add_executable(
     seal
     setup.cpp
@@ -45,6 +79,7 @@ target_link_libraries(
         ${CMAKE_THREAD_LIBS_INIT}
         ${GMP_LIBRARIES}
         aztec_common
+        barretenberg
 )
 
 target_include_directories(
@@ -53,6 +88,7 @@ target_include_directories(
         ${DEPENDS_DIR}/libff
         ${DEPENDS_DIR}/blake2b/ref
         ${private_include_dir}
+        ${DEPENDS_DIR}/barretenberg/src
 )
 
 target_compile_definitions(seal PRIVATE SEALING=1)

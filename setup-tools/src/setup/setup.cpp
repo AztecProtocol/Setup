@@ -12,7 +12,6 @@
 #ifdef __linux__
 #include <pthread.h>
 #endif
-
 #include <aztec_common/streaming_transcript.hpp>
 
 #include "utils.hpp"
@@ -33,27 +32,50 @@ std::string getTranscriptOutPath(std::string const &dir, size_t num)
 };
 
 // A compute thread. A job consists of multiple threads.
-template <typename GroupT, size_t N>
+template <typename GroupT>
 void compute_thread(Fr const &y, std::vector<GroupT> &g_x, size_t transcript_start, size_t thread_start, size_t thread_range, std::atomic<size_t> &progress)
 {
+    constexpr size_t num_limbs = sizeof(Fq) / GMP_NUMB_BYTES;
+
     Fr accumulator = y ^ (unsigned long)(transcript_start + thread_start + 1);
 
     for (size_t i = thread_start; i < thread_start + thread_range; ++i)
     {
-        libff::bigint<N> x_bigint = accumulator.as_bigint();
-        g_x[i] = libff::fixed_window_wnaf_exp<GroupT, N>(WNAF_WINDOW_SIZE, g_x[i], x_bigint);
+        libff::bigint<num_limbs> x_bigint = accumulator.as_bigint();
+        g_x[i] = libff::fixed_window_wnaf_exp<GroupT, num_limbs>(WNAF_WINDOW_SIZE, g_x[i], x_bigint);
         accumulator = accumulator * y;
         ++progress;
     }
 }
+
+#ifdef SUPERFAST
+// Include a fast, Barretenberg specialization for G1 points.
+#include <barretenberg/groups/g1.hpp>
+
+namespace bb = barretenberg;
+
+void compute_g1_thread(Fr const &_y, std::vector<G1> &g_x, size_t transcript_start, size_t thread_start, size_t thread_range, std::atomic<size_t> &progress)
+{
+    bb::fr::field_t &y = *(bb::fr::field_t *)&_y;
+    bb::fr::field_t accumulator;
+    bb::fr::field_t t0 = {transcript_start + thread_start + 1, 0, 0, 0};
+    bb::fr::pow(y, t0, accumulator);
+    for (size_t i = thread_start; i < thread_start + thread_range; ++i)
+    {
+        bb::g1::element &g1x = *(bb::g1::element *)&g_x[i];
+        auto newg1x = bb::g1::group_exponentiation(g1x, accumulator);
+        bb::g1::copy(&newg1x, (bb::g1::element *)&g_x[i]);
+        accumulator = bb::fr::mul(accumulator, y);
+        ++progress;
+    }
+}
+#endif
 
 // A compute job. Processing a single transcript file results in a two jobs computed in serial over G1 and G2.
 template <typename GroupT>
 void compute_job(std::vector<GroupT> &g_x, size_t start_from, size_t progress_total, Fr const &multiplicand, size_t &progress, int weight)
 {
     std::atomic<size_t> job_progress(0);
-
-    const size_t num_limbs = sizeof(Fq) / GMP_NUMB_BYTES;
 
     size_t num_threads = std::thread::hardware_concurrency();
     num_threads = num_threads ? num_threads : 4;
@@ -69,7 +91,18 @@ void compute_job(std::vector<GroupT> &g_x, size_t start_from, size_t progress_to
         {
             thread_range += leftovers;
         }
-        threads.push_back(std::thread(compute_thread<GroupT, num_limbs>, std::ref(multiplicand), std::ref(g_x), start_from, thread_start, thread_range, std::ref(job_progress)));
+#ifdef SUPERFAST
+        if constexpr (std::is_same<GroupT, G1>::value)
+        {
+            threads.push_back(std::thread(compute_g1_thread, std::ref(multiplicand), std::ref(g_x), start_from, thread_start, thread_range, std::ref(job_progress)));
+        }
+        else
+        {
+            threads.push_back(std::thread(compute_thread<GroupT>, std::ref(multiplicand), std::ref(g_x), start_from, thread_start, thread_range, std::ref(job_progress)));
+        }
+#else
+        threads.push_back(std::thread(compute_thread<GroupT>, std::ref(multiplicand), std::ref(g_x), start_from, thread_start, thread_range, std::ref(job_progress)));
+#endif
 
 #ifdef __linux__
         // Create a cpu_set_t object representing a set of CPUs. Clear it and mark

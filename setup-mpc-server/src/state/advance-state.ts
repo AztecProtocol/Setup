@@ -63,6 +63,7 @@ export async function advanceState(state: MpcState, store: TranscriptStore, veri
     ) {
       runningParticipant.sequence = nextSequence;
       runningParticipant.state = 'INVALIDATED';
+      runningParticipant.transcripts = [];
       runningParticipant.error = 'timed out';
       state.sequence = nextSequence;
     } else {

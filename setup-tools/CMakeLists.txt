@@ -30,8 +30,9 @@ find_path(GMP_INCLUDE_DIR NAMES gmp.h)
 find_library(GMP_LIBRARIES NAMES gmp libgmp)
 find_library(GMPXX_LIBRARIES NAMES gmpxx libgmpxx)
 
+add_compile_options(-Werror -Wall -Wextra)
 add_compile_options(-fno-stack-protector)
-add_compile_options(-Wno-unused-const-variable)
+#add_compile_options(-Wno-unused-const-variable)
 
 option(
     ENABLE_LIBFF_PROFILING

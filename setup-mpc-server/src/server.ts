@@ -436,30 +436,30 @@ export class Server implements MpcServer {
   private async verifierCallback(address: Address, transcriptNumber: number, verified: boolean) {
     const release = await this.mutex.acquire();
     try {
+      const p = this.getParticipant(address);
+
+      if (p.state !== 'RUNNING') {
+        // Abort update if state changed during verification process (timed out).
+        return;
+      }
+
       if (verified) {
-        await this.onVerified(address, transcriptNumber);
+        await this.onVerified(p, transcriptNumber);
       } else {
-        await this.onRejected(address, transcriptNumber);
+        await this.onRejected(p, transcriptNumber);
       }
     } finally {
       release();
     }
   }
 
-  private async onVerified(address: Address, transcriptNumber: number) {
-    const p = this.getParticipant(address);
-
-    if (p.state !== 'RUNNING') {
-      // Abort update if state changed during verification process (timed out).
-      return;
-    }
-
+  private async onVerified(p: Participant, transcriptNumber: number) {
     p.lastVerified = moment();
     p.transcripts[transcriptNumber].complete = true;
     p.verifyProgress = ((transcriptNumber + 1) / p.transcripts.length) * 100;
 
     if (p.transcripts.every(t => t.complete)) {
-      await this.store.makeLive(address);
+      await this.store.makeLive(p.address);
       p.state = 'COMPLETE';
       p.runningState = 'COMPLETE';
       // Don't need transcripts anymore. If we don't clear them, state size will increase over time.
@@ -476,9 +476,8 @@ export class Server implements MpcServer {
     p.sequence = this.state.sequence;
   }
 
-  private async onRejected(address: Address, transcriptNumber: number) {
-    const p = this.getParticipant(address);
-    console.error(`Verification failed: ${address.toString()} ${transcriptNumber}...`);
+  private async onRejected(p: Participant, transcriptNumber: number) {
+    console.error(`Verification failed: ${p.address.toString()} ${transcriptNumber}...`);
     if (p.runningState === 'OFFLINE') {
       // If participant is computing offline, we'll be more lenient and give them a chance to retry.
       p.transcripts[transcriptNumber].uploaded = 0;

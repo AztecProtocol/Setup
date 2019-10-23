@@ -3,6 +3,7 @@
 #include <setup/setup.hpp>
 #include <setup/utils.hpp>
 #include <verify/verifier.hpp>
+#include <setup/setup.hpp>
 #include "test_utils.hpp"
 
 TEST(setup, batch_normalize_works)
@@ -37,15 +38,11 @@ TEST(setup, same_ratio)
 {
     libff::init_alt_bn128_params();
     size_t N = 100;
-    std::vector<G1> points;
-    points.reserve(N);
+    std::vector<G1> points(N, G1::one());
     Fr y = Fr::random_element();
-    Fr accumulator = y;
-    for (size_t i = 0; i < 100; ++i)
-    {
-        points.emplace_back(accumulator * G1::one());
-        accumulator = accumulator * y;
-    }
+    std::atomic<size_t> progress(0);
+    compute_g1_thread(y, points, 0, 0, N, progress);
+
     VerificationKey<G2> g2_key;
     g2_key.lhs = y * G2::one();
     g2_key.rhs = G2::one();
@@ -62,15 +59,10 @@ TEST(setup, validate_polynomial_evaluation)
 {
     libff::init_alt_bn128_params();
     size_t N = 100;
-    std::vector<G1> points;
-    points.reserve(N);
+    std::vector<G1> points(N, G1::one());
     Fr y = Fr::random_element();
-    Fr accumulator = y;
-    for (size_t i = 0; i < 100; ++i)
-    {
-        points.emplace_back(accumulator * G1::one());
-        accumulator = accumulator * y;
-    }
+    std::atomic<size_t> progress(0);
+    compute_g1_thread(y, points, 0, 0, N, progress);
     G2 comparator = y * G2::one();
 
     bool result = validate_polynomial_evaluation(points, comparator);
@@ -93,11 +85,13 @@ TEST(setup, validate_transcript)
         Fr accumulator = y;
         for (size_t i = 0; i < N; ++i)
         {
-            g1_x_prev.emplace_back(accumulator * G1::one());
+            g1_x_prev.emplace_back(G1::one());
             g2_x_prev.emplace_back(accumulator * G2::one());
 
             accumulator = accumulator * y;
         }
+        std::atomic<size_t> progress(0);
+        compute_g1_thread(y, g1_x_prev, 0, 0, N, progress);
     }
 
     {
@@ -105,11 +99,13 @@ TEST(setup, validate_transcript)
         Fr accumulator = y;
         for (size_t i = 0; i < N; ++i)
         {
-            g1_x.emplace_back(accumulator * g1_x_prev[i]);
+            g1_x.emplace_back(g1_x_prev[i]);
             g2_x.emplace_back(accumulator * g2_x_prev[i]);
 
             accumulator = accumulator * y;
         }
+        std::atomic<size_t> progress(0);
+        compute_g1_thread(y, g1_x, 0, 0, N, progress);
         g2_y = libff::fixed_window_wnaf_exp<G2, num_limbs>(5, G2::one(), y.as_bigint());
     }
 

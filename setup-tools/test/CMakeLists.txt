@@ -24,11 +24,6 @@ mark_as_advanced(
 
 set(setup_private_include_dir ${PROJECT_SOURCE_DIR}/src)
 
-#add_compile_options(-Werror -Wall -Wextra -Wshadow)
-#add_compile_options(-Wconversion -Wsign-conversion)
-#add_compile_options(-fno-stack-protector)
-#add_compile_options(-Wno-unused-const-variable)
-
 find_package (OpenMP)
 
 add_executable(
@@ -39,11 +34,14 @@ add_executable(
     ../src/verify/verifier.cpp
     ../src/range/range_multi_exp.cpp
     ../src/generate_h/range_multi_exp.cpp
+    ../src/setup/setup.cpp
 )
 
 if(OpenMP_CXX_FOUND)
     target_link_libraries(setup_tests PUBLIC OpenMP::OpenMP_CXX)
 endif()
+
+target_compile_options(setup_tests PRIVATE -Wno-sign-compare)
 
 target_link_libraries(
     setup_tests
@@ -75,3 +73,5 @@ add_test(
     TEST_PREFIX
     ${PROJECT_NAME}/tests/
 )
+
+target_compile_definitions(setup_tests PRIVATE SUPERFAST=1)
