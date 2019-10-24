@@ -167,10 +167,10 @@ export class Server implements MpcServer {
 
       // If we have a running participant, reset their lastVerified time to give them additional
       // time on current chunk. Not fair to penalise them when we restarted the server.
-      // const running = this.state.participants.find(p => p.state === 'RUNNING');
-      // if (running) {
-      //   running.lastVerified = moment();
-      // }
+      const running = state.participants.find(p => p.state === 'RUNNING');
+      if (running) {
+        running.lastVerified = moment();
+      }
 
       this.state = state;
       this.readState = cloneMpcState(state);
@@ -210,9 +210,9 @@ export class Server implements MpcServer {
 
     // Get any files awaiting verification and add to the queue.
     if (runningParticipant) {
-      const { address } = runningParticipant;
+      const { address, transcripts } = runningParticipant;
       const unverified = await this.store.getUnverified(address);
-      unverified.forEach(item => verifier.put({ address, ...item }));
+      unverified.filter(uv => !transcripts[uv.num].complete).forEach(item => verifier.put({ address, ...item }));
     }
 
     return verifier;
