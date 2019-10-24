@@ -33,19 +33,7 @@ export async function advanceState(state: MpcState, store: TranscriptStore, veri
     state.sequence = nextSequence;
   }
 
-  const runningParticipant = state.participants.find(p => p.state === 'RUNNING');
-
-  // If at least min participants reached and after end date, shift ceremony to sealing state.
-  if (
-    !runningParticipant &&
-    state.participants.reduce((a, p) => (p.state === 'COMPLETE' ? a + 1 : a), 0) >= state.minParticipants &&
-    now.isSameOrAfter(state.endTime)
-  ) {
-    state.statusSequence = nextSequence;
-    state.ceremonyState = 'SEALING';
-    state.sequence = nextSequence;
-    return;
-  }
+  let runningParticipant = state.participants.find(p => p.state === 'RUNNING');
 
   // If we have a running participant, mark as invalidated if timed out.
   if (runningParticipant) {
@@ -66,10 +54,23 @@ export async function advanceState(state: MpcState, store: TranscriptStore, veri
       runningParticipant.state = 'INVALIDATED';
       runningParticipant.transcripts = [];
       runningParticipant.error = 'timed out';
+      runningParticipant = undefined;
       state.sequence = nextSequence;
     } else {
       return;
     }
+  }
+
+  // If at least min participants reached and after end date, shift ceremony to sealing state.
+  if (
+    !runningParticipant &&
+    state.participants.reduce((a, p) => (p.state === 'COMPLETE' ? a + 1 : a), 0) >= state.minParticipants &&
+    now.isSameOrAfter(state.endTime)
+  ) {
+    state.statusSequence = nextSequence;
+    state.ceremonyState = 'SEALING';
+    state.sequence = nextSequence;
+    return;
   }
 
   // Find next waiting, online participant and shift them to the running state.
