@@ -57,6 +57,7 @@ export interface Participant {
   runningState: ParticipantRunningState;
   transcripts: Transcript[]; // Except 'complete'.
   computeProgress: number;
+  fast: boolean;
 }
 
 export interface ParticipantLocation {

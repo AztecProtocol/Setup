@@ -384,7 +384,7 @@ export class Server implements MpcServer {
   public async updateParticipant(participantData: Participant, admin: boolean = false) {
     const release = await this.mutex.acquire();
     try {
-      const { transcripts, address, runningState, computeProgress, invalidateAfter } = participantData;
+      const { transcripts, address, runningState, computeProgress, invalidateAfter, fast } = participantData;
       const p = this.getAndAssertRunningParticipant(address);
       if (admin) {
         // Fields that administrator can adjust.
@@ -402,6 +402,7 @@ export class Server implements MpcServer {
             t.uploaded = transcripts[i].uploaded;
           });
         }
+        p.fast = fast;
         p.runningState = runningState;
         p.computeProgress = computeProgress;
         p.lastUpdate = moment();

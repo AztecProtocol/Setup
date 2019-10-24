@@ -22,5 +22,6 @@ export function createParticipant(
     verifyProgress: 0,
     transcripts: [],
     address,
+    fast: false,
   };
 }

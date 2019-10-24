@@ -70,13 +70,14 @@ export class HttpClient implements MpcServer {
     if (!this.account) {
       throw new Error('No account provided. Can only request server state, not modify.');
     }
-    const { transcripts, address, runningState, computeProgress, error } = participant;
+    const { transcripts, address, runningState, computeProgress, error, fast } = participant;
     const body = JSON.stringify({
       address: address.toString().toLowerCase(),
       runningState,
       computeProgress,
       transcripts,
       error,
+      fast,
     });
     const { signature } = this.account.sign(body);
     const response = await fetch(`${this.apiUrl}/participant/${address.toString().toLowerCase()}`, {

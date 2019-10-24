@@ -10,7 +10,6 @@ export class TerminalInterface {
   private banner = false;
   private bannerY!: number;
   private listY!: number;
-  private offset: number = 0;
   private state?: MpcState;
   public lastUpdate?: Moment;
 
@@ -185,9 +184,9 @@ export class TerminalInterface {
 
     const { participants } = this.state;
     const linesLeft = this.term.height - this.listY;
-    this.offset = this.getRenderOffset(linesLeft);
+    const offset = this.getRenderOffset(linesLeft);
 
-    participants.slice(this.offset, this.offset + linesLeft).forEach((p, i) => {
+    participants.slice(offset, offset + linesLeft).forEach((p, i) => {
       this.renderLine(p, i);
       this.term.nextLine(1);
     });
@@ -250,7 +249,11 @@ export class TerminalInterface {
     const progIndex = addrString.length * ((p.runningState === 'OFFLINE' ? p.verifyProgress : p.computeProgress) / 100);
     term.yellow(addrString.slice(0, progIndex)).grey(addrString.slice(progIndex));
 
-    term.red(' <');
+    if (p.fast) {
+      term.magentaBright(' <');
+    } else {
+      term.red(' <');
+    }
     if (p.lastUpdate || p.runningState === 'OFFLINE') {
       switch (p.runningState) {
         case 'OFFLINE':
@@ -341,10 +344,12 @@ export class TerminalInterface {
       await this.renderBanner();
     }
 
+    const linesLeft = this.term.height - this.listY;
+    const offset = this.getRenderOffset(linesLeft);
     this.state.participants.forEach((p, i) => {
       // Update any new participants, participants that changed, and always the running participant (for the countdown).
       if (!oldState.participants[i] || p.sequence !== oldState.participants[i].sequence || p.state === 'RUNNING') {
-        this.renderLine(p, i - this.offset);
+        this.renderLine(p, i - offset);
       }
     });
   }
