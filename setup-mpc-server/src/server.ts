@@ -167,10 +167,10 @@ export class Server implements MpcServer {
 
       // If we have a running participant, reset their lastVerified time to give them additional
       // time on current chunk. Not fair to penalise them when we restarted the server.
-      const running = this.state.participants.find(p => p.state === 'RUNNING');
-      if (running) {
-        running.lastVerified = moment();
-      }
+      // const running = this.state.participants.find(p => p.state === 'RUNNING');
+      // if (running) {
+      //   running.lastVerified = moment();
+      // }
 
       this.state = state;
       this.readState = cloneMpcState(state);
