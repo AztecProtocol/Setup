@@ -162,10 +162,20 @@ export class Server implements MpcServer {
   private async resetWithState(state: MpcState) {
     this.stop();
 
-    const release = await this.mutex.acquire();
-    this.state = state;
-    this.readState = cloneMpcState(state);
-    release();
+    {
+      const release = await this.mutex.acquire();
+
+      // If we have a running participant, reset their lastVerified time to give them additional
+      // time on current chunk. Not fair to penalise them when we restarted the server.
+      const running = this.state.participants.find(p => p.state === 'RUNNING');
+      if (running) {
+        running.lastVerified = moment();
+      }
+
+      this.state = state;
+      this.readState = cloneMpcState(state);
+      release();
+    }
 
     this.store = this.storeFactory.create(state.name);
 
@@ -380,6 +390,7 @@ export class Server implements MpcServer {
         // Fields that administrator can adjust.
         if (invalidateAfter) {
           p.startedAt = moment();
+          p.lastVerified = moment();
           p.invalidateAfter = invalidateAfter;
         }
       } else {
