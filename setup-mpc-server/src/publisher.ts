@@ -45,7 +45,7 @@ export class Publisher extends EventEmitter {
 
         return `https://aztec-ignition.s3.eu-west-2.amazonaws.com/index.html#${this.s3Folder}/`;
       } catch (err) {
-        console.error('Publisher failed (will retry): ', err);
+        console.log('Publisher failed (will retry): ', err);
         await new Promise(resolve => setTimeout(resolve, 1000));
         if (this.cancelled) {
           return;
@@ -126,11 +126,21 @@ export class Publisher extends EventEmitter {
       completedAt: moment(),
       participants: participants
         .filter(p => p.state === 'COMPLETE')
-        .map(({ address, position, startedAt, completedAt }) => ({
+        .map(({ address, position, priority, startedAt, completedAt }) => ({
           address,
           position,
+          priority,
           startedAt,
           completedAt,
+        })),
+      invalidated: participants
+        .filter(p => p.state === 'INVALIDATED')
+        .map(({ address, position, priority, startedAt, error }) => ({
+          address,
+          position,
+          priority,
+          startedAt,
+          error,
         })),
       crs,
     };
@@ -180,7 +190,7 @@ export class Publisher extends EventEmitter {
 
         return;
       } catch (err) {
-        console.error(`Upload of ${key} failed. Will retry.`);
+        console.log(`Upload of ${key} failed. Will retry.`);
         await new Promise(resolve => setTimeout(resolve, 1000));
         if (this.cancelled) {
           return;

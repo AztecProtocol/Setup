@@ -60,7 +60,7 @@ export class DiskStateStore implements StateStore {
       await writeFileAsync(`${this.storeFile}.new`, JSON.stringify(this.state));
       await renameAsync(`${this.storeFile}.new`, this.storeFile);
     } catch (err) {
-      console.error(err);
+      console.log(err);
     }
   }
 

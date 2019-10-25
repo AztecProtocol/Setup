@@ -60,10 +60,10 @@ export class Sealer extends EventEmitter {
         };
       } catch (err) {
         if (err instanceof CancelledError) {
-          console.error('Sealer cancelled.');
+          console.log('Sealer cancelled.');
           return;
         }
-        console.error('Sealer failed: ', err);
+        console.log('Sealer failed: ', err);
         await new Promise(resolve => setTimeout(resolve, 1000));
       }
     }
@@ -98,14 +98,14 @@ export class Sealer extends EventEmitter {
         })
         .on('line', this.handleSetupOutput);
 
-      proc.stderr.on('data', data => console.error(data.toString()));
+      proc.stderr.on('data', data => console.log(data.toString()));
 
       proc.on('close', code => {
         this.proc = undefined;
         if (this.cancelled) {
           reject(new CancelledError());
         } else if (code === 0) {
-          console.error(`Sealing complete.`);
+          console.log(`Sealing complete.`);
           resolve();
         } else {
           reject(new Error(`seal exited with code ${code}`));
@@ -117,7 +117,7 @@ export class Sealer extends EventEmitter {
   }
 
   private handleSetupOutput = (data: Buffer) => {
-    console.error('From seal: ', data.toString());
+    console.log('From seal: ', data.toString());
     const params = data
       .toString()
       .replace('\n', '')
@@ -255,7 +255,7 @@ export class Sealer extends EventEmitter {
 
         return;
       } catch (err) {
-        console.error(`Upload of ${key} failed. Will retry.`);
+        console.log(`Upload of ${key} failed. Will retry.`);
         await new Promise(resolve => setTimeout(resolve, 1000));
         if (this.cancelled) {
           return;

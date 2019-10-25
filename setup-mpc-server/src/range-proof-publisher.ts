@@ -56,7 +56,7 @@ export class RangeProofPublisher extends EventEmitter {
           return;
         }
       } catch (err) {
-        console.error('Range proof publisher failed (will retry): ', err);
+        console.log('Range proof publisher failed (will retry): ', err);
         await new Promise(resolve => setTimeout(resolve, 1000));
         if (this.cancelled) {
           return;
@@ -125,7 +125,7 @@ export class RangeProofPublisher extends EventEmitter {
 
         return;
       } catch (err) {
-        console.error(`Upload of ${key} failed. Will retry.`);
+        console.log(`Upload of ${key} failed. Will retry.`);
         await new Promise(resolve => setTimeout(resolve, 1000));
         if (this.cancelled) {
           return;

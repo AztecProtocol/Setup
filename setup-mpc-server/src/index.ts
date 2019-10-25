@@ -36,4 +36,4 @@ async function main() {
   console.log(`Server listening on port ${PORT}.`);
 }
 
-main().catch(console.error);
+main().catch(console.log);

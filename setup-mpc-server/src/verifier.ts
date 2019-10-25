@@ -45,7 +45,7 @@ export class Verifier {
         }
 
         if (await this.verifyTranscript(address, num, transcriptPath)) {
-          console.error(`Verification succeeded: ${transcriptPath}...`);
+          console.log(`Verification succeeded: ${transcriptPath}...`);
 
           await this.cb(address, num, true);
         } else {
@@ -55,7 +55,7 @@ export class Verifier {
           }
         }
       } catch (err) {
-        console.error(err);
+        console.log(err);
       }
     }
     console.log('Verifier completed.');
@@ -100,18 +100,18 @@ export class Verifier {
       args.push(this.store.getUnverifiedTranscriptPath(address, transcriptNumber - 1));
     }
 
-    console.error(`Verifiying transcript ${transcriptNumber}...`);
+    console.log(`Verifiying transcript ${transcriptNumber}...`);
     return new Promise<boolean>(resolve => {
       const binPath = '../setup-tools/verify';
       const verify = spawn(binPath, args);
       this.proc = verify;
 
       verify.stdout.on('data', data => {
-        console.error(data.toString());
+        console.log(data.toString());
       });
 
       verify.stderr.on('data', data => {
-        console.error(data.toString());
+        console.log(data.toString());
       });
 
       verify.on('close', code => {

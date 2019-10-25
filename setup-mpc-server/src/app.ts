@@ -161,57 +161,45 @@ export function appFactory(
 
   router.put('/data/:address/:num', async (ctx: Koa.Context) => {
     const address = Address.fromString(ctx.params.address.toLowerCase());
+    const transcriptNum = +ctx.params.num;
     const [pingSig, dataSig] = ctx.get('X-Signature').split(',');
+
+    console.log(`Receiving transcript: /${address.toString()}/${transcriptNum}`);
 
     // 500, unless we explicitly set it to 200 or something else.
     ctx.status = 500;
 
-    if (lockUpload) {
-      ctx.body = {
-        error: 'Can only upload 1 file at a time.',
-      };
-      ctx.status = 401;
-      return;
-    }
+    try {
+      if (lockUpload) {
+        throw new Error('Can only upload 1 file at a time.');
+      }
 
-    if (!pingSig || !dataSig) {
-      ctx.body = {
-        error: 'X-Signature header incomplete.',
-      };
-      ctx.status = 401;
-      return;
-    }
+      if (!pingSig || !dataSig) {
+        throw new Error('X-Signature header incomplete.');
+      }
 
-    // Before reading body, pre-authenticate user.
-    if (!address.equals(recover('ping', pingSig))) {
-      ctx.status = 401;
-      return;
-    }
+      // Before reading body, pre-authenticate user.
+      if (!address.equals(recover('ping', pingSig))) {
+        throw new Error('Ping signature incorrect.');
+      }
 
-    const { participants } = await server.getState();
-    const participant = participants.find(p => p.address.equals(address));
-    if (!participant || participant.state !== 'RUNNING') {
-      ctx.body = {
-        error: 'Can only upload to currently running participant.',
-      };
-      ctx.status = 401;
-      return;
-    }
+      const { participants } = await server.getState();
+      const participant = participants.find(p => p.address.equals(address));
+      if (!participant || participant.state !== 'RUNNING') {
+        throw new Error('Can only upload to currently running participant.');
+      }
 
-    const transcriptNum = +ctx.params.num;
-    if (transcriptNum >= 30) {
-      ctx.body = {
-        error: 'Transcript number out of range (max 0-29).',
-      };
-      ctx.status = 401;
-      return;
-    }
+      if (transcriptNum >= 30) {
+        throw new Error('Transcript number out of range (max 0-29).');
+      }
 
-    const transcript = participant.transcripts[transcriptNum];
-    if (transcript && transcript.size > 0 && transcript.uploaded === transcript.size) {
-      ctx.body = {
-        error: 'Transcript already uploaded.',
-      };
+      const transcript = participant.transcripts[transcriptNum];
+      if (transcript && transcript.size > 0 && transcript.uploaded === transcript.size) {
+        throw new Error('Transcript already uploaded.');
+      }
+    } catch (err) {
+      console.log(`Rejecting: ${err.message}`);
+      ctx.body = { error: err.message };
       ctx.status = 401;
       return;
     }
@@ -223,6 +211,7 @@ export function appFactory(
     try {
       lockUpload = true;
 
+      console.log(`Writing to temporary file: ${transcriptPath}`);
       await new Promise((resolve, reject) => {
         const writeStream = createWriteStream(transcriptPath);
         const meterStream = meter(maxUploadSize);
@@ -239,6 +228,7 @@ export function appFactory(
           .on('error', reject)
           .on('finish', resolve);
       });
+      console.log(`Finished receiving transcript: ${transcriptPath}`);
 
       const hash = await hashFiles([transcriptPath]);
       if (!address.equals(recover(bufferToHex(hash), dataSig))) {
@@ -252,6 +242,7 @@ export function appFactory(
 
       ctx.status = 200;
     } catch (err) {
+      console.log(`Rejecting: ${err.message}`);
       ctx.body = { error: err.message };
       unlink(transcriptPath, () => {});
       unlink(signaturePath, () => {});

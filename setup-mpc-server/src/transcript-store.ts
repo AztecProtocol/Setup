@@ -160,7 +160,7 @@ export class DiskTranscriptStore implements TranscriptStore {
       }
       await rmdirAsync(this.getVerifiedBasePath(address));
     } catch (err) {
-      console.error(err);
+      console.log(err);
     }
   }
 
@@ -180,7 +180,7 @@ export class DiskTranscriptStore implements TranscriptStore {
         await rmdirAsync(this.getUnverifiedBasePath(address));
       }
     } catch (err) {
-      console.error(err);
+      console.log(err);
     }
   }
 

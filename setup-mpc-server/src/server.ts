@@ -291,7 +291,7 @@ export class Server implements MpcServer {
         this.launchRangeProofsPublisher();
       }
     } catch (err) {
-      console.error(err);
+      console.log(err);
     } finally {
       await this.stateStore.setState(this.state);
       this.readState = cloneMpcState(this.state);
@@ -497,7 +497,7 @@ export class Server implements MpcServer {
   }
 
   private async onRejected(p: Participant, transcriptNumber: number) {
-    console.error(`Verification failed: ${p.address.toString()} ${transcriptNumber}...`);
+    console.log(`Verification failed: ${p.address.toString()} ${transcriptNumber}...`);
     if (p.runningState === 'OFFLINE') {
       // If participant is computing offline, we'll be more lenient and give them a chance to retry.
       p.transcripts[transcriptNumber].uploaded = 0;
