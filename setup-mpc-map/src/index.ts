@@ -5,6 +5,9 @@ import './css/main.css';
 import { Viewer } from './viewer';
 
 async function main() {
+  if (window.location.search) {
+    window.location.search = '';
+  }
   const viewer = new Viewer();
   const url = window.location;
   const apiUrl = `${url.protocol}//${url.hostname}:${url.port}/api`;
