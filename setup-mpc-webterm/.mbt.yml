@@ -1,0 +1,14 @@
+name: setup-mpc-webterm
+build:
+  default:
+    cmd: ../ci-scripts/build.sh
+    args:
+      - setup-mpc-webterm
+commands:
+  deploy:
+    cmd: ../ci-scripts/deploy.sh
+    args:
+      - setup-mpc-webterm
+dependencies:
+  - setup-mpc-common
+  - setup-mpc-client

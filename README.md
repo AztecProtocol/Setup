@@ -74,3 +74,15 @@ Binaries are available below, install in your `PATH` as `mbt`:
 Once installed:
 
 `mbt build local`
+
+## Building Just The Client
+
+Run:
+
+`./build-client.sh`
+
+## Troubleshooting The Build
+
+Some older hardware has trouble running a specific code path that results in an “Illegal instruction” error when running tests. This results in a secondary container failing to find the setup-tools image layer.
+
+If you have this error, please comment out the last line of `/setup-tools/Dockerfile.build` and try again.
