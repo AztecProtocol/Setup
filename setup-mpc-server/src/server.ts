@@ -89,6 +89,7 @@ export class Server implements MpcServer {
       statusSequence: nextSequence,
       startSequence: nextSequence,
       ceremonyState: 'PRESELECTION',
+      paused: false,
       numG1Points: resetState.numG1Points,
       numG2Points: resetState.numG2Points,
       startTime: resetState.startTime,

@@ -185,6 +185,19 @@ describe('advance state', () => {
     ]);
   });
 
+  it('should not shift to next waiting online participant when paused', async () => {
+    state.ceremonyState = 'RUNNING';
+    state.paused = true;
+    state.participants[0].state = 'COMPLETE';
+    state.participants[1].online = true;
+
+    const now = moment(state.startTime).add(10, 's');
+    await advanceState(state, mockTranscriptStore as any, mockVerifier as any, now);
+
+    expect(state.sequence).toBe(0);
+    expect(state.participants[1].state).toBe('WAITING');
+  });
+
   it('should invalidate running tier 1 participant after timeout', async () => {
     state.ceremonyState = 'RUNNING';
     state.participants[0].startedAt = state.startTime;

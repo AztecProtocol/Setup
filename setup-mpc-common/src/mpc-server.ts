@@ -77,6 +77,7 @@ export interface MpcState {
   startSequence: number;
   statusSequence: number;
   ceremonyState: CeremonyState;
+  paused: boolean;
   maxTier2: number;
   minParticipants: number;
   numG1Points: number;
@@ -122,6 +123,7 @@ export interface ResetState {
 }
 
 export interface PatchState {
+  paused: boolean;
   startTime?: Moment;
   endTime?: Moment;
   selectBlock?: number;
