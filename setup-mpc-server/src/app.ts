@@ -192,11 +192,6 @@ export function appFactory(
       if (transcriptNum >= 30) {
         throw new Error('Transcript number out of range (max 0-29).');
       }
-
-      const transcript = participant.transcripts[transcriptNum];
-      if (transcript && transcript.size > 0 && transcript.uploaded === transcript.size) {
-        throw new Error('Transcript already uploaded.');
-      }
     } catch (err) {
       console.log(`Rejecting: ${err.message}`);
       ctx.body = { error: err.message };

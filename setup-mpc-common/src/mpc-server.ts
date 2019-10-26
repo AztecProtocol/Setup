@@ -12,10 +12,11 @@ export type CeremonyState =
   | 'COMPLETE';
 export type ParticipantState = 'WAITING' | 'RUNNING' | 'COMPLETE' | 'INVALIDATED';
 export type ParticipantRunningState = 'OFFLINE' | 'WAITING' | 'RUNNING' | 'COMPLETE';
+export type TranscriptState = 'WAITING' | 'VERIFYING' | 'COMPLETE';
 
 export interface Transcript {
   // Server controlled data.
-  complete: boolean;
+  state: TranscriptState;
   // Client controlled data.
   num: number;
   fromAddress?: Address;

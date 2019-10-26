@@ -45,8 +45,9 @@ export class DiskStateStore implements StateStore {
       // In the event that new state is added, we merge in the defaults.
       this.state = {
         ...defaultState,
-        ...mpcStateFromJSON(JSON.parse(buffer.toString())),
+        ...this.migrate(mpcStateFromJSON(JSON.parse(buffer.toString()))),
       };
+
       this.state.startSequence = this.state.sequence;
     } else {
       this.state = defaultState;
@@ -89,4 +90,18 @@ export class DiskStateStore implements StateStore {
       .replace(/[^A-Za-z0-9_ ]/g, '')
       .replace(/ +/g, '_')
       .toLowerCase()}.json`;
+
+  private migrate(state: any) {
+    // 001 - Discarded transcript complete flag in favour of state.
+    for (const p of state.participants) {
+      for (const t of p.transcripts) {
+        if (t.complete !== undefined) {
+          t.state = t.complete ? 'COMPLETE' : 'WAITING';
+          t.complete = undefined;
+        }
+      }
+    }
+
+    return state;
+  }
 }

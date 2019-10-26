@@ -129,14 +129,14 @@ describe('advance state', () => {
         size: 0,
         downloaded: 0,
         uploaded: 0,
-        complete: false,
+        state: 'WAITING',
       },
       {
         num: 1,
         size: 0,
         downloaded: 0,
         uploaded: 0,
-        complete: false,
+        state: 'WAITING',
       },
     ]);
   });
@@ -172,7 +172,7 @@ describe('advance state', () => {
         size: 1000,
         downloaded: 0,
         uploaded: 0,
-        complete: false,
+        state: 'WAITING',
       },
       {
         fromAddress: state.participants[0].address,
@@ -180,7 +180,7 @@ describe('advance state', () => {
         size: 1005,
         downloaded: 0,
         uploaded: 0,
-        complete: false,
+        state: 'WAITING',
       },
     ]);
   });

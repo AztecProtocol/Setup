@@ -1,7 +1,8 @@
 import moment from 'moment';
-import { applyDelta, cloneParticipant, MpcServer, MpcState, Participant } from 'setup-mpc-common';
+import { applyDelta, cloneParticipant, MpcServer, MpcState } from 'setup-mpc-common';
 import { Writable } from 'stream';
 import { Account } from 'web3x/account';
+import { Address } from 'web3x/address';
 import { Compute } from './compute';
 import { TerminalInterface } from './terminal-interface';
 import { TerminalKit } from './terminal-kit';
@@ -48,6 +49,10 @@ export class App {
 
       // this.state updates atomically in this code block, allowing the ui to update independently.
       if (!this.state) {
+        if (this.account && this.participantIsOnline(remoteStateDelta, this.account.address)) {
+          this.terminalInterface.error = 'Participant is already online. Is another container already running?';
+          throw new Error('Participant is already online.');
+        }
         this.state = remoteStateDelta;
       } else if (this.state.startSequence !== remoteStateDelta.startSequence) {
         this.state = await this.server.getState();
@@ -68,6 +73,11 @@ export class App {
       this.scheduleUpdate();
     }
   };
+
+  private participantIsOnline(state: MpcState, address: Address) {
+    const p = state.participants.find(p => p.address.equals(address));
+    return p && p.online;
+  }
 
   private updateUi = () => {
     if (this.compute && this.state) {

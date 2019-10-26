@@ -101,7 +101,7 @@ async function getRunningParticipantsTranscripts(state: MpcState, store: Transcr
         size: 0,
         downloaded: 0,
         uploaded: 0,
-        complete: false,
+        state: 'WAITING',
       }));
   }
 
@@ -112,7 +112,7 @@ async function getRunningParticipantsTranscripts(state: MpcState, store: Transcr
     fromAddress: lastCompletedParticipant.address,
     downloaded: 0,
     uploaded: 0,
-    complete: false,
+    state: 'WAITING',
   }));
 }
 

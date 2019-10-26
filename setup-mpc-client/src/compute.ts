@@ -68,33 +68,26 @@ export class Compute {
     if (previousParticipant) {
       console.error('Previous participant found.');
 
-      if (this.myState.transcripts.length === 0) {
-        // We haven't yet defined our transcripts. Base them off the previous participants.
-        this.myState.transcripts = previousParticipant.transcripts.map(t => ({
-          ...t,
-          fromAddress: previousParticipant.address,
-          uploaded: 0,
-          downloaded: 0,
-          complete: false,
-        }));
-        this.myState.transcripts.forEach(transcript => this.downloader.put(transcript));
-      } else {
-        this.myState.transcripts.forEach(transcript => {
-          if (!this.downloader.isDownloaded(transcript)) {
-            // If not fully downloaded, reset download and upload progress as we are starting over.
-            transcript.downloaded = 0;
-            transcript.uploaded = 0;
-          }
+      this.myState.transcripts.forEach(transcript => {
+        // Reset download and upload progress as we are starting over.
+        if (!this.downloader.isDownloaded(transcript)) {
+          transcript.downloaded = 0;
+        }
+        transcript.uploaded = 0;
 
-          // Add to downloaded queue regardless of if already downloaded. Will shortcut later in the downloader.
-          this.downloader.put(transcript);
-        });
-      }
+        // Add to downloaded queue regardless of if already downloaded. Will shortcut later in the downloader.
+        this.downloader.put(transcript);
+      });
 
       this.downloader.end();
     } else {
       console.error('We are the first participant.');
       this.downloader.end();
+
+      this.myState.transcripts.forEach(transcript => {
+        transcript.uploaded = 0;
+      });
+
       const { numG1Points, numG2Points, pointsPerTranscript } = this.state;
       this.computeQueue.put(`create ${numG1Points} ${numG2Points} ${pointsPerTranscript}`);
       this.computeQueue.end();

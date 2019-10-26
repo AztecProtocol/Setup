@@ -23,6 +23,10 @@ export class Verifier {
     private cb: (address: Address, num: number, verified: boolean) => Promise<void>
   ) {}
 
+  public async active() {
+    return this.proc || (await this.queue.length());
+  }
+
   public async run() {
     console.log('Verifier started...');
     while (true) {

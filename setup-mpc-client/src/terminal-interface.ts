@@ -12,6 +12,7 @@ export class TerminalInterface {
   private listY!: number;
   private state?: MpcState;
   public lastUpdate?: Moment;
+  public error?: string
 
   constructor(private term: TerminalKit, private myAccount?: Account) {}
 
@@ -50,7 +51,7 @@ export class TerminalInterface {
     this.term.eraseLine();
 
     if (!this.state) {
-      this.term.white('Awaiting update from server...');
+      this.term.white(this.error || 'Awaiting update from server...');
       return;
     }
 
