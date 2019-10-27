@@ -140,6 +140,7 @@ export class Coordinator {
 
   private updateCeremonyStatus(state: MpcState) {
     const {
+      paused,
       ceremonyState,
       publishPath,
       selectBlock,
@@ -163,7 +164,10 @@ export class Coordinator {
         el.innerHTML = `PARTICIPANTS SELECTED, AWAITING START`;
         break;
       case 'RUNNING':
-        if (!participants.some(p => p.state === 'RUNNING')) {
+        if (paused) {
+          el.className = 'yellow';
+          el.innerHTML = `PAUSED`;
+        } else if (!participants.some(p => p.state === 'RUNNING')) {
           el.className = 'yellow';
           el.innerHTML = `AWAITING PARTICIPANT`;
         } else {

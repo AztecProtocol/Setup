@@ -89,6 +89,7 @@ export class Server implements MpcServer {
       statusSequence: nextSequence,
       startSequence: nextSequence,
       ceremonyState: 'PRESELECTION',
+      paused: false,
       numG1Points: resetState.numG1Points,
       numG2Points: resetState.numG2Points,
       startTime: resetState.startTime,
@@ -212,7 +213,9 @@ export class Server implements MpcServer {
     if (runningParticipant) {
       const { address, transcripts } = runningParticipant;
       const unverified = await this.store.getUnverified(address);
-      unverified.filter(uv => !transcripts[uv.num].complete).forEach(item => verifier.put({ address, ...item }));
+      unverified
+        .filter(uv => transcripts[uv.num].state !== 'COMPLETE')
+        .forEach(item => verifier.put({ address, ...item }));
     }
 
     return verifier;
@@ -424,8 +427,24 @@ export class Server implements MpcServer {
   }
 
   public async uploadData(address: Address, transcriptNumber: number, transcriptPath: string, signaturePath: string) {
-    this.getAndAssertRunningParticipant(address);
+    const p = this.getAndAssertRunningParticipant(address);
+
+    // If we have any transcripts >= to this one, they must all be invalidated. If the verifier is running just reject
+    // outright and client can try again once verifier is complete. Enables safe client restarts.
+    const gteCurrent = p.transcripts.filter(t => t.num >= transcriptNumber);
+    if (gteCurrent.some(t => t.state !== 'WAITING')) {
+      if (await this.verifier.active()) {
+        throw new Error('Upload of older transcript rejected until verifier inactive.');
+      }
+      for (const t of gteCurrent) {
+        console.log(`Setting transcript ${t.num} to be WAITING.`);
+        await this.store.eraseUnverified(address, transcriptNumber);
+        t.state = 'WAITING';
+      }
+    }
+
     await this.store.save(address, transcriptNumber, transcriptPath, signaturePath);
+    p.transcripts[transcriptNumber].state = 'VERIFYING';
     this.verifier.put({ address, num: transcriptNumber });
   }
 
@@ -475,10 +494,10 @@ export class Server implements MpcServer {
 
   private async onVerified(p: Participant, transcriptNumber: number) {
     p.lastVerified = moment();
-    p.transcripts[transcriptNumber].complete = true;
+    p.transcripts[transcriptNumber].state = 'COMPLETE';
     p.verifyProgress = ((transcriptNumber + 1) / p.transcripts.length) * 100;
 
-    if (p.transcripts.every(t => t.complete)) {
+    if (p.transcripts.every(t => t.state === 'COMPLETE')) {
       await this.store.makeLive(p.address);
       p.state = 'COMPLETE';
       p.runningState = 'COMPLETE';

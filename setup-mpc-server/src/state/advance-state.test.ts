@@ -129,14 +129,14 @@ describe('advance state', () => {
         size: 0,
         downloaded: 0,
         uploaded: 0,
-        complete: false,
+        state: 'WAITING',
       },
       {
         num: 1,
         size: 0,
         downloaded: 0,
         uploaded: 0,
-        complete: false,
+        state: 'WAITING',
       },
     ]);
   });
@@ -172,7 +172,7 @@ describe('advance state', () => {
         size: 1000,
         downloaded: 0,
         uploaded: 0,
-        complete: false,
+        state: 'WAITING',
       },
       {
         fromAddress: state.participants[0].address,
@@ -180,9 +180,22 @@ describe('advance state', () => {
         size: 1005,
         downloaded: 0,
         uploaded: 0,
-        complete: false,
+        state: 'WAITING',
       },
     ]);
+  });
+
+  it('should not shift to next waiting online participant when paused', async () => {
+    state.ceremonyState = 'RUNNING';
+    state.paused = true;
+    state.participants[0].state = 'COMPLETE';
+    state.participants[1].online = true;
+
+    const now = moment(state.startTime).add(10, 's');
+    await advanceState(state, mockTranscriptStore as any, mockVerifier as any, now);
+
+    expect(state.sequence).toBe(0);
+    expect(state.participants[1].state).toBe('WAITING');
   });
 
   it('should invalidate running tier 1 participant after timeout', async () => {

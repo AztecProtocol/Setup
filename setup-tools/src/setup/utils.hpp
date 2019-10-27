@@ -1,7 +1,7 @@
 /**
  * Setup
  * Copyright Spilsbury Holdings 2019
- * 
+ *
  **/
 #pragma once
 
@@ -21,7 +21,7 @@ template <typename FieldT, typename GroupT>
 void batch_normalize(size_t start, size_t number, GroupT *x, GroupT *alpha_x)
 {
     FieldT accumulator = FieldT::one();
-    FieldT* temporaries = static_cast<FieldT *>(malloc(2 * number * sizeof(FieldT)));
+    FieldT *temporaries = static_cast<FieldT *>(malloc(2 * number * sizeof(FieldT)));
     for (size_t i = 0; i < number; ++i)
     {
         temporaries[2 * i] = accumulator;
@@ -55,7 +55,7 @@ template <typename FieldT, typename GroupT>
 void batch_normalize(size_t start, size_t number, GroupT *x)
 {
     FieldT accumulator = FieldT::one();
-    FieldT* temporaries = static_cast<FieldT *>(malloc(number * sizeof(FieldT)));
+    FieldT *temporaries = static_cast<FieldT *>(malloc(number * sizeof(FieldT)));
     for (size_t i = 0; i < number; ++i)
     {
         temporaries[i] = accumulator;
@@ -80,7 +80,7 @@ void batch_normalize(size_t start, size_t number, GroupT *x)
 template <typename FieldT>
 FieldT convert_buffer_to_field_element(char *buffer, size_t size)
 {
-    if (size <= sizeof(FieldT))
+    if (size < sizeof(FieldT))
     {
         // throw an error if the buffer size is too small.
         // Don't want to just zero-pad, it is likely that something has gone wrong - with our current use-case,

@@ -7,7 +7,7 @@ import { orderWaitingParticipants } from './order-waiting-participants';
 const OFFLINE_AFTER = 10;
 
 export async function advanceState(state: MpcState, store: TranscriptStore, verifier: Verifier, now: Moment) {
-  const { sequence, startTime, completedAt, invalidateAfter } = state;
+  const { paused, sequence, startTime, completedAt, invalidateAfter } = state;
   const nextSequence = sequence + 1;
 
   // Shift any participants that haven't performed an update recently to offline state and reorder accordingly.
@@ -16,7 +16,7 @@ export async function advanceState(state: MpcState, store: TranscriptStore, veri
     state.sequence = nextSequence;
   }
 
-  // Nothing to do if not yet running, or already completed.
+  // Nothing to do if paused, not yet running, or already completed.
   if (now.isBefore(startTime) || completedAt) {
     return;
   }
@@ -75,7 +75,7 @@ export async function advanceState(state: MpcState, store: TranscriptStore, veri
 
   // Find next waiting, online participant and shift them to the running state.
   const waitingParticipant = state.participants.find(p => p.state === 'WAITING');
-  if (waitingParticipant && waitingParticipant.online) {
+  if (!paused && waitingParticipant && waitingParticipant.online) {
     await store.eraseAll(waitingParticipant.address);
     state.sequence = nextSequence;
     state.statusSequence = nextSequence;
@@ -101,7 +101,7 @@ async function getRunningParticipantsTranscripts(state: MpcState, store: Transcr
         size: 0,
         downloaded: 0,
         uploaded: 0,
-        complete: false,
+        state: 'WAITING',
       }));
   }
 
@@ -112,7 +112,7 @@ async function getRunningParticipantsTranscripts(state: MpcState, store: Transcr
     fromAddress: lastCompletedParticipant.address,
     downloaded: 0,
     uploaded: 0,
-    complete: false,
+    state: 'WAITING',
   }));
 }
 
