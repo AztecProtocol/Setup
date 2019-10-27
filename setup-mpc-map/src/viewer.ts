@@ -64,8 +64,8 @@ export class Viewer extends EventEmitter {
     this.viewer.scene.moon = undefined;
 
     this.viewer.cesiumWidget.screenSpaceEventHandler.setInputAction(() => {
-      this.emit('double_click');
-    }, Cesium.ScreenSpaceEventType.LEFT_DOUBLE_CLICK);
+      this.emit('click');
+    }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
 
     this.viewer.clock.onTick.addEventListener(clock => {
       this.emit('tick', Cesium.JulianDate.toDate(clock.currentTime));

@@ -13,12 +13,21 @@ export class Coordinator {
   constructor(private viewer: Viewer, private server: MpcServer) {
     viewer.on('tick', time => this.onTick(time));
 
-    viewer.on('double_click', () => {
-      if (!this.doNotZoomRunning && this.running) {
-        this.running = undefined;
-        this.viewer.standby();
+    let clickInterval: NodeJS.Timer;
+    let clicked = false;
+    viewer.on('click', () => {
+      if (clicked) {
+        clearInterval(clickInterval);
+        clicked = false;
+        if (!this.doNotZoomRunning && this.running) {
+          this.running = undefined;
+          this.viewer.standby();
+        }
+        this.doNotZoomRunning = !this.doNotZoomRunning;
+      } else {
+        clicked = true;
+        clickInterval = setTimeout(() => (clicked = false), 500);
       }
-      this.doNotZoomRunning = !this.doNotZoomRunning;
     });
   }
 
