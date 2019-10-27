@@ -26,7 +26,7 @@ export class Coordinator {
         this.doNotZoomRunning = !this.doNotZoomRunning;
       } else {
         clicked = true;
-        clickInterval = setTimeout(() => (clicked = false), 500);
+        clickInterval = setTimeout(() => (clicked = false), 300);
       }
     });
   }

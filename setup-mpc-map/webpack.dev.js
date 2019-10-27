@@ -89,18 +89,17 @@ module.exports = [
 
     // development server options
     devServer: {
+      host: '0.0.0.0',
       contentBase: path.join(__dirname, 'dist'),
       proxy: {
         '/api': 'http://localhost:8081',
       },
-      /*
-      proxy: {
-        '/api': {
-          target: 'https://ignition.aztecprotocol.com',
-          secure: false,
-        },
-      },
-      */
+      // proxy: {
+      //   '/api': {
+      //     target: 'https://ignition.aztecprotocol.com',
+      //     secure: false,
+      //   },
+      // },
     },
   },
 ];
