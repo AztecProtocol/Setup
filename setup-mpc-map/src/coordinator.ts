@@ -8,9 +8,18 @@ export class Coordinator {
   private timer?: NodeJS.Timer;
   private state!: MpcState;
   private running?: Participant;
+  private doNotZoomRunning = false;
 
   constructor(private viewer: Viewer, private server: MpcServer) {
     viewer.on('tick', time => this.onTick(time));
+
+    viewer.on('double_click', () => {
+      if (!this.doNotZoomRunning && this.running) {
+        this.running = undefined;
+        this.viewer.standby();
+      }
+      this.doNotZoomRunning = !this.doNotZoomRunning;
+    });
   }
 
   public start() {
@@ -321,20 +330,22 @@ export class Coordinator {
       document.getElementById('participant-overlay')!.style.display = 'none';
     }
 
-    if (running && (!this.running || !this.running.address.equals(running.address))) {
-      // We are shifting from standby, or to a new participant.
-      if (running.location) {
-        this.running = running;
-        await this.viewer.focus(running.location.latitude!, running.location.longitude!);
-      } else if (this.running) {
-        this.running = running;
+    if (!this.doNotZoomRunning) {
+      if (running && (!this.running || !this.running.address.equals(running.address))) {
+        // We are shifting from standby, or to a new participant.
+        if (running.location) {
+          this.running = running;
+          await this.viewer.focus(running.location.latitude!, running.location.longitude!);
+        } else if (this.running) {
+          this.running = running;
+          await this.viewer.standby();
+        }
+      } else if (!running && this.running) {
+        // We are shifting to standby.
+        this.viewer.updateCompletedEntities(this.getCompletedLocations(state));
         await this.viewer.standby();
+        this.running = undefined;
       }
-    } else if (!running && this.running) {
-      // We are shifting to standby.
-      this.viewer.updateCompletedEntities(this.getCompletedLocations(state));
-      await this.viewer.standby();
-      this.running = undefined;
     }
 
     this.updateIgnitionCountdown(state);
