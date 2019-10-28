@@ -392,7 +392,6 @@ export class Server implements MpcServer {
       if (admin) {
         // Fields that administrator can adjust.
         if (invalidateAfter) {
-          p.startedAt = moment();
           p.lastVerified = moment();
           p.invalidateAfter = invalidateAfter;
         }

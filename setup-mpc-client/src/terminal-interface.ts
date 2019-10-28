@@ -12,7 +12,7 @@ export class TerminalInterface {
   private listY!: number;
   private state?: MpcState;
   public lastUpdate?: Moment;
-  public error?: string
+  public error?: string;
 
   constructor(private term: TerminalKit, private myAccount?: Account) {}
 
@@ -197,16 +197,18 @@ export class TerminalInterface {
 
   private getRenderOffset(linesForList: number) {
     const { participants } = this.state!;
-    const selectedIndex = participants.findIndex(p => p.state !== 'COMPLETE' && p.state !== 'INVALIDATED');
+    // Find first RUNNING or WAITING.
+    let selectedIndex = participants.findIndex(p => p.state !== 'COMPLETE' && p.state !== 'INVALIDATED');
+    if (selectedIndex < 0) {
+      // None found, pick last in list.
+      selectedIndex = this.state!.participants.length - 1;
+    }
     const midLine = Math.floor(linesForList / 2);
-    return Math.min(
-      Math.max(0, (selectedIndex >= 0 ? selectedIndex : this.state!.participants.length - 1) - midLine),
-      Math.max(0, this.state!.participants.length - linesForList)
-    );
+    return Math.min(Math.max(0, selectedIndex - midLine), Math.max(0, this.state!.participants.length - linesForList));
   }
 
   private renderLine(p: Participant, i: number) {
-    if (this.listY + i > this.term.height) {
+    if (i < 0 || this.listY + i > this.term.height) {
       return;
     }
     this.term.moveTo(0, this.listY + i);
