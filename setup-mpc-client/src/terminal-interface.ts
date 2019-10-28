@@ -231,12 +231,12 @@ export class TerminalInterface {
         break;
       case 'COMPLETE':
         this.term.green(p.address.toString());
-        this.term.grey(` (${p.completedAt!.diff(p.startedAt!, 's')}s)`);
+        this.term.grey(` (${p.priority}) (${p.completedAt!.diff(p.startedAt!, 's')}s)`);
         break;
       case 'INVALIDATED':
         this.term.red(p.address.toString());
         if (p.error) {
-          this.term.grey(` (${p.error})`);
+          this.term.grey(` (${p.priority}) (${p.error})`);
         }
         break;
     }
@@ -251,6 +251,7 @@ export class TerminalInterface {
     const addrString = p.address.toString();
     const progIndex = addrString.length * ((p.runningState === 'OFFLINE' ? p.verifyProgress : p.computeProgress) / 100);
     term.yellow(addrString.slice(0, progIndex)).grey(addrString.slice(progIndex));
+    term.grey(` (${p.priority})`);
 
     if (p.fast) {
       term.magentaBright(' <');
