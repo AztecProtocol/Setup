@@ -3,7 +3,8 @@ build:
   default:
     cmd: ../ci-scripts/build.sh
     args:
-      - setup-mpc-map
+      - 278380418400.dkr.ecr.eu-west-2.amazonaws.com/setup-mpc-map
+      - 278380418400.dkr.ecr.eu-west-2.amazonaws.com/setup-mpc-common:latest
 commands:
   deploy:
     cmd: ../ci-scripts/deploy.sh
