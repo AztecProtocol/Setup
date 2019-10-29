@@ -387,13 +387,28 @@ export class Server implements MpcServer {
   public async updateParticipant(participantData: Participant, admin: boolean = false) {
     const release = await this.mutex.acquire();
     try {
-      const { transcripts, address, runningState, computeProgress, invalidateAfter, fast } = participantData;
-      const p = this.getAndAssertRunningParticipant(address);
+      const { state, transcripts, address, runningState, computeProgress, invalidateAfter, fast } = participantData;
+      const p = admin ? this.getParticipant(address) : this.getAndAssertRunningParticipant(address);
+      this.state.sequence += 1;
+      p.sequence = this.state.sequence;
       if (admin) {
         // Fields that administrator can adjust.
         if (invalidateAfter) {
           p.lastVerified = moment();
           p.invalidateAfter = invalidateAfter;
+        }
+        if (state && state === 'WAITING' && p.state === 'INVALIDATED') {
+          // Reset participant.
+          p.state = 'WAITING';
+          p.runningState = 'WAITING';
+          p.startedAt = undefined;
+          p.lastVerified = undefined;
+          p.error = undefined;
+          p.invalidateAfter = invalidateAfter;
+          p.computeProgress = 0;
+          p.verifyProgress = 0;
+          p.transcripts = [];
+          this.state.participants = orderWaitingParticipants(this.state.participants, this.state.sequence);
         }
       } else {
         if (transcripts) {
@@ -410,8 +425,6 @@ export class Server implements MpcServer {
         p.lastUpdate = moment();
         p.online = true;
       }
-      this.state.sequence += 1;
-      p.sequence = this.state.sequence;
     } finally {
       release();
     }
