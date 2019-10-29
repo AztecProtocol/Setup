@@ -14,6 +14,7 @@ import { orderWaitingParticipants } from './state/order-waiting-participants';
 import { selectParticipants } from './state/select-participants';
 import { TranscriptStore, TranscriptStoreFactory } from './transcript-store';
 import { Verifier } from './verifier';
+import { resetParticipant } from './state/reset-participant';
 
 export class Server implements MpcServer {
   private interval?: NodeJS.Timer;
@@ -398,17 +399,7 @@ export class Server implements MpcServer {
           p.invalidateAfter = invalidateAfter;
         }
         if (state && state === 'WAITING' && p.state === 'INVALIDATED') {
-          // Reset participant.
-          p.state = 'WAITING';
-          p.runningState = 'WAITING';
-          p.startedAt = undefined;
-          p.lastVerified = undefined;
-          p.error = undefined;
-          p.invalidateAfter = invalidateAfter;
-          p.computeProgress = 0;
-          p.verifyProgress = 0;
-          p.transcripts = [];
-          this.state.participants = orderWaitingParticipants(this.state.participants, this.state.sequence);
+          resetParticipant(this.state, p, invalidateAfter);
         }
       } else {
         if (transcripts) {
