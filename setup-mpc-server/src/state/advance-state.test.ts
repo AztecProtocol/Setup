@@ -251,12 +251,12 @@ describe('advance state', () => {
     state.participants[0].tier = 2;
 
     // Within time limit.
-    await advanceState(state, mockTranscriptStore as any, mockVerifier as any, moment(state.startTime).add(90, 's'));
+    await advanceState(state, mockTranscriptStore as any, mockVerifier as any, moment(state.startTime).add(180, 's'));
     expect(state.sequence).toBe(0);
     expect(state.participants[0].state).toBe('RUNNING');
 
     // After time limit.
-    await advanceState(state, mockTranscriptStore as any, mockVerifier as any, moment(state.startTime).add(91, 's'));
+    await advanceState(state, mockTranscriptStore as any, mockVerifier as any, moment(state.startTime).add(181, 's'));
     expect(state.sequence).toBe(1);
     expect(state.participants[0].state).toBe('INVALIDATED');
   });

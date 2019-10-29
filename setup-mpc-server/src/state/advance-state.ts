@@ -40,7 +40,7 @@ export async function advanceState(state: MpcState, store: TranscriptStore, veri
     const { startedAt, tier, lastVerified } = runningParticipant;
     const { numG1Points, numG2Points, pointsPerTranscript } = state;
     const completeWithin = runningParticipant.invalidateAfter || invalidateAfter;
-    const verifyWithin = completeWithin / (Math.max(numG1Points, numG2Points) / pointsPerTranscript);
+    const verifyWithin = 2 * completeWithin / (Math.max(numG1Points, numG2Points) / pointsPerTranscript);
     if (
       moment(now)
         .subtract(completeWithin, 's')

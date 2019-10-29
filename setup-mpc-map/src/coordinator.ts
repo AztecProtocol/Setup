@@ -137,7 +137,7 @@ export class Coordinator {
 
     const { invalidateAfter, numG1Points, numG2Points, pointsPerTranscript } = state!;
     const completeWithin = p.invalidateAfter || invalidateAfter;
-    const verifyWithin = completeWithin / (Math.max(numG1Points, numG2Points) / pointsPerTranscript);
+    const verifyWithin = (2 * completeWithin) / (Math.max(numG1Points, numG2Points) / pointsPerTranscript);
     const verifyTimeout = Math.max(
       0,
       moment(p.lastVerified || p.startedAt!)

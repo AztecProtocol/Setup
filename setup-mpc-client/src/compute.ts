@@ -120,6 +120,7 @@ export class Compute {
     return new Promise(async (resolve, reject) => {
       this.myState.fast = !!process.env.FAST;
       const binPath = process.env.FAST ? '../setup-tools/setup-fast' : '../setup-tools/setup';
+      console.error(`Computing with: ${binPath}`);
       const setup = spawn(binPath, ['../setup_db']);
       this.setupProc = setup;
 
