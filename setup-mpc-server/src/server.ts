@@ -11,10 +11,10 @@ import { StateStore } from './state-store';
 import { advanceState } from './state/advance-state';
 import { createParticipant } from './state/create-participant';
 import { orderWaitingParticipants } from './state/order-waiting-participants';
+import { resetParticipant } from './state/reset-participant';
 import { selectParticipants } from './state/select-participants';
 import { TranscriptStore, TranscriptStoreFactory } from './transcript-store';
 import { Verifier } from './verifier';
-import { resetParticipant } from './state/reset-participant';
 
 export class Server implements MpcServer {
   private interval?: NodeJS.Timer;
@@ -395,7 +395,9 @@ export class Server implements MpcServer {
       if (admin) {
         // Fields that administrator can adjust.
         if (invalidateAfter) {
-          p.lastVerified = moment();
+          if (p.lastVerified) {
+            p.lastVerified = moment();
+          }
           p.invalidateAfter = invalidateAfter;
         }
         if (state && state === 'WAITING' && p.state === 'INVALIDATED') {

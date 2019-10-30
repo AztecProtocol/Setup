@@ -23,6 +23,7 @@ export class App {
     private computeOffline = false,
     private exitOnComplete = false
   ) {
+    console.error(`Exit on complete: ${exitOnComplete}`);
     const termKit = new TerminalKit(stream, height, width);
     this.terminalInterface = new TerminalInterface(termKit, this.account);
   }
