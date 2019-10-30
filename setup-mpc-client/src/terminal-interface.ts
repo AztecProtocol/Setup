@@ -280,22 +280,22 @@ export class TerminalInterface {
           const verifyProgress = p.verifyProgress;
           term
             .white(` (`)
-            .blue('\u2b07')
+            .blue('\u2b07\ufe0e')
             .white(` ${downloadProgress.toFixed(downloadProgress < 100 ? 2 : 0)}%`)
             .white(`)`);
           term
             .white(` (`)
-            .blue('\u2699')
+            .blue('\u2699\ufe0e')
             .white(` ${computeProgress.toFixed(computeProgress < 100 ? 2 : 0)}%`)
             .white(`)`);
           term
             .white(` (`)
-            .blue('\u2b06')
+            .blue('\u2b06\ufe0e')
             .white(` ${uploadProgress.toFixed(uploadProgress < 100 ? 2 : 0)}%`)
             .white(`)`);
           term
             .white(` (`)
-            .blue('\u2714')
+            .blue('\u2714\ufe0e')
             .white(` ${verifyProgress.toFixed(verifyProgress < 100 ? 2 : 0)}%`)
             .white(`)`);
           break;
@@ -319,7 +319,7 @@ export class TerminalInterface {
         .diff(moment(), 's')
     );
 
-    term.white(` (`).blue('\u25b6\u25b6 ');
+    term.white(` (`).blue('\u25b6\ufe0e\u25b6\ufe0e ');
 
     if (p.tier > 1) {
       term.white(`${verifyTimeout}/`);

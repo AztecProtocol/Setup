@@ -28,7 +28,7 @@ async function main() {
     fontFamily = 'Roboto Mono';
   }
 
-  const term = new Terminal();
+  const term = new Terminal({ rendererType: 'dom' });
   term.setOption('theme', {
     background: '#000000',
     foreground: '#c7c7c7',

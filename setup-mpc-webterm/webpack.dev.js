@@ -35,6 +35,7 @@ module.exports = {
     readline: 'empty',
   },
   devServer: {
+    host: '0.0.0.0',
     contentBase: path.join(__dirname, 'dist'),
     proxy: {
       '/api': {
