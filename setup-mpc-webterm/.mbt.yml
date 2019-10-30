@@ -4,7 +4,7 @@ build:
     cmd: ../ci-scripts/build.sh
     args:
       - 278380418400.dkr.ecr.eu-west-2.amazonaws.com/setup-mpc-webterm
-      - '278380418400.dkr.ecr.eu-west-2.amazonaws.com/setup-mpc-common:latest aztecprotocol/setup-mpc-client:latest'
+      - '278380418400.dkr.ecr.eu-west-2.amazonaws.com/setup-mpc-common aztecprotocol/setup-mpc-client'
 commands:
   deploy:
     cmd: ../ci-scripts/deploy.sh

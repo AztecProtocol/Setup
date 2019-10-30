@@ -4,7 +4,7 @@ build:
     cmd: ../ci-scripts/build.sh
     args:
       - aztecprotocol/setup-mpc-client
-      - '278380418400.dkr.ecr.eu-west-2.amazonaws.com/setup-mpc-common:latest 278380418400.dkr.ecr.eu-west-2.amazonaws.com/setup-tools:latest'
+      - '278380418400.dkr.ecr.eu-west-2.amazonaws.com/setup-mpc-common 278380418400.dkr.ecr.eu-west-2.amazonaws.com/setup-tools'
 commands:
   deploy-public:
     cmd: ../ci-scripts/deploy-public.sh
