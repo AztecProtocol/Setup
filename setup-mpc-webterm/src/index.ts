@@ -28,7 +28,7 @@ async function main() {
     fontFamily = 'Roboto Mono';
   }
 
-  const term = new Terminal({ rendererType: window.devicePixelRatio > 1 ? 'dom' : 'canvas' });
+  const term = new Terminal({ rendererType: window.devicePixelRatio > 2 ? 'dom' : 'canvas' });
   term.setOption('theme', {
     background: '#000000',
     foreground: '#c7c7c7',
