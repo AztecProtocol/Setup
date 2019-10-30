@@ -20,6 +20,10 @@ provider "aws" {
   region  = "eu-west-2"
 }
 
+variable "SLACK_MPC_TOKEN" {
+  type = "string"
+}
+
 resource "aws_ecs_task_definition" "setup_mpc_alerts" {
   family                   = "setup-mpc-alerts"
   requires_compatibilities = ["FARGATE"]
@@ -38,6 +42,10 @@ resource "aws_ecs_task_definition" "setup_mpc_alerts" {
       {
         "name": "NODE_ENV",
         "value": "production"
+      },
+      {
+        "name": "SLACK_MPC_TOKEN",
+        "value": "${var.SLACK_MPC_TOKEN}"
       }
     ],
     "logConfiguration": {

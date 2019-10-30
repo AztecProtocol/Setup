@@ -1,17 +1,21 @@
 import moment from 'moment';
 import { applyDelta, MpcServer, MpcState, Participant } from 'setup-mpc-common';
-import fetch from 'node-fetch';
+const slack = require('slack-notify');
 
 export class App {
   private interval!: NodeJS.Timeout;
   private state?: MpcState;
   private running?: Participant;
   private alerted = false;
+  private slack: any;
 
-  constructor(private server: MpcServer, private alertTimeLeft: number) {}
+  constructor(private server: MpcServer, private alertTimeLeft: number, token: string) {
+    const webhook = `https://hooks.slack.com/services/T8P21L9SL/BPZNB6448/${token}`;
+    this.slack = slack(webhook);
+  }
 
   public start() {
-    this.alert('Alert application started.');
+    this.slack.note('Alert application started.');
     this.updateState();
   }
 
@@ -67,7 +71,11 @@ export class App {
 
   private alertParticipantFinished(running: Participant) {
     const previous = this.state!.participants.find(p => p.address.equals(running.address))!;
-    this.alert(`Participant ${previous.address}: ${previous.state}`);
+    if (previous.state === 'COMPLETE') {
+      this.complete(`Participant complete: ${previous.address}`);
+    } else {
+      this.fail(`Participant failed ${previous.address}: ${previous.error}`);
+    }
   }
 
   private alertIfTimeout(running: Participant) {
@@ -98,17 +106,27 @@ export class App {
     }
   }
 
+  private complete(text: string) {
+    console.log(text);
+    this.slack.send({
+      text,
+      icon_emoji: ':thumbsup:',
+    });
+  }
+
+  private fail(text: string) {
+    console.log(text);
+    this.slack.send({
+      text,
+      icon_emoji: ':boom:',
+    });
+  }
+
   private alert(text: string) {
     console.log(text);
-    const webhook = 'https://hooks.slack.com/services/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';
-    fetch(webhook, {
-      method: 'POST',
-      body: JSON.stringify({
-        text,
-      }),
-      headers: {
-        'Content-Type': 'application/json',
-      },
+    this.slack.send({
+      text,
+      icon_emoji: ':exclamation:',
     });
   }
 

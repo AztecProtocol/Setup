@@ -12,12 +12,11 @@
   "devDependencies": {
     "@types/moment": "^2.13.0",
     "@types/node": "^12.12.3",
-    "@types/node-fetch": "^2.5.2",
     "tsc-watch": "^4.0.0",
     "typescript": "^3.5.3"
   },
   "dependencies": {
     "moment": "^2.24.0",
-    "node-fetch": "^2.6.0"
+    "slack-notify": "^0.1.7"
   }
 }
