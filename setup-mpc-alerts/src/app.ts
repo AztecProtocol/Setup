@@ -1,21 +1,21 @@
 import moment from 'moment';
 import { applyDelta, MpcServer, MpcState, Participant } from 'setup-mpc-common';
-const slack = require('slack-notify');
+import { IncomingWebhook } from '@slack/webhook';
 
 export class App {
   private interval!: NodeJS.Timeout;
   private state?: MpcState;
   private running?: Participant;
   private alerted = false;
-  private slack: any;
+  private slack: IncomingWebhook;
 
   constructor(private server: MpcServer, private alertTimeLeft: number, token: string) {
     const webhook = `https://hooks.slack.com/services/T8P21L9SL/BPZNB6448/${token}`;
-    this.slack = slack(webhook);
+    this.slack = new IncomingWebhook(webhook);
   }
 
   public start() {
-    this.slack.note('Alert application started.');
+    this.send(':unicorn_face: Alert application started.');
     this.updateState();
   }
 
@@ -72,9 +72,9 @@ export class App {
   private alertParticipantFinished(running: Participant) {
     const previous = this.state!.participants.find(p => p.address.equals(running.address))!;
     if (previous.state === 'COMPLETE') {
-      this.complete(`Participant complete: ${previous.address}`);
+      this.send(`:tada: Participant complete: \`${previous.address}\``);
     } else {
-      this.fail(`Participant failed ${previous.address}: ${previous.error}`);
+      this.send(`:boom: Participant failed \`${previous.address}\`: ${previous.error}`);
     }
   }
 
@@ -99,35 +99,16 @@ export class App {
     if (totalSkip < this.alertTimeLeft || (running.tier > 1 && verifyTimeout < this.alertTimeLeft)) {
       if (!this.alerted) {
         this.alerted = true;
-        this.alert(`Participant ${running.address} timeout in ${this.alertTimeLeft}s`);
+        this.send(`:exclamation: Participant \`${running.address}\` will timeout in ${this.alertTimeLeft}s.`);
       }
     } else {
       this.alerted = false;
     }
   }
 
-  private complete(text: string) {
+  private send(text: string) {
     console.log(text);
-    this.slack.send({
-      text,
-      icon_emoji: ':thumbsup:',
-    });
-  }
-
-  private fail(text: string) {
-    console.log(text);
-    this.slack.send({
-      text,
-      icon_emoji: ':boom:',
-    });
-  }
-
-  private alert(text: string) {
-    console.log(text);
-    this.slack.send({
-      text,
-      icon_emoji: ':exclamation:',
-    });
+    this.slack.send(text);
   }
 
   private scheduleUpdate = () => {

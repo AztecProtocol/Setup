@@ -16,7 +16,7 @@
     "typescript": "^3.5.3"
   },
   "dependencies": {
-    "moment": "^2.24.0",
-    "slack-notify": "^0.1.7"
+    "@slack/webhook": "^5.0.2",
+    "moment": "^2.24.0"
   }
 }
