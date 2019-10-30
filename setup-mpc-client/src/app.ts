@@ -131,7 +131,7 @@ export class App {
         console.error(`Compute failed: `, err);
         this.compute = undefined;
         // In case we were running fast code path, disable it. Maybe that was the issue.
-        process.env.FAST = undefined;
+        delete process.env.FAST;
       });
     } else if (myRemoteState.state !== 'RUNNING' && this.compute) {
       this.compute.cancel();
