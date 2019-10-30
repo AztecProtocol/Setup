@@ -20,8 +20,8 @@ export class Coordinator {
         clearInterval(clickInterval);
         clicked = false;
         if (!this.doNotZoomRunning && this.running) {
+          this.toStandby(this.state);
           this.running = undefined;
-          this.viewer.standby();
         }
         this.doNotZoomRunning = !this.doNotZoomRunning;
       } else {
@@ -346,13 +346,12 @@ export class Coordinator {
           this.running = running;
           await this.viewer.focus(running.location.latitude!, running.location.longitude!);
         } else if (this.running) {
+          this.toStandby(state);
           this.running = running;
-          await this.viewer.standby();
         }
       } else if (!running && this.running) {
         // We are shifting to standby.
-        this.viewer.updateCompletedEntities(this.getCompletedLocations(state));
-        await this.viewer.standby();
+        this.toStandby(state);
         this.running = undefined;
       }
     }
@@ -360,6 +359,11 @@ export class Coordinator {
     this.updateIgnitionCountdown(state);
 
     this.state = state;
+  }
+
+  private async toStandby(state: MpcState) {
+    this.viewer.updateCompletedEntities(this.getCompletedLocations(state));
+    await this.viewer.standby();
   }
 
   private getCompletedLocations(state: MpcState): LatLon[] {
