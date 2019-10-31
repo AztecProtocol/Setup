@@ -1,6 +1,7 @@
 import moment from 'moment';
 import { applyDelta, MpcServer, MpcState, Participant } from 'setup-mpc-common';
 import { IncomingWebhook } from '@slack/webhook';
+import { calculateMetrics } from './calculate-metrics';
 
 export class App {
   private interval!: NodeJS.Timeout;
@@ -9,7 +10,7 @@ export class App {
   private alerted = false;
   private slack: IncomingWebhook;
 
-  constructor(private server: MpcServer, private alertTimeLeft: number, token: string) {
+  constructor(private server: MpcServer, private alertTimeLeft: number, private token: string) {
     const webhook = `https://hooks.slack.com/services/T8P21L9SL/BPZNB6448/${token}`;
     this.slack = new IncomingWebhook(webhook);
   }
@@ -74,32 +75,30 @@ export class App {
     if (previous.state === 'COMPLETE') {
       this.send(`:tada: Participant complete: \`${previous.address}\``);
     } else {
-      this.send(`:boom: Participant failed \`${previous.address}\`: ${previous.error}`);
+      this.send(`:boom: Participant failed \`${previous.address}\`: ${previous.error}.`);
     }
   }
 
-  private alertIfTimeout(running: Participant) {
-    const { invalidateAfter, numG1Points, numG2Points, pointsPerTranscript } = this.state!;
-    const completeWithin = running.invalidateAfter || invalidateAfter;
-    const verifyWithin = (2 * completeWithin) / (Math.max(numG1Points, numG2Points) / pointsPerTranscript);
-    const verifyTimeout = Math.max(
-      0,
-      moment(running.lastVerified || running.startedAt!)
-        .add(verifyWithin, 's')
-        .diff(moment(), 's')
-    );
+  private alertIfTimeout(p: Participant) {
+    const {
+      downloadProgress,
+      computeProgress,
+      uploadProgress,
+      verifyProgress,
+      verifyTimeout,
+      totalTimeout,
+    } = calculateMetrics(this.state!, p);
 
-    const totalSkip = Math.max(
-      0,
-      moment(running.startedAt!)
-        .add(completeWithin, 's')
-        .diff(moment(), 's')
-    );
-
-    if (totalSkip < this.alertTimeLeft || (running.tier > 1 && verifyTimeout < this.alertTimeLeft)) {
+    if (totalTimeout < this.alertTimeLeft || (p.tier > 1 && verifyTimeout < this.alertTimeLeft)) {
       if (!this.alerted) {
         this.alerted = true;
-        this.send(`:exclamation: Participant \`${running.address}\` will timeout in ${this.alertTimeLeft}s.`);
+        this.send(
+          `:exclamation: Participant \`${p.address}\` will timeout in ${this.alertTimeLeft}s.\n` +
+            `\`\`\`download: ${downloadProgress.toFixed(2)}\n` +
+            `compute: ${computeProgress.toFixed(2)}\n` +
+            `upload: ${uploadProgress.toFixed(2)}\n` +
+            `verify: ${verifyProgress.toFixed(2)}\`\`\``
+        );
       }
     } else {
       this.alerted = false;
@@ -108,7 +107,9 @@ export class App {
 
   private send(text: string) {
     console.log(text);
-    this.slack.send(text);
+    if (this.token) {
+      this.slack.send(text);
+    }
   }
 
   private scheduleUpdate = () => {
