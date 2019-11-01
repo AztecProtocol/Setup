@@ -29,7 +29,7 @@ body {
 #screen {
   z-index: 10;
   position: absolute;
-  width: 100%;
+  width: 2000px;
   height: 5000px;
   top: 0;
 }
