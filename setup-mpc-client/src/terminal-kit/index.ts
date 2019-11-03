@@ -5,8 +5,8 @@ const options: any = { enabled: true, level: 2 };
 const chalk = new chalkmod.constructor(options);
 
 export class TerminalKit {
-  private x: number = 1;
-  private y: number = 1;
+  private x: number = 0;
+  private y: number = 0;
 
   constructor(private stream: Writable, public height: number, public width: number) {}
 
@@ -85,7 +85,7 @@ export class TerminalKit {
   }
 
   public clear() {
-    this.moveTo(1, 1);
+    this.moveTo(0, 0);
     this.stream.write('\u001B[2J');
     this.stream.write('\u001B[3J');
   }
@@ -96,9 +96,9 @@ export class TerminalKit {
   }
 
   public moveTo(x: number, y: number) {
-    this.x = x;
-    this.y = y;
-    this.stream.write(`\u001B[${y};${x}H`);
+    this.x = Math.min(x, this.width - 1);
+    this.y = Math.min(y, this.height - 1);
+    this.stream.write(`\u001B[${y + 1};${x + 1}H`);
   }
 
   public nextLine(n: number) {
@@ -117,7 +117,10 @@ export class TerminalKit {
     }
   }
 
-  public getCursorLocation(cb: any) {
-    cb(null, this.x, this.y);
+  public getCursorLocation() {
+    return {
+      x: this.x,
+      y: this.y,
+    };
   }
 }

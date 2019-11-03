@@ -10,29 +10,18 @@ export class TerminalInterface {
   private banner = false;
   private bannerY!: number;
   private listY!: number;
+  private offset = 0;
   private state?: MpcState;
   public lastUpdate?: Moment;
   public error?: string;
 
   constructor(private term: TerminalKit, private myAccount?: Account) {}
 
-  private async getCursorLocation(): Promise<{ x: number; y: number }> {
-    return new Promise((resolve, reject) => {
-      this.term.getCursorLocation((err: any, x?: number, y?: number) => {
-        if (err) {
-          reject(err);
-          return;
-        }
-        resolve({ x: x!, y: y! });
-      });
-    });
-  }
-
-  public async render() {
+  private render() {
     this.term.clear();
     this.term.hideCursor();
     this.term.cyan('AZTEC Trusted Setup Multi Party Computation\n\n');
-    await this.renderStatus();
+    this.renderStatus();
     this.renderList();
   }
 
@@ -46,8 +35,8 @@ export class TerminalInterface {
     this.term.hideCursor(hide);
   }
 
-  private async renderStatus() {
-    this.term.moveTo(0, 3);
+  private renderStatus() {
+    this.term.moveTo(0, 2);
     this.term.eraseLine();
 
     if (!this.state) {
@@ -94,12 +83,12 @@ export class TerminalInterface {
       }
     }
 
-    this.bannerY = (await this.getCursorLocation()).y;
+    this.bannerY = this.term.getCursorLocation().y;
     this.renderBanner(true);
 
     this.term.nextLine(1);
 
-    const { y } = await this.getCursorLocation();
+    const { y } = this.term.getCursorLocation();
     this.listY = y;
   }
 
@@ -185,14 +174,18 @@ export class TerminalInterface {
 
     const { participants } = this.state;
     const linesLeft = this.term.height - this.listY;
-    const offset = this.getRenderOffset(linesLeft);
+    this.offset = this.getRenderOffset(linesLeft);
 
-    participants.slice(offset, offset + linesLeft).forEach((p, i) => {
+    const toRender = participants.slice(this.offset, this.offset + linesLeft);
+
+    toRender.forEach((p, i) => {
       this.renderLine(p, i);
       this.term.nextLine(1);
     });
 
-    this.term.eraseDisplayBelow();
+    if (toRender.length < linesLeft) {
+      this.term.eraseDisplayBelow();
+    }
   }
 
   private getRenderOffset(linesForList: number) {
@@ -208,7 +201,7 @@ export class TerminalInterface {
   }
 
   private renderLine(p: Participant, i: number) {
-    if (i < 0 || this.listY + i > this.term.height) {
+    if (i < 0 || this.listY + i >= this.term.height) {
       return;
     }
     this.term.moveTo(0, this.listY + i);
@@ -352,10 +345,16 @@ export class TerminalInterface {
     const offset = this.getRenderOffset(linesLeft);
     this.state.participants.forEach((p, i) => {
       // Update any new participants, participants that changed, and always the running participant (for the countdown).
-      if (!oldState.participants[i] || p.sequence !== oldState.participants[i].sequence || p.state === 'RUNNING') {
+      if (
+        offset !== this.offset ||
+        !oldState.participants[i] ||
+        p.sequence !== oldState.participants[i].sequence ||
+        p.state === 'RUNNING'
+      ) {
         this.renderLine(p, i - offset);
       }
     });
+    this.offset = offset;
   }
 
   public getParticipant(address: Address) {
