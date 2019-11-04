@@ -210,7 +210,6 @@ export function appFactory(
       await new Promise((resolve, reject) => {
         const writeStream = createWriteStream(transcriptPath);
         const meterStream = meter(maxUploadSize);
-        ctx.req.setTimeout(60000, reject);
         ctx.req
           .on('error', reject)
           .on('aborted', reject)
