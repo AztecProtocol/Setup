@@ -210,13 +210,14 @@ export function appFactory(
       await new Promise((resolve, reject) => {
         const writeStream = createWriteStream(transcriptPath);
         const meterStream = meter(maxUploadSize);
+        ctx.req.setTimeout(180000, () => reject(new Error('Timeout reading data.')));
         ctx.req
           .on('error', reject)
-          .on('aborted', reject)
+          .on('aborted', () => reject(new Error('Read was aborted.')))
           .pipe(meterStream)
           .on('error', (err: Error) => {
             ctx.status = 429;
-            reject(err);
+            reject(err || new Error('Upload too large.'));
           })
           .pipe(writeStream)
           .on('error', reject)
@@ -236,7 +237,7 @@ export function appFactory(
 
       ctx.status = 200;
     } catch (err) {
-      console.log(`Rejecting: ${err.message}`);
+      console.log(`Rejecting: ${err ? err.message : 'no error information'}`);
       ctx.body = { error: err.message };
       unlink(transcriptPath, () => {});
       unlink(signaturePath, () => {});
