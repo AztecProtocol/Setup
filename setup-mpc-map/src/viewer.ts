@@ -68,7 +68,7 @@ export class Viewer extends EventEmitter {
     }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
 
     // Prevents iOS from swallowing our double tap.
-    document.querySelector('body')!.addEventListener('touchend', e => e.preventDefault());
+    document.querySelector('#cesiumContainer')!.addEventListener('touchend', e => e.preventDefault());
 
     this.viewer.clock.onTick.addEventListener(clock => {
       this.emit('tick', Cesium.JulianDate.toDate(clock.currentTime));
