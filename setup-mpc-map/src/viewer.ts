@@ -116,14 +116,18 @@ export class Viewer extends EventEmitter {
 
       const polyline = new Cesium.PolylineGraphics();
       polyline.material = new Cesium.ColorMaterialProperty(color);
-      polyline.width = new Cesium.ConstantProperty(2);
+      polyline.width = new Cesium.ConstantProperty(8);
       polyline.arcType = new Cesium.ConstantProperty(Cesium.ArcType.NONE);
       polyline.positions = new Cesium.ConstantProperty([surfacePosition, heightPosition]);
 
       const entity = new Cesium.Entity({
         id: 'index ' + i.toString(),
+        position: surfacePosition,
         show: true,
-        polyline,
+        box: {
+          material: color,
+          dimensions: new Cesium.Cartesian3(50000, 50000, height * 2 * heightScale),
+        },
       });
 
       this.viewer.entities.add(entity);

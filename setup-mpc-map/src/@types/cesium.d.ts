@@ -1726,7 +1726,7 @@ declare module 'cesium/Cesium' {
         definitionChanged: Event;
         show: Property;
         dimensions: Property;
-        material: MaterialProperty;
+        material: MaterialProperty | Color;
         fill: Property;
         outline: Property;
         outlineColor: Property;
@@ -2085,7 +2085,7 @@ declare module 'cesium/Cesium' {
           viewFrom?: Property;
           parent?: Entity;
           billboard?: BillboardGraphics;
-          box?: BoxGraphics;
+          box?: Partial<BoxGraphics>;
           corridor?: CorridorGraphics;
           cylinder?: CylinderGraphics;
           ellipse?: EllipseGraphics;
@@ -2098,7 +2098,7 @@ declare module 'cesium/Cesium' {
           polygon?: PolygonGraphics;
           polyline?: PolylineGraphics;
           polylineVolume?: PolylineVolumeGraphics;
-          rectangle?: RectangleGraphics;
+          rectangle?: Partial<RectangleGraphics>;
           wall?: WallGraphics
         });
         addProperty(propertyName: string): void;
@@ -2553,15 +2553,15 @@ declare module 'cesium/Cesium' {
         definitionChanged: Event;
         show: Property;
         coordinates: Property;
-        material: MaterialProperty;
-        height: Property;
-        extrudedHeight: Property;
+        material: MaterialProperty | Color;
+        height: Property | number;
+        extrudedHeight: Property | number;
         granularity: Property;
         stRotation: Property;
-        rotation: Property;
+        rotation: Property | number;
         fill: Property;
-        outline: Property;
-        outlineColor: Property;
+        outline: Property | boolean;
+        outlineColor: Property | Color;
         outlineWidth: Property;
         closeTop: Property;
         closeBottom: Property;
