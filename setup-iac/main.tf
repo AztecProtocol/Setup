@@ -515,6 +515,36 @@ resource "aws_route53_record" "qr" {
   }
 }
 
+# Enterprise Code DNS entry and redirection.
+resource "aws_s3_bucket" "enterprise_redirect" {
+  bucket = "enterprise.aztecprotocol.com"
+  acl    = "private"
+
+  website {
+    index_document = "index.html"
+    routing_rules  = <<EOF
+[{
+    "Redirect": {
+      "Protocol": "https",
+      "HostName": "www.aztecprotocol.com",
+      "ReplaceKeyWith": ""
+    }
+}]
+EOF
+  }
+}
+
+resource "aws_route53_record" "enterprise" {
+  zone_id = "Z1XXO7GDQEVT6B"
+  name    = "enterprise"
+  type    = "A"
+  alias {
+    name                   = "${aws_s3_bucket.enterprise_redirect.website_domain}"
+    zone_id                = "${aws_s3_bucket.enterprise_redirect.hosted_zone_id}"
+    evaluate_target_health = true
+  }
+}
+
 # Certificate management.
 resource "aws_acm_certificate" "cert" {
   domain_name               = "aztecprotocol.com"
