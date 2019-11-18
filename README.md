@@ -16,7 +16,7 @@ An overview of the different projects, in order of relevance and interest:
 
 ## Participating
 
-Brief technical overview of particpating in the MPC. Further information available [here](https://app.gitbook.com/@aztec-protocol/s/mpc).
+Brief technical overview of participating in the MPC. Further information available [here](https://app.gitbook.com/@aztec-protocol/s/mpc).
 
 #### The Easy Way
 
