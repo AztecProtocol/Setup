@@ -1,4 +1,4 @@
-name: setup-mpc-client
+name: build-image
 build:
   default:
     cmd: ../ci-scripts/build.sh
