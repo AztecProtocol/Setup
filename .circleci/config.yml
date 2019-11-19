@@ -32,7 +32,7 @@ jobs:
           command: |
             LAST_SUCCESSFUL_BUILD_URL="https://circleci.com/api/v1.1/project/github/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/tree/master?filter=successful&limit=1"
             echo export LAST_SUCCESSFUL_COMMIT=`curl -Ss -u "$CIRCLE_TOKEN:" $LAST_SUCCESSFUL_BUILD_URL | jq -r '.[0]["vcs_revision"]'` >> $BASH_ENV
-            echo "Last successful commit: ${LAST_SUCCESSFUL_COMMIT}"
+            cat $BASH_ENV
       - checkout
       - run:
           name: 'Pull submodules'

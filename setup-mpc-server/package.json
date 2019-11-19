@@ -1,6 +1,6 @@
 {
   "name": "setup-mpc-server",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "main": "dest/index.js",
   "license": "MIT",
   "scripts": {
