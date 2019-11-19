@@ -11,5 +11,6 @@ commands:
     args:
       - setup-mpc-server
 dependencies:
+  - build-image
   - setup-mpc-common
   - setup-tools
