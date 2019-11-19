@@ -31,7 +31,7 @@ jobs:
           name: 'Setup environment variables'
           command: |
             LAST_SUCCESSFUL_BUILD_URL="https://circleci.com/api/v1.1/project/github/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/tree/master?filter=successful&limit=10"
-            echo export LAST_SUCCESSFUL_COMMIT=`curl -Ss -u "$CIRCLE_TOKEN:" $LAST_SUCCESSFUL_BUILD_URL | jq -r "[.[] | select(.vcs_revision != \"${CIRCLE_SHA1}\")][0].vcs_revision"` >> $BASH_ENV
+            echo export LAST_SUCCESSFUL_COMMIT=`curl -Ss -u "$CIRCLE_TOKEN:" $LAST_SUCCESSFUL_BUILD_URL | jq -r '[.[] | select(.build_parameters.CIRCLE_JOB != "build_build_image")][0].vcs_revision'` >> $BASH_ENV
             cat $BASH_ENV
       - checkout
       - run:
