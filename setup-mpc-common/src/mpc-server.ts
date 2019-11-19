@@ -155,4 +155,5 @@ export interface MpcServer {
     signaturePath?: string,
     progressCb?: (transferred: number) => void
   ): Promise<void>;
+  flushWaiting(): Promise<void>;
 }

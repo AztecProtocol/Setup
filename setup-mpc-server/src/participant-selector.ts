@@ -59,5 +59,6 @@ export class ParticipantSelector extends EventEmitter {
 
   public stop() {
     this.cancelled = true;
+    this.removeAllListeners();
   }
 }

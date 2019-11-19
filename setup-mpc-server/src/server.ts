@@ -22,7 +22,7 @@ export class Server implements MpcServer {
   private state!: MpcState;
   private readState!: MpcState;
   private mutex = new Mutex();
-  private participantSelector!: ParticipantSelector;
+  private participantSelector?: ParticipantSelector;
   private sealer?: Sealer;
   private publisher?: Publisher;
   private rangeProofPublisher?: RangeProofPublisher;
@@ -122,6 +122,23 @@ export class Server implements MpcServer {
     }
 
     await this.resetWithState(state);
+  }
+
+  public async flushWaiting() {
+    const release = await this.mutex.acquire();
+    try {
+      this.state.participants = this.state.participants.filter(p => p.state !== 'WAITING');
+      this.state.sequence += 1;
+      // Force clients to re-request entire state.
+      this.state.startSequence += this.state.sequence;
+
+      if (this.participantSelector) {
+        this.participantSelector.stop();
+        this.participantSelector = undefined;
+      }
+    } finally {
+      release();
+    }
   }
 
   public async loadState(name: string) {
@@ -248,7 +265,10 @@ export class Server implements MpcServer {
       this.state.sequence += 1;
       this.state.statusSequence = this.state.sequence;
       if (addresses.length) {
-        console.log(`Adding participants from block ${latestBlock}:`, addresses.map(a => a.toString()));
+        console.log(
+          `Adding participants from block ${latestBlock}:`,
+          addresses.map(a => a.toString())
+        );
         addresses.forEach(address => this.addNextParticipant(this.state, address, 3));
       }
     }

@@ -92,6 +92,10 @@ export function appFactory(
     }
   });
 
+  router.post('/flush-waiting', adminAuth, async (ctx: Koa.Context) => {
+    await server.flushWaiting();
+  });
+
   router.get('/state', async (ctx: Koa.Context) => {
     ctx.body = await server.getState(ctx.query.sequence);
   });
