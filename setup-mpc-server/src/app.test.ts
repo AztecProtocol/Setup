@@ -30,6 +30,7 @@ describe('app', () => {
       downloadSignature: jest.fn(),
       uploadData: jest.fn(),
       ping: jest.fn(),
+      flushWaiting: jest.fn(),
     };
 
     const state = defaultState(1234);
