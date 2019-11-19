@@ -1,0 +1,11 @@
+name: setup-mpc-client
+build:
+  default:
+    cmd: ../ci-scripts/build.sh
+    args:
+      - aztecprotocol/build-image
+commands:
+  deploy-public:
+    cmd: ../ci-scripts/deploy-public.sh
+    args:
+      - build-image
