@@ -56,4 +56,6 @@ workflows:
   build_and_push_images:
     jobs:
       - build_build_image
-      - build_and_test
+      - build_and_test:
+          requires:
+            - build_build_image
