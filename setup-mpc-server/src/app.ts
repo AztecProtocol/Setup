@@ -48,8 +48,6 @@ export function appFactory(
   tmpDir: string = '/tmp',
   maxUploadSize: number = MAX_UPLOAD_SIZE
 ) {
-  let lockUpload = false;
-
   const isAdmin = (ctx: Koa.Context) => {
     const signature = ctx.get('X-Signature');
     return adminAddress.equals(recover('SignMeWithYourPrivateKey', signature));
@@ -170,10 +168,6 @@ export function appFactory(
     ctx.status = 500;
 
     try {
-      if (lockUpload) {
-        throw new Error('Can only upload 1 file at a time.');
-      }
-
       if (!pingSig || !dataSig) {
         throw new Error('X-Signature header incomplete.');
       }
@@ -204,8 +198,6 @@ export function appFactory(
     const signaturePath = `${tmpDir}/transcript_${ctx.params.address}_${transcriptNum}_${nonce}.sig`;
 
     try {
-      lockUpload = true;
-
       console.log(`Writing to temporary file: ${transcriptPath}`);
       await new Promise((resolve, reject) => {
         const writeStream = createWriteStream(transcriptPath);
@@ -242,8 +234,6 @@ export function appFactory(
       unlink(transcriptPath, () => {});
       unlink(signaturePath, () => {});
       return;
-    } finally {
-      lockUpload = false;
     }
   });
 
