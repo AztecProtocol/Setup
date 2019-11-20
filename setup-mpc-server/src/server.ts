@@ -131,6 +131,7 @@ export class Server implements MpcServer {
       this.state.sequence += 1;
       // Force clients to re-request entire state.
       this.state.startSequence += this.state.sequence;
+      this.state.latestBlock = -1;
 
       if (this.participantSelector) {
         this.participantSelector.stop();
@@ -169,10 +170,17 @@ export class Server implements MpcServer {
         delete state.selectBlock;
         delete state.maxTier2;
     }
+
     this.state = {
       ...this.state,
       ...state,
     };
+
+    if (this.state.latestBlock < 0 && this.participantSelector) {
+      this.participantSelector.stop();
+      this.participantSelector = undefined;
+    }
+
     this.readState = cloneMpcState(this.state);
     release();
     return this.readState;
@@ -201,8 +209,10 @@ export class Server implements MpcServer {
     this.verifier = await this.createVerifier();
     this.verifier.run();
 
-    this.participantSelector = this.createParticipantSelector(state.network, state.latestBlock, state.selectBlock);
-    this.participantSelector.run();
+    if (state.latestBlock >= 0) {
+      this.participantSelector = this.createParticipantSelector(state.network, state.latestBlock, state.selectBlock);
+      this.participantSelector.run();
+    }
 
     this.scheduleAdvanceState();
   }
