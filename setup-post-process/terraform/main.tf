@@ -74,7 +74,7 @@ resource "aws_ecs_service" "setup_post_process" {
   name                               = "setup-post-process"
   cluster                            = data.terraform_remote_state.setup_iac_us_east_2.outputs.ecs_main_cluster_id
   launch_type                        = "EC2"
-  desired_count                      = "1000"
+  desired_count                      = "3000"
   deployment_maximum_percent         = 100
   deployment_minimum_healthy_percent = 0
 

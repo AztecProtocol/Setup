@@ -44,7 +44,7 @@ while true; do
   exit_if_ceremony_changed
 
   if [ -n "$RESULT" ]; then
-    curl --retry 100 -L -s -X PUT -d "$RESULT" -H "Content-Type: text/plain" http://$JOB_SERVER_HOST/complete/$JOBNUM > /dev/null
+    curl --retry 100 --retry-delay 10 -L -s -X PUT -d "$RESULT" -H "Content-Type: text/plain" http://$JOB_SERVER_HOST/complete/$JOBNUM > /dev/null
   fi
   echo "Job $JOBNUM complete in $((END-START))s: $RESULT"
 done

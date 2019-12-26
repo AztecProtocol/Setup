@@ -87,10 +87,10 @@ const r4Instances = [
 ].map(e => [e[0], Math.floor(e[1] * 0.9)]);
 
 const instances = [
-  ...m5Instances,
+  //...m5Instances,
   // ...m5aInstances,
   // ...m4Instances,
-  //...r5Instances,
+  ...r5Instances,
   // ...r5aInstances,
   // ...r4Instances,
 ];
@@ -101,7 +101,8 @@ const availabilityZones = [
   ['us-east-2c', 'az3'],
 ];
 
-const target = '576';
+//const target = '192';
+const target = '1152';
 //const target = '1';
 const price = '0.011';
 
@@ -112,7 +113,7 @@ resource "aws_spot_fleet_request" "main" {
   target_capacity                     = "${target}"
   spot_price                          = "${price}"
   terminate_instances_with_expiration = true
-  valid_until                         = "2020-01-01T00:00:00Z"`;
+  valid_until                         = "2020-02-01T00:00:00Z"`;
 
 const template = ([instanceType, weight], [availabilityZone, az]) => `
   launch_specification {
