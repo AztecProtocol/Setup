@@ -20,24 +20,25 @@ provider "aws" {
   region  = "eu-west-2"
 }
 
+/*
 # We use redis as a backing store for the job-server.
 resource "aws_elasticache_subnet_group" "setup_redis" {
   name       = "setup-redis-subnet"
   subnet_ids = ["${data.terraform_remote_state.setup_iac.outputs.subnet_az1_private_id}"]
 }
 
-# resource "aws_elasticache_cluster" "setup_redis" {
-#   cluster_id           = "setup-redis"
-#   engine               = "redis"
-#   node_type            = "cache.t2.medium"
-#   num_cache_nodes      = 1
-#   parameter_group_name = "default.redis3.2"
-#   engine_version       = "3.2.10"
-#   port                 = 6379
-#   subnet_group_name    = "${aws_elasticache_subnet_group.setup_redis.name}"
-#   security_group_ids   = ["${data.terraform_remote_state.setup_iac.outputs.security_group_private_id}"]
-#   apply_immediately    = true
-# }
+resource "aws_elasticache_cluster" "setup_redis" {
+  cluster_id           = "setup-redis"
+  engine               = "redis"
+  node_type            = "cache.t2.medium"
+  num_cache_nodes      = 1
+  parameter_group_name = "default.redis3.2"
+  engine_version       = "3.2.10"
+  port                 = 6379
+  subnet_group_name    = "${aws_elasticache_subnet_group.setup_redis.name}"
+  security_group_ids   = ["${data.terraform_remote_state.setup_iac.outputs.security_group_private_id}"]
+  apply_immediately    = true
+}
 
 # Service discovery.
 resource "aws_service_discovery_service" "job_server" {
@@ -186,7 +187,7 @@ resource "aws_ecs_service" "setup_job_server" {
   # Track the latest ACTIVE revision
   task_definition = "${aws_ecs_task_definition.setup_job_server.family}:${max("${aws_ecs_task_definition.setup_job_server.revision}", "${data.aws_ecs_task_definition.setup_job_server.revision}")}"
 }
-
+*/
 # Logging job-server to CloudWatch
 resource "aws_cloudwatch_log_group" "setup_job_server_logs" {
   name              = "/fargate/service/setup-job-server"
