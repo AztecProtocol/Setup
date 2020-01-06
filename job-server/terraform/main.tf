@@ -26,18 +26,18 @@ resource "aws_elasticache_subnet_group" "setup_redis" {
   subnet_ids = ["${data.terraform_remote_state.setup_iac.outputs.subnet_az1_private_id}"]
 }
 
-resource "aws_elasticache_cluster" "setup_redis" {
-  cluster_id           = "setup-redis"
-  engine               = "redis"
-  node_type            = "cache.t2.medium"
-  num_cache_nodes      = 1
-  parameter_group_name = "default.redis3.2"
-  engine_version       = "3.2.10"
-  port                 = 6379
-  subnet_group_name    = "${aws_elasticache_subnet_group.setup_redis.name}"
-  security_group_ids   = ["${data.terraform_remote_state.setup_iac.outputs.security_group_private_id}"]
-  apply_immediately    = true
-}
+# resource "aws_elasticache_cluster" "setup_redis" {
+#   cluster_id           = "setup-redis"
+#   engine               = "redis"
+#   node_type            = "cache.t2.medium"
+#   num_cache_nodes      = 1
+#   parameter_group_name = "default.redis3.2"
+#   engine_version       = "3.2.10"
+#   port                 = 6379
+#   subnet_group_name    = "${aws_elasticache_subnet_group.setup_redis.name}"
+#   security_group_ids   = ["${data.terraform_remote_state.setup_iac.outputs.security_group_private_id}"]
+#   apply_immediately    = true
+# }
 
 # Service discovery.
 resource "aws_service_discovery_service" "job_server" {
@@ -162,7 +162,7 @@ resource "aws_ecs_service" "setup_job_server" {
   name          = "setup-job-server"
   cluster       = "${data.terraform_remote_state.setup_iac.outputs.ecs_cluster_id}"
   launch_type   = "FARGATE"
-  desired_count = "1"
+  desired_count = "0"
 
   network_configuration {
     subnets = [
