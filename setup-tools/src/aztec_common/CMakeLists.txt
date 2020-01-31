@@ -14,6 +14,7 @@ add_library(
     streaming_g2.cpp
     streaming_transcript.hpp
     streaming_transcript.cpp
+    streaming_range.hpp
     streaming.hpp
     streaming.cpp
 )
@@ -25,6 +26,7 @@ target_link_libraries(
     PUBLIC
         ${GMP_LIBRARIES}
         blake2
+        barretenberg
 )
 
 target_include_directories(
@@ -33,6 +35,7 @@ target_include_directories(
         ${DEPENDS_DIR}/blake2/ref
         ${DEPENDS_DIR}/libff
         ${GMP_INCLUDE_DIR}
+        ${DEPENDS_DIR}/barretenberg/src
 )
 
 install(
