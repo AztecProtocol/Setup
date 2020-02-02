@@ -20,6 +20,7 @@ provider "aws" {
   region  = "eu-west-2"
 }
 
+/*
 # We use redis as a backing store for the job-server.
 resource "aws_elasticache_subnet_group" "setup_redis" {
   name       = "setup-redis-subnet"
@@ -162,7 +163,7 @@ resource "aws_ecs_service" "setup_job_server" {
   name          = "setup-job-server"
   cluster       = "${data.terraform_remote_state.setup_iac.outputs.ecs_cluster_id}"
   launch_type   = "FARGATE"
-  desired_count = "1"
+  desired_count = "0"
 
   network_configuration {
     subnets = [
@@ -186,7 +187,7 @@ resource "aws_ecs_service" "setup_job_server" {
   # Track the latest ACTIVE revision
   task_definition = "${aws_ecs_task_definition.setup_job_server.family}:${max("${aws_ecs_task_definition.setup_job_server.revision}", "${data.aws_ecs_task_definition.setup_job_server.revision}")}"
 }
-
+*/
 # Logging job-server to CloudWatch
 resource "aws_cloudwatch_log_group" "setup_job_server_logs" {
   name              = "/fargate/service/setup-job-server"

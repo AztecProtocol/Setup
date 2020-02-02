@@ -87,38 +87,43 @@ const r4Instances = [
 ].map(e => [e[0], Math.floor(e[1] * 0.9)]);
 
 const instances = [
-  ...m5Instances,
+  //...m5Instances,
   // ...m5aInstances,
   // ...m4Instances,
-  //...r5Instances,
+  ...r5Instances,
   // ...r5aInstances,
   // ...r4Instances,
 ];
 
-const availabilityZones = [['us-east-2a', 'az1'], ['us-east-2b', 'az2'], ['us-east-2c', 'az3']];
+const availabilityZones = [
+  ['us-east-2a', 'az1'],
+  ['us-east-2b', 'az2'],
+  ['us-east-2c', 'az3'],
+];
 
-//const target = '576';
-const target = '1';
+//const target = '192';
+const target = '1152';
+//const target = '1';
 const price = '0.011';
 
 const header = (target, price) => `
 resource "aws_spot_fleet_request" "main" {
-  iam_fleet_role                      = "\${data.terraform_remote_state.setup_iac.outputs.ecs_spot_fleet_role_arn}"
+  iam_fleet_role                      = data.terraform_remote_state.setup_iac.outputs.ecs_spot_fleet_role_arn
   allocation_strategy                 = "capacityOptimized"
   target_capacity                     = "${target}"
   spot_price                          = "${price}"
   terminate_instances_with_expiration = true
-  valid_until                         = "2020-01-01T00:00:00Z"`;
+  valid_until                         = "2020-02-01T00:00:00Z"`;
 
 const template = ([instanceType, weight], [availabilityZone, az]) => `
   launch_specification {
     weighted_capacity      = ${weight}
-    ami                    = "ami-0918be4c91697b460"
+    ami                    = "ami-0fbd313043845c4f2"
     instance_type          = "${instanceType}"
-    subnet_id              = "\${data.terraform_remote_state.setup_iac_us_east_2.outputs.subnet_${az}_private_id}"
-    vpc_security_group_ids = ["\${data.terraform_remote_state.setup_iac_us_east_2.outputs.security_group_private_id}"]
-    iam_instance_profile   = "\${data.terraform_remote_state.setup_iac.outputs.ecs_instance_profile_name}"
-    key_name               = "\${data.terraform_remote_state.setup_iac_us_east_2.outputs.instance_key_pair_name}"
+    subnet_id              = data.terraform_remote_state.setup_iac_us_east_2.outputs.subnet_${az}_private_id
+    vpc_security_group_ids = [data.terraform_remote_state.setup_iac_us_east_2.outputs.security_group_private_id]
+    iam_instance_profile   = data.terraform_remote_state.setup_iac.outputs.ecs_instance_profile_name
+    key_name               = data.terraform_remote_state.setup_iac_us_east_2.outputs.instance_key_pair_name
     availability_zone      = "${availabilityZone}"
 
     user_data = <<USER_DATA
@@ -134,7 +139,7 @@ USER_DATA
 
 const footer = `
   lifecycle {
-    ignore_changes = ["valid_until"]
+    ignore_changes = [valid_until]
   }
 }`;
 

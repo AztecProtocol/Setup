@@ -49,7 +49,7 @@ while true; do
   aws --region $EC2_REGION s3 cp s3://aztec-post-process/generator$KMAX.dat generator_prep.dat --quiet
 
   echo Downloading g1x points...
-  aws --region $EC2_REGION s3 cp s3://aztec-post-process/$CEREMONYNAME/g1x_prep.dat g1x_prep.dat --quiet
+  aws --region $EC2_REGION s3 cp "s3://aztec-post-process/$CEREMONYNAME/g1x_prep.dat" g1x_prep.dat --quiet
 
   [ -z "$NUMJOBS" ] && NUMJOBS=$(nproc)
 

@@ -33,8 +33,8 @@ resource "aws_ecs_task_definition" "setup_post_process" {
   family                   = "setup-post-process"
   requires_compatibilities = ["EC2"]
   network_mode             = "awsvpc"
-  execution_role_arn       = "${data.terraform_remote_state.setup_iac.outputs.ecs_task_execution_role_arn}"
-  task_role_arn            = "${aws_iam_role.setup_post_process_task_role.arn}"
+  execution_role_arn       = data.terraform_remote_state.setup_iac.outputs.ecs_task_execution_role_arn
+  task_role_arn            = aws_iam_role.setup_post_process_task_role.arn
 
   container_definitions = <<DEFINITIONS
 [
@@ -72,9 +72,9 @@ data "aws_ecs_task_definition" "setup_post_process" {
 
 resource "aws_ecs_service" "setup_post_process" {
   name                               = "setup-post-process"
-  cluster                            = "${data.terraform_remote_state.setup_iac_us_east_2.outputs.ecs_main_cluster_id}"
+  cluster                            = data.terraform_remote_state.setup_iac_us_east_2.outputs.ecs_main_cluster_id
   launch_type                        = "EC2"
-  desired_count                      = "1000"
+  desired_count                      = "3000"
   deployment_maximum_percent         = 100
   deployment_minimum_healthy_percent = 0
 
@@ -122,7 +122,7 @@ data "aws_iam_policy_document" "ecs_task" {
 
 resource "aws_iam_role" "setup_post_process_task_role" {
   name               = "setup-post-process-task-role"
-  assume_role_policy = "${data.aws_iam_policy_document.ecs_task.json}"
+  assume_role_policy = data.aws_iam_policy_document.ecs_task.json
 }
 
 data "aws_iam_policy_document" "aztec_post_processing_bucket_read" {
@@ -134,6 +134,6 @@ data "aws_iam_policy_document" "aztec_post_processing_bucket_read" {
 }
 
 resource "aws_iam_role_policy" "setup_post_processing_task_policy" {
-  policy = "${data.aws_iam_policy_document.aztec_post_processing_bucket_read.json}"
-  role   = "${aws_iam_role.setup_post_process_task_role.id}"
+  policy = data.aws_iam_policy_document.aztec_post_processing_bucket_read.json
+  role   = aws_iam_role.setup_post_process_task_role.id
 }
