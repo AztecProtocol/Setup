@@ -5,7 +5,7 @@ RUN apt update
 
 # Terraform
 ENV TF_IN_AUTOMATION 1
-ENV TERRAFORM_VERSION 0.12.16
+ENV TERRAFORM_VERSION 0.13.3
 RUN curl -sSL https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip -o terraform.zip \
   && unzip terraform.zip \
   && mv terraform /usr/local/bin/ \
