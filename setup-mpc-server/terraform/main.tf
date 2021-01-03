@@ -40,25 +40,25 @@ resource "aws_service_discovery_service" "setup_mpc_server" {
 }
 
 # Create EC2 instances in each AZ.
-resource "aws_instance" "container_instance_az1" {
-  ami                    = "ami-08ebd554ebc53fa9f"
-  instance_type          = "m5.large"
-  subnet_id              = data.terraform_remote_state.setup_iac.outputs.subnet_az1_private_id
-  vpc_security_group_ids = [data.terraform_remote_state.setup_iac.outputs.security_group_private_id]
-  iam_instance_profile   = data.terraform_remote_state.setup_iac.outputs.ecs_instance_profile_name
-  key_name               = data.terraform_remote_state.setup_iac.outputs.ecs_instance_key_pair_name
-  availability_zone      = "eu-west-2a"
+# resource "aws_instance" "container_instance_az1" {
+#   ami                    = "ami-08ebd554ebc53fa9f"
+#   instance_type          = "m5.large"
+#   subnet_id              = data.terraform_remote_state.setup_iac.outputs.subnet_az1_private_id
+#   vpc_security_group_ids = [data.terraform_remote_state.setup_iac.outputs.security_group_private_id]
+#   iam_instance_profile   = data.terraform_remote_state.setup_iac.outputs.ecs_instance_profile_name
+#   key_name               = data.terraform_remote_state.setup_iac.outputs.ecs_instance_key_pair_name
+#   availability_zone      = "eu-west-2a"
 
-  user_data = <<USER_DATA
-#!/bin/bash
-echo ECS_CLUSTER=${data.terraform_remote_state.setup_iac.outputs.ecs_cluster_name} >> /etc/ecs/ecs.config
-echo 'ECS_INSTANCE_ATTRIBUTES={"group": "setup-mpc-server"}' >> /etc/ecs/ecs.config
-USER_DATA
+#   user_data = <<USER_DATA
+# #!/bin/bash
+# echo ECS_CLUSTER=${data.terraform_remote_state.setup_iac.outputs.ecs_cluster_name} >> /etc/ecs/ecs.config
+# echo 'ECS_INSTANCE_ATTRIBUTES={"group": "setup-mpc-server"}' >> /etc/ecs/ecs.config
+# USER_DATA
 
-  tags = {
-    Name = "setup-container-instance-az1"
-  }
-}
+#   tags = {
+#     Name = "setup-container-instance-az1"
+#   }
+# }
 
 # resource "aws_instance" "container_instance_az2" {
 #   ami                    = "ami-08ebd554ebc53fa9f"
@@ -108,22 +108,26 @@ resource "aws_efs_mount_target" "private_az2" {
 # Define task definition and service.
 resource "aws_ecs_task_definition" "setup_mpc_server" {
   family                   = "setup-mpc-server"
-  requires_compatibilities = ["EC2"]
+  requires_compatibilities = ["FARGATE"]
   network_mode             = "awsvpc"
+  cpu                      = "256"
+  memory                   = "512"
   execution_role_arn       = data.terraform_remote_state.setup_iac.outputs.ecs_task_execution_role_arn
   task_role_arn            = aws_iam_role.setup_mpc_server_task_role.arn
 
   volume {
     name = "efs-data-store"
-    docker_volume_configuration {
-      scope         = "shared"
-      autoprovision = true
-      driver        = "local"
-      driver_opts = {
-        type   = "nfs"
-        device = "${aws_efs_file_system.setup_data_store.dns_name}:/"
-        o      = "addr=${aws_efs_file_system.setup_data_store.dns_name},nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2"
-      }
+    efs_volume_configuration {
+      file_system_id = aws_efs_file_system.setup_data_store.id
+      root_directory = "/"
+      # scope         = "shared"
+      # autoprovision = true
+      # driver        = "local"
+      # driver_opts = {
+      #   type   = "nfs"
+      #   device = "${aws_efs_file_system.setup_data_store.dns_name}:/"
+      #   o      = "addr=${aws_efs_file_system.setup_data_store.dns_name},nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2"
+      # }
     }
   }
 
@@ -179,10 +183,11 @@ data "aws_ecs_task_definition" "setup_mpc_server" {
 resource "aws_ecs_service" "setup_mpc_server" {
   name                               = "setup-mpc-server"
   cluster                            = data.terraform_remote_state.setup_iac.outputs.ecs_cluster_id
-  launch_type                        = "EC2"
+  launch_type                        = "FARGATE"
   desired_count                      = "1"
   deployment_maximum_percent         = 100
   deployment_minimum_healthy_percent = 0
+  platform_version                   = "1.4.0"
 
   network_configuration {
     subnets = [
@@ -208,10 +213,10 @@ resource "aws_ecs_service" "setup_mpc_server" {
     registry_arn = aws_service_discovery_service.setup_mpc_server.arn
   }
 
-  placement_constraints {
-    type       = "memberOf"
-    expression = "attribute:group == setup-mpc-server"
-  }
+  # placement_constraints {
+  #   type       = "memberOf"
+  #   expression = "attribute:group == setup-mpc-server"
+  # }
 
   task_definition = "${aws_ecs_task_definition.setup_mpc_server.family}:${max(aws_ecs_task_definition.setup_mpc_server.revision, data.aws_ecs_task_definition.setup_mpc_server.revision)}"
 }
@@ -254,8 +259,9 @@ resource "aws_lb_listener_rule" "api" {
   }
 
   condition {
-    field  = "path-pattern"
-    values = ["/api/*"]
+    path_pattern {
+      values = ["/api/*"]
+    }
   }
 }
 
