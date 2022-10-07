@@ -69,7 +69,7 @@ resource "aws_ecs_service" "setup_mpc_alerts" {
   name          = "setup-mpc-alerts"
   cluster       = "${data.terraform_remote_state.setup_iac.outputs.ecs_cluster_id}"
   launch_type   = "FARGATE"
-  desired_count = "1"
+  desired_count = "0"
 
   network_configuration {
     subnets = [

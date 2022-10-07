@@ -386,7 +386,10 @@ resource "aws_iam_role_policy_attachment" "ecs_task_execution_policy" {
 # Create our cluster.
 resource "aws_ecs_cluster" "setup" {
   name = "setup"
-  # container_insights = true
+  #  setting {
+  #    name  = "containerInsights"
+  #    value = "enabled"
+  #  }
 }
 
 # Create our load balancer.
@@ -556,19 +559,26 @@ resource "aws_acm_certificate" "cert" {
 }
 
 resource "aws_route53_record" "cert_validation" {
-  name    = aws_acm_certificate.cert.domain_validation_options.0.resource_record_name
-  type    = aws_acm_certificate.cert.domain_validation_options.0.resource_record_type
+  for_each = {
+    for dvo in aws_acm_certificate.cert.domain_validation_options : dvo.domain_name => {
+      name   = dvo.resource_record_name
+      record = dvo.resource_record_value
+      type   = dvo.resource_record_type
+    }
+  }
+
   zone_id = "Z1XXO7GDQEVT6B"
-  records = [aws_acm_certificate.cert.domain_validation_options.0.resource_record_value]
   ttl     = 300
+
+  allow_overwrite = true
+  name            = each.value.name
+  records         = [each.value.record]
+  type            = each.value.type
 }
 
 resource "aws_acm_certificate_validation" "cert" {
-  certificate_arn = aws_acm_certificate.cert.arn
-
-  validation_record_fqdns = [
-    aws_route53_record.cert_validation.fqdn,
-  ]
+  certificate_arn         = aws_acm_certificate.cert.arn
+  validation_record_fqdns = [for record in aws_route53_record.cert_validation : record.fqdn]
 }
 
 # EC2 instances roles, policies, keys.
@@ -607,7 +617,7 @@ resource "aws_key_pair" "instance_key_pair" {
 # Bastion
 resource "aws_instance" "bastion" {
   ami                         = "ami-0d8e27447ec2c8410"
-  instance_type               = "t2.nano"
+  instance_type               = "t3.small"
   subnet_id                   = aws_subnet.public_az1.id
   vpc_security_group_ids      = [aws_security_group.public.id]
   iam_instance_profile        = aws_iam_instance_profile.ecs.name
@@ -616,7 +626,8 @@ resource "aws_instance" "bastion" {
   availability_zone           = "eu-west-2a"
 
   tags = {
-    Name = "bastion"
+    Name       = "bastion"
+    prometheus = ""
   }
 }
 

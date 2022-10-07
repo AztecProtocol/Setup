@@ -384,6 +384,11 @@ resource "aws_key_pair" "instance_key_pair" {
   public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDagCvr/+CA1jmFaJf+e9+Kw6iwfhvaKOpfbGEl5zLgB+rum5L4Kga6Jow1gLQeMnAHfqc2IgpsU4t04c8PYApAt8AWNDL+KxMiFytfjKfJ2DZJA73CYkFnkfnMtU+ki+JG9dAHd6m7ShtCSzE5n6EDO2yWCVWQfqE3dcnpwrymSWkJYrbxzeOixiNZ4f1nD9ddvFvTWGB4l+et5SWgeIaYgJYDqTI2teRt9ytJiDGrCWXs9olHsCZOL6TEJPUQmNekwBkjMAZ4TmbBMjwbUlIxOpW2UxzlONcNn7IlRcGQg0Gdbkpo/zOlCNXsvacvnphDk5vKKaQj+aQiG916LU5P charlie@aztecprotocol.com"
 }
 
+resource "aws_key_pair" "build_instance" {
+  key_name   = "build-instance"
+  public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDexWt/1GoGL7od5CXsNAhPqhv9WaxfRnim1EO8gRBF2cbZCAdIiSoYM+EhNfzw9sdEOhQ32ZfcfiOpbRKTnBZHB6rYJrDW/p65odmKxoqba6+SM4sEVASVN5FGa45+PUmdkdRzOjLW128N5d8AndY0jylmcb5SPbwpugQRNMLrEpvpTNgIYwgb+q7Hok0VKmbJGCCgiI1010NuFhc4CpVn/dMPf+KfXlxK5ozWyUPIQEWN3Yn9RDQPU3R43iUNgzeEtDrJz8CxAPKJP8lpb7jCoXDq0Oiyw7NJqO38s0/FTQ+SPuRplwRQpLeqW8y5V4EhBIfg3A1IrUZF6RDfeUHNy0kEtSOQ2UadmtXsBa/e8+o6MOihTgCDO6CBCbgsfmh+2bneu1WHdCPsK/Jfc0/y+EMeiE/vHqBHKY65xlriyQD2fR3g0SfCOuz/3x0vO+oyqhIqnfjfFlgXOlMBk8MT554dnRRv1JoTfl5QtOVgc1oUdEKxDhmHhwFSC3T9LkU= charlie@mainframe"
+}
+
 ### PEERING
 
 # us-east-2 side of the peering configuration. VPC, subnets, security group, routes to eu-west-2.
