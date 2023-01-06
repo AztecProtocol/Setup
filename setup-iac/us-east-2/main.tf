@@ -33,7 +33,7 @@ resource "aws_vpc" "setup" {
 
 # We create an addional CIDR block to expand beyond initial /16 limits.
 resource "aws_vpc_ipv4_cidr_block_association" "cidr1" {
-  vpc_id     = "${aws_vpc.setup.id}"
+  vpc_id     = aws_vpc.setup.id
   cidr_block = "10.3.0.0/16"
 }
 
@@ -154,7 +154,7 @@ resource "aws_security_group_rule" "setup_public_allow_all_outgoing" {
 
 # Private subnets in each avilability zone.
 resource "aws_subnet" "private_az1" {
-  vpc_id            = "${aws_vpc.setup.id}"
+  vpc_id            = aws_vpc.setup.id
   cidr_block        = "10.3.0.0/18"
   availability_zone = "us-east-2a"
 
@@ -164,7 +164,7 @@ resource "aws_subnet" "private_az1" {
 }
 
 resource "aws_subnet" "private_az2" {
-  vpc_id            = "${aws_vpc.setup.id}"
+  vpc_id            = aws_vpc.setup.id
   cidr_block        = "10.3.64.0/18"
   availability_zone = "us-east-2b"
 
@@ -174,7 +174,7 @@ resource "aws_subnet" "private_az2" {
 }
 
 resource "aws_subnet" "private_az3" {
-  vpc_id            = "${aws_vpc.setup.id}"
+  vpc_id            = aws_vpc.setup.id
   cidr_block        = "10.3.128.0/18"
   availability_zone = "us-east-2c"
 
@@ -185,7 +185,7 @@ resource "aws_subnet" "private_az3" {
 
 # Private network routing tables, rules to NAT gateway, and subnet associations.
 resource "aws_route_table" "private_az1" {
-  vpc_id = "${aws_vpc.setup.id}"
+  vpc_id = aws_vpc.setup.id
 
   tags = {
     Name = "setup-private-az1"
@@ -193,7 +193,7 @@ resource "aws_route_table" "private_az1" {
 }
 
 resource "aws_route_table" "private_az2" {
-  vpc_id = "${aws_vpc.setup.id}"
+  vpc_id = aws_vpc.setup.id
 
   tags = {
     Name = "setup-private-az2"
@@ -201,7 +201,7 @@ resource "aws_route_table" "private_az2" {
 }
 
 resource "aws_route_table" "private_az3" {
-  vpc_id = "${aws_vpc.setup.id}"
+  vpc_id = aws_vpc.setup.id
 
   tags = {
     Name = "setup-private-az3"
@@ -229,24 +229,24 @@ resource "aws_route" "private_az3" {
 
 */
 resource "aws_route_table_association" "subnet_association_az1" {
-  subnet_id      = "${aws_subnet.private_az1.id}"
-  route_table_id = "${aws_route_table.private_az1.id}"
+  subnet_id      = aws_subnet.private_az1.id
+  route_table_id = aws_route_table.private_az1.id
 }
 
 resource "aws_route_table_association" "subnet_association_az2" {
-  subnet_id      = "${aws_subnet.private_az2.id}"
-  route_table_id = "${aws_route_table.private_az2.id}"
+  subnet_id      = aws_subnet.private_az2.id
+  route_table_id = aws_route_table.private_az2.id
 }
 
 resource "aws_route_table_association" "subnet_association_az3" {
-  subnet_id      = "${aws_subnet.private_az3.id}"
-  route_table_id = "${aws_route_table.private_az3.id}"
+  subnet_id      = aws_subnet.private_az3.id
+  route_table_id = aws_route_table.private_az3.id
 }
 
 # Private security group.
 resource "aws_security_group" "private" {
   name   = "setup-private"
-  vpc_id = "${aws_vpc.setup.id}"
+  vpc_id = aws_vpc.setup.id
 
   ingress {
     protocol  = "-1"
@@ -290,7 +290,7 @@ resource "aws_security_group" "private" {
 
 # Private link endpoint interfaces to get access to AWS services.
 resource "aws_vpc_endpoint" "ecs_agent" {
-  vpc_id              = "${aws_vpc.setup.id}"
+  vpc_id              = aws_vpc.setup.id
   service_name        = "com.amazonaws.us-east-2.ecs-agent"
   vpc_endpoint_type   = "Interface"
   private_dns_enabled = true
@@ -303,7 +303,7 @@ resource "aws_vpc_endpoint" "ecs_agent" {
 }
 
 resource "aws_vpc_endpoint" "ecs_telemetry" {
-  vpc_id              = "${aws_vpc.setup.id}"
+  vpc_id              = aws_vpc.setup.id
   service_name        = "com.amazonaws.us-east-2.ecs-telemetry"
   vpc_endpoint_type   = "Interface"
   private_dns_enabled = true
@@ -316,7 +316,7 @@ resource "aws_vpc_endpoint" "ecs_telemetry" {
 }
 
 resource "aws_vpc_endpoint" "ecs" {
-  vpc_id              = "${aws_vpc.setup.id}"
+  vpc_id              = aws_vpc.setup.id
   service_name        = "com.amazonaws.us-east-2.ecs"
   vpc_endpoint_type   = "Interface"
   private_dns_enabled = true
@@ -329,7 +329,7 @@ resource "aws_vpc_endpoint" "ecs" {
 }
 
 resource "aws_vpc_endpoint" "logs" {
-  vpc_id              = "${aws_vpc.setup.id}"
+  vpc_id              = aws_vpc.setup.id
   service_name        = "com.amazonaws.us-east-2.logs"
   vpc_endpoint_type   = "Interface"
   private_dns_enabled = true
@@ -342,7 +342,7 @@ resource "aws_vpc_endpoint" "logs" {
 }
 
 resource "aws_vpc_endpoint" "ecr_api" {
-  vpc_id              = "${aws_vpc.setup.id}"
+  vpc_id              = aws_vpc.setup.id
   service_name        = "com.amazonaws.us-east-2.ecr.api"
   vpc_endpoint_type   = "Interface"
   private_dns_enabled = true
@@ -355,7 +355,7 @@ resource "aws_vpc_endpoint" "ecr_api" {
 }
 
 resource "aws_vpc_endpoint" "ecr_dkr" {
-  vpc_id              = "${aws_vpc.setup.id}"
+  vpc_id              = aws_vpc.setup.id
   service_name        = "com.amazonaws.us-east-2.ecr.dkr"
   vpc_endpoint_type   = "Interface"
   private_dns_enabled = true
@@ -368,7 +368,7 @@ resource "aws_vpc_endpoint" "ecr_dkr" {
 }
 
 resource "aws_vpc_endpoint" "s3" {
-  vpc_id            = "${aws_vpc.setup.id}"
+  vpc_id            = aws_vpc.setup.id
   service_name      = "com.amazonaws.us-east-2.s3"
   vpc_endpoint_type = "Gateway"
   route_table_ids   = ["${aws_route_table.private_az1.id}", "${aws_route_table.private_az2.id}", "${aws_route_table.private_az3.id}"]
@@ -386,15 +386,15 @@ resource "aws_key_pair" "instance_key_pair" {
 
 resource "aws_key_pair" "build_instance" {
   key_name   = "build-instance"
-  public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDexWt/1GoGL7od5CXsNAhPqhv9WaxfRnim1EO8gRBF2cbZCAdIiSoYM+EhNfzw9sdEOhQ32ZfcfiOpbRKTnBZHB6rYJrDW/p65odmKxoqba6+SM4sEVASVN5FGa45+PUmdkdRzOjLW128N5d8AndY0jylmcb5SPbwpugQRNMLrEpvpTNgIYwgb+q7Hok0VKmbJGCCgiI1010NuFhc4CpVn/dMPf+KfXlxK5ozWyUPIQEWN3Yn9RDQPU3R43iUNgzeEtDrJz8CxAPKJP8lpb7jCoXDq0Oiyw7NJqO38s0/FTQ+SPuRplwRQpLeqW8y5V4EhBIfg3A1IrUZF6RDfeUHNy0kEtSOQ2UadmtXsBa/e8+o6MOihTgCDO6CBCbgsfmh+2bneu1WHdCPsK/Jfc0/y+EMeiE/vHqBHKY65xlriyQD2fR3g0SfCOuz/3x0vO+oyqhIqnfjfFlgXOlMBk8MT554dnRRv1JoTfl5QtOVgc1oUdEKxDhmHhwFSC3T9LkU= charlie@mainframe"
+  public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC/MQzU7KxG1Cl+Jr/aALPwAjH+MnBwXxq2M+zMFTmmKAfltOy3vbIh5zA/7yWCQkCgGYDFQSMPW/+4UPnllX8m/P7g9/Z8+e2hWmUDmzzkPNblz+557LS0JjaC7Sb4YCwv8lc3dgw9hzu4AWxfYlWc9xT/W9uG6ct3LUnx9ZPvvp8z49Px8hDoasHqIpLli3S8ULRBs3R7Ent5DCDxWPH2BEZLEZU09A6DLf0ACzYzn3uPQt+9bxGaybeHwhr5p6o193GOCZDCmlyd0mQBKD5HZbAbnpFPWNIJvSMTr55D0mLGx0Lobdo9BhZAlu2Vu+84WZflIegjiqshhyhwVNK/520rTCVY2rcGNk2333WD32Nrw/9uc1aL8qk3u8pzc8outbFy1htJgaFabY7oR5UV505H+xZlt78FfDAhprTA5L4wpRpx6jL4XiNN30bA/H3uJ8+luQhqN1DqkXvM4ak/WoAgwgCrMf5fCTb6Awx6N6lNU5ZxhoE325jnz2F0avM= stefan@aztecprotocol.com"
 }
 
 ### PEERING
 
 # us-east-2 side of the peering configuration. VPC, subnets, security group, routes to eu-west-2.
 resource "aws_vpc_peering_connection" "peer" {
-  vpc_id      = "${aws_vpc.setup.id}"
-  peer_vpc_id = "${data.terraform_remote_state.setup_iac.outputs.vpc_id}"
+  vpc_id      = aws_vpc.setup.id
+  peer_vpc_id = data.terraform_remote_state.setup_iac.outputs.vpc_id
   peer_region = "eu-west-2"
   auto_accept = false
 
@@ -405,7 +405,7 @@ resource "aws_vpc_peering_connection" "peer" {
 }
 
 resource "aws_vpc_peering_connection_options" "peer" {
-  vpc_peering_connection_id = "${aws_vpc_peering_connection.peer.id}"
+  vpc_peering_connection_id = aws_vpc_peering_connection.peer.id
 
   requester {
     allow_remote_vpc_dns_resolution = true
@@ -414,51 +414,51 @@ resource "aws_vpc_peering_connection_options" "peer" {
 
 # Routes to eu-west-2 subnets through peering connection.
 resource "aws_route" "main_table_peer_public" {
-  route_table_id            = "${aws_vpc.setup.main_route_table_id}"
+  route_table_id            = aws_vpc.setup.main_route_table_id
   destination_cidr_block    = "10.0.0.0/16"
-  vpc_peering_connection_id = "${aws_vpc_peering_connection.peer.id}"
+  vpc_peering_connection_id = aws_vpc_peering_connection.peer.id
 }
 
 resource "aws_route" "main_table_peer_private" {
-  route_table_id            = "${aws_vpc.setup.main_route_table_id}"
+  route_table_id            = aws_vpc.setup.main_route_table_id
   destination_cidr_block    = "10.1.0.0/16"
-  vpc_peering_connection_id = "${aws_vpc_peering_connection.peer.id}"
+  vpc_peering_connection_id = aws_vpc_peering_connection.peer.id
 }
 
 resource "aws_route" "private_az1_peer_public" {
-  route_table_id            = "${aws_route_table.private_az1.id}"
+  route_table_id            = aws_route_table.private_az1.id
   destination_cidr_block    = "10.0.0.0/16"
-  vpc_peering_connection_id = "${aws_vpc_peering_connection.peer.id}"
+  vpc_peering_connection_id = aws_vpc_peering_connection.peer.id
 }
 
 resource "aws_route" "private_az1_peer_private" {
-  route_table_id            = "${aws_route_table.private_az1.id}"
+  route_table_id            = aws_route_table.private_az1.id
   destination_cidr_block    = "10.1.0.0/16"
-  vpc_peering_connection_id = "${aws_vpc_peering_connection.peer.id}"
+  vpc_peering_connection_id = aws_vpc_peering_connection.peer.id
 }
 
 resource "aws_route" "private_az2_peer_public" {
-  route_table_id            = "${aws_route_table.private_az2.id}"
+  route_table_id            = aws_route_table.private_az2.id
   destination_cidr_block    = "10.0.0.0/16"
-  vpc_peering_connection_id = "${aws_vpc_peering_connection.peer.id}"
+  vpc_peering_connection_id = aws_vpc_peering_connection.peer.id
 }
 
 resource "aws_route" "private_az2_peer_private" {
-  route_table_id            = "${aws_route_table.private_az2.id}"
+  route_table_id            = aws_route_table.private_az2.id
   destination_cidr_block    = "10.1.0.0/16"
-  vpc_peering_connection_id = "${aws_vpc_peering_connection.peer.id}"
+  vpc_peering_connection_id = aws_vpc_peering_connection.peer.id
 }
 
 resource "aws_route" "private_az3_peer_public" {
-  route_table_id            = "${aws_route_table.private_az3.id}"
+  route_table_id            = aws_route_table.private_az3.id
   destination_cidr_block    = "10.0.0.0/16"
-  vpc_peering_connection_id = "${aws_vpc_peering_connection.peer.id}"
+  vpc_peering_connection_id = aws_vpc_peering_connection.peer.id
 }
 
 resource "aws_route" "private_az3_peer_private" {
-  route_table_id            = "${aws_route_table.private_az3.id}"
+  route_table_id            = aws_route_table.private_az3.id
   destination_cidr_block    = "10.1.0.0/16"
-  vpc_peering_connection_id = "${aws_vpc_peering_connection.peer.id}"
+  vpc_peering_connection_id = aws_vpc_peering_connection.peer.id
 }
 
 # eu-west-2 side of the peering configuration. Routes to us-east-2.
@@ -470,7 +470,7 @@ provider "aws" {
 
 resource "aws_vpc_peering_connection_accepter" "peer" {
   provider                  = "aws.eu-west-2"
-  vpc_peering_connection_id = "${aws_vpc_peering_connection.peer.id}"
+  vpc_peering_connection_id = aws_vpc_peering_connection.peer.id
   auto_accept               = true
 
   tags = {
@@ -481,7 +481,7 @@ resource "aws_vpc_peering_connection_accepter" "peer" {
 
 resource "aws_vpc_peering_connection_options" "accepter" {
   provider                  = "aws.eu-west-2"
-  vpc_peering_connection_id = "${aws_vpc_peering_connection.peer.id}"
+  vpc_peering_connection_id = aws_vpc_peering_connection.peer.id
 
   accepter {
     allow_remote_vpc_dns_resolution = true
@@ -490,21 +490,21 @@ resource "aws_vpc_peering_connection_options" "accepter" {
 
 resource "aws_route" "from_peer_main" {
   provider                  = "aws.eu-west-2"
-  route_table_id            = "${data.terraform_remote_state.setup_iac.outputs.vpc_main_route_table_id}"
+  route_table_id            = data.terraform_remote_state.setup_iac.outputs.vpc_main_route_table_id
   destination_cidr_block    = "10.3.0.0/16"
-  vpc_peering_connection_id = "${aws_vpc_peering_connection.peer.id}"
+  vpc_peering_connection_id = aws_vpc_peering_connection.peer.id
 }
 
 resource "aws_route" "from_peer_az1" {
   provider                  = "aws.eu-west-2"
-  route_table_id            = "${data.terraform_remote_state.setup_iac.outputs.route_table_az1_private_id}"
+  route_table_id            = data.terraform_remote_state.setup_iac.outputs.route_table_az1_private_id
   destination_cidr_block    = "10.3.0.0/16"
-  vpc_peering_connection_id = "${aws_vpc_peering_connection.peer.id}"
+  vpc_peering_connection_id = aws_vpc_peering_connection.peer.id
 }
 
 resource "aws_route" "from_peer_az2" {
   provider                  = "aws.eu-west-2"
-  route_table_id            = "${data.terraform_remote_state.setup_iac.outputs.route_table_az2_private_id}"
+  route_table_id            = data.terraform_remote_state.setup_iac.outputs.route_table_az2_private_id
   destination_cidr_block    = "10.3.0.0/16"
-  vpc_peering_connection_id = "${aws_vpc_peering_connection.peer.id}"
+  vpc_peering_connection_id = aws_vpc_peering_connection.peer.id
 }
