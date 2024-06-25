@@ -11,7 +11,7 @@ Participants in the AZTEC trusted setup multi party computation fall into three 
 2. **Early bird individuals** - Participants that have signed up for the ceremony prior to the _selection date_. They have secondary priority during the ceremony.
 3. **Individuals** - Participants that have signed up for the ceremony after the _selection date_, or who were not choosen during selection. They have tertiary priority during the ceremony.
 
-The _selection date_ is goverened by a predetermined Ethereum block height. The block hash of the block is used as a seed to a pseudo random number generator which first selects a number of participants from tier 2, and is then used to randomise the priority order of participants in both tier 1 and tier 2. Unselected participants and participants in tier 3 are ordered on a first come first served basis.
+The _selection date_ is goverened by a predetermined Ethereum block height. The block hash of the block is used as a seed to a pseudo random number generator which first selects a number of participants from tier 2, and is then used to randomize the priority order of participants in both tier 1 and tier 2. Unselected participants and participants in tier 3 are ordered on a first come first served basis.
 
 To sign up for participation, a user must send 1 wei to the AZTEC controlled address `0x000000000xxxxxxx0000000`. The private key of the sending address must be provided to the client application for authentication.
 

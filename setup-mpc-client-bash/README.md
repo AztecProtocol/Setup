@@ -5,7 +5,7 @@ This project contains a few bash scripts which can be used as a reference as to 
 ## Requirements
 
 - You need to be running [setup-mpc-client](../setup-mpc-client) with the environment variable `COMPUTE_OFFLINE=1`.
-- You need to be running an ETH node such as ganache configured with the account that you will use to verify with the server.
+- You need to be running an ETH node such as a ganache configured with the account that you will use to verify with the server.
 
 ## Usage
 

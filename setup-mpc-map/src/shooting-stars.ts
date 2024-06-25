@@ -7,7 +7,7 @@ export class ShootingStars {
   constructor(locations: LatLon[], viewer: Cesium.Viewer) {
     const baseTime = viewer.clock.startTime;
 
-    // Stick first location on the end, so we get a loop. Remove duplicate contiguous locations.
+    // Stick the first location on the end, so we get a loop. Remove duplicate contiguous locations.
     locations = [...locations, locations[0]].filter(
       (el, i, a) => i === 0 || (el.lat !== a[i - 1].lat || el.lon !== a[i - 1].lon)
     );

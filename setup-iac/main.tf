@@ -28,7 +28,7 @@ resource "aws_vpc" "setup" {
   }
 }
 
-# We create an addional CIDR block to expand beyond initial /16 limits.
+# We create an additional CIDR block to expand beyond initial /16 limits.
 resource "aws_vpc_ipv4_cidr_block_association" "cidr1" {
   vpc_id     = aws_vpc.setup.id
   cidr_block = "10.1.0.0/16"

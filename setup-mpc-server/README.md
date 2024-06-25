@@ -84,7 +84,7 @@ The text `SignMeWithYourPrivateKey`, signed by the admin address.
 
 `PATCH /api/participant/<address>`
 
-Updates telemetry around a participants progress.
+Updates telemetry around a participant's progress.
 
 `Body`
 

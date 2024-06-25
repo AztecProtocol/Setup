@@ -3,7 +3,7 @@ set -e
 
 IMAGE_NAME=$1
 
-# Docker layer caching can have old layers. Pull given images from remote if we haven't rebuilt this run.
+# Docker layer caching can have old layers. Pull the given images from the remote if we haven't rebuilt this run.
 for DEP in $2; do
   if [ ! -f /tmp/${DEP#*/}.rebuilt ]; then
     docker pull $DEP:latest
