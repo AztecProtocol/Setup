@@ -104,7 +104,7 @@ export class Verifier {
       args.push(this.store.getUnverifiedTranscriptPath(address, transcriptNumber - 1));
     }
 
-    console.log(`Verifiying transcript ${transcriptNumber}...`);
+    console.log(`Verifying transcript ${transcriptNumber}...`);
     return new Promise<boolean>(resolve => {
       const binPath = '../setup-tools/verify';
       const verify = spawn(binPath, args);
