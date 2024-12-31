@@ -31,7 +31,7 @@ resource "aws_vpc" "setup" {
   }
 }
 
-# We create an addional CIDR block to expand beyond initial /16 limits.
+# We create an additional CIDR block to expand beyond initial /16 limits.
 resource "aws_vpc_ipv4_cidr_block_association" "cidr1" {
   vpc_id     = aws_vpc.setup.id
   cidr_block = "10.3.0.0/16"
@@ -152,7 +152,7 @@ resource "aws_security_group_rule" "setup_public_allow_all_outgoing" {
 
 ### PRIVATE NETWORK
 
-# Private subnets in each avilability zone.
+# Private subnets in each availability zone.
 resource "aws_subnet" "private_az1" {
   vpc_id            = aws_vpc.setup.id
   cidr_block        = "10.3.0.0/18"
