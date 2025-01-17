@@ -18,7 +18,7 @@ An overview of the different projects, in order of relevance and interest:
 
 Brief technical overview of participating in the MPC. Further information available [here](https://app.gitbook.com/@aztec-protocol/s/mpc).
 
-#### The Easy Way
+**The Easy Way**
 
 The simplest way to participate is to run [setup-mpc-client](/setup-mpc-client). The only input required to the application is the private key of the address used to register.
 The application will then display the current ceremony status, and will automatically handle your computation when your turn comes around.
