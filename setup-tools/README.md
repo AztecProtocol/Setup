@@ -143,7 +143,7 @@ Ensure that at the top level of the repo you have run:
 git submodule init && git submodule update
 ```
 
-To ease development you can create an image with necessary build environment, with your current source code mounted into the conatiner.
+To ease development you can create an image with necessary build environment, with your current source code mounted into the container.
 
 ```
 docker-compose build build-env
