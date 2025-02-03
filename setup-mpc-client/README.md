@@ -44,7 +44,7 @@ Example:
 docker run -ti -e PRIVATE_KEY=0x469844c8ae3d0a18ec3f52779cd0e6d87a3c0395176f575d50e5810a086cf311 aztecprotocol/setup-mpc-client
 ```
 
-## Dress Rehersal
+## Dress Rehearsal
 
 In preparation for the MPC in September, we will be running multiple test runs of the MPC both internally and externally.
 For ease of coordination amongst testers, the following set of addresses and corresponding private keys are being used.
