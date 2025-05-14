@@ -9,7 +9,7 @@ Participants in the AZTEC trusted setup multi party computation fall into three 
 
 1. **Institutional participants** - These participants are known up front and have been formally accepted into the computation by AZTEC. They have top priority during the ceremony.
 2. **Early bird individuals** - Participants that have signed up for the ceremony prior to the _selection date_. They have secondary priority during the ceremony.
-3. **Individuals** - Participants that have signed up for the ceremony after the _selection date_, or who were not choosen during selection. They have tertiary priority during the ceremony.
+3. **Individuals** - Participants that have signed up for the ceremony after the _selection date_, or who were not chosen during selection. They have tertiary priority during the ceremony.
 
 The _selection date_ is goverened by a predetermined Ethereum block height. The block hash of the block is used as a seed to a pseudo random number generator which first selects a number of participants from tier 2, and is then used to randomise the priority order of participants in both tier 1 and tier 2. Unselected participants and participants in tier 3 are ordered on a first come first served basis.
 
@@ -44,7 +44,7 @@ Example:
 docker run -ti -e PRIVATE_KEY=0x469844c8ae3d0a18ec3f52779cd0e6d87a3c0395176f575d50e5810a086cf311 aztecprotocol/setup-mpc-client
 ```
 
-## Dress Rehersal
+## Dress Rehearsal
 
 In preparation for the MPC in September, we will be running multiple test runs of the MPC both internally and externally.
 For ease of coordination amongst testers, the following set of addresses and corresponding private keys are being used.
