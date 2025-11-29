@@ -1,13 +1,32 @@
-version: '3'
+# docker-compose.yml (For Local Development)
+
+version: '3.8'
+
 services:
-  setup-mpc-server:
-    build: .
-    image: 278380418400.dkr.ecr.eu-west-2.amazonaws.com/setup-mpc-server
-    command: yarn start
+  mpc-server-dev:
+    # 1. Build the image locally from the context ('.').
+    build: . 
+    image: mpc-server-local:latest # Use a local tag for identification
+    
+    # 2. Run the start command (assuming yarn start is a dev server)
+    command: yarn start 
+    
+    # Set the environment explicitly for development
     environment:
-      NODE_ENV: production
+      NODE_ENV: development
+      
+    # Map container port 80 to host port 8081
     ports:
       - '8081:80'
+      
+    # Volume mounts are essential for development:
     volumes:
-      - .:/usr/src/setup-mpc-server
-      - ../setup-mpc-common:/usr/src/setup-mpc-server/node_modules/setup-mpc-common
+      # Mount the current project directory to enable code changes without rebuilding the image
+      - .:/usr/src/app
+      # Mount the local common module directly over its node_modules path (Monorepo style)
+      - ../setup-mpc-common:/usr/src/app/node_modules/setup-mpc-common 
+
+# --- Annotations ---
+# This configuration is optimized for a fast feedback loop in local development.
+# The image field is used here only for tagging the local build.
+# The original setup-mpc-server/ prefix was simplified to 'app' within the container for conciseness.
